@@ -1,0 +1,19 @@
+{
+  "name": "chaska-gaming-platform",
+  "version": "1.0.0",
+  "description": "World-Class Ultra-Fast Real-Money Gaming Platform & Android App",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "ws": "^8.17.0"
+  },
+  "keywords": ["gaming", "casino", "aviator", "roulette", "teen-patti", "sportsbook", "real-money"],
+  "author": "Antigravity Team",
+  "license": "ISC"
+}

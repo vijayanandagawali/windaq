@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1A2234"/>
+      <stop offset="70%" stop-color="#0B0F19"/>
+      <stop offset="100%" stop-color="#05070C"/>
+    </radialGradient>
+
+    <!-- Metallic Gold 24K Gradient -->
+    <linearGradient id="gold24k" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF3A8"/>
+      <stop offset="25%" stop-color="#FFD700"/>
+      <stop offset="50%" stop-color="#FFA000"/>
+      <stop offset="75%" stop-color="#FFC107"/>
+      <stop offset="100%" stop-color="#D48800"/>
+    </linearGradient>
+
+    <!-- Deep Shadow Gold -->
+    <linearGradient id="goldShadow" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#B87300"/>
+      <stop offset="100%" stop-color="#FFB300"/>
+    </linearGradient>
+
+    <!-- Electric Cyan Accent -->
+    <linearGradient id="cyanGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F0FF"/>
+      <stop offset="100%" stop-color="#0072FF"/>
+    </linearGradient>
+
+    <!-- Neon Green Win Glow -->
+    <linearGradient id="greenWin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00FF88"/>
+      <stop offset="100%" stop-color="#00AA44"/>
+    </linearGradient>
+
+    <!-- Drop Shadow Filter -->
+    <filter id="goldGlowFilter" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="shadow3D">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base Shield -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGrad)"/>
+  
+  <!-- Outer Hexagonal Tech Ring -->
+  <polygon points="256,36 450,148 450,364 256,476 62,364 62,148" 
+           fill="none" stroke="url(#gold24k)" stroke-width="4" stroke-opacity="0.3" stroke-dasharray="16, 8"/>
+
+  <!-- Inner Glowing Shield -->
+  <polygon points="256,56 430,158 430,354 256,456 82,354 82,158" 
+           fill="#0E131E" stroke="url(#gold24k)" stroke-width="2" stroke-opacity="0.6"/>
+
+  <!-- Crown / Diamond Top Crest -->
+  <polygon points="256,80 290,130 256,155 222,130" fill="url(#cyanGlow)" filter="url(#goldGlowFilter)"/>
+  <circle cx="256" cy="115" r="7" fill="#FFFFFF"/>
+  <circle cx="196" cy="140" r="5" fill="url(#gold24k)"/>
+  <circle cx="316" cy="140" r="5" fill="url(#gold24k)"/>
+
+  <!-- The Master Dynamic "W" Emblem with 3D Facets -->
+  <g filter="url(#shadow3D)">
+    <!-- Left Wing Outer -->
+    <polygon points="120,170 170,170 215,350 165,350" fill="url(#goldShadow)"/>
+    <!-- Left Wing Inner Highlight -->
+    <polygon points="120,170 145,170 195,350 170,350" fill="url(#gold24k)"/>
+
+    <!-- Right Wing Outer -->
+    <polygon points="392,170 342,170 297,350 347,350" fill="url(#gold24k)"/>
+    <!-- Right Wing Inner Highlight -->
+    <polygon points="392,170 367,170 317,350 342,350" fill="url(#goldShadow)"/>
+
+    <!-- Central Diamond Core "V" of W -->
+    <polygon points="256,220 295,370 256,410 217,370" fill="url(#gold24k)" filter="url(#goldGlowFilter)"/>
+    
+    <!-- Central Cutting Apex Line -->
+    <polygon points="256,220 275,370 256,410" fill="#FFEAA7"/>
+    <polygon points="256,220 237,370 256,410" fill="#D48800"/>
+
+    <!-- Precision Cross Wings Connectors -->
+    <polygon points="170,170 256,220 217,370" fill="url(#gold24k)"/>
+    <polygon points="342,170 256,220 295,370" fill="url(#goldShadow)"/>
+  </g>
+
+  <!-- Accent Sparkles -->
+  <polygon points="256,180 262,195 277,201 262,207 256,222 250,207 235,201 250,195" fill="#FFFFFF"/>
+  <polygon points="120,150 123,158 131,161 123,164 120,172 117,164 109,161 117,158" fill="url(#cyanGlow)"/>
+  <polygon points="392,150 395,158 403,161 395,164 392,172 389,164 381,161 389,158" fill="url(#cyanGlow)"/>
+
+  <!-- WINDAQ Lettering Typography inside Badge Footer -->
+  <text x="256" y="445" 
+        font-family="'Outfit', 'Montserrat', 'Segoe UI', sans-serif" 
+        font-size="28" 
+        font-weight="900" 
+        letter-spacing="6" 
+        fill="url(#gold24k)" 
+        text-anchor="middle">
+    WINDAQ
+  </text>
+  
+  <text x="256" y="468" 
+        font-family="'Outfit', 'Noto Sans Devanagari', 'Segoe UI', sans-serif" 
+        font-size="14" 
+        font-weight="700" 
+        letter-spacing="3" 
+        fill="#00F0FF" 
+        text-anchor="middle">
+    विन डैक
+  </text>
+</svg>

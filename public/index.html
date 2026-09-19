@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>WinDaq (विन डैक) - World-Class Real Money Gaming Platform</title>
+  <meta name="description" content="WinDaq (विन डैक) - Play high-speed real money games: Aviator, Color Prediction, Roulette, Teen Patti, Andar Bahar, Dragon Tiger, Slots and Live Cricket Betting." />
+  <link rel="icon" type="image/png" href="/assets/windaq_logo.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0a0d14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+</head>
+<body>
+
+  <!-- Mobile App Frame Container -->
+  <div id="app-container">
+
+    <!-- 1. Authentic Android OS Status Bar -->
+    <div class="android-status-bar">
+      <div class="android-status-left">
+        <span id="android-clock">12:00</span>
+      </div>
+      <div class="android-status-right">
+        <span id="sound-indicator" class="status-icon" title="Toggle Sound" onclick="window.soundEngine && window.soundEngine.toggleMute()">🔊</span>
+        <span class="status-icon">5G</span>
+        <span class="status-icon">📶</span>
+        <span class="status-icon">98% 🔋</span>
+      </div>
+    </div>
+
+    <!-- 2. Top Sticky Header -->
+    <header class="top-header">
+      <div class="brand-box" title="Tap 5 times for Admin Panel" onclick="window.app && window.app.handleLogoTap()">
+        <img src="/assets/windaq_logo.png" alt="WinDaq Logo" class="brand-logo-img" />
+        <div class="brand-text-col">
+          <div class="brand-title">WINDAQ</div>
+          <div class="brand-hindi">विन डैक</div>
+        </div>
+        <!-- VIP Tier Badge in Header -->
+        <div id="header-vip-badge" class="vip-badge-pill" onclick="window.app && window.app.openVipModal(); event.stopPropagation();">
+          🥉 BRONZE
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Notification Bell -->
+        <button class="notif-btn" title="Notifications" onclick="window.app && window.app.openNotifModal()">
+          🔔<span class="notif-dot">1</span>
+        </button>
+
+        <!-- Balance Chip (Logged In) -->
+        <div id="header-balance-chip" class="balance-chip open-deposit-btn" style="display: none;">
+          <span class="coin-icon">🪙</span>
+          <span>₹<span id="header-bal-val">1000.00</span></span>
+          <div class="deposit-plus-btn">+</div>
+        </div>
+
+        <!-- Login Button (Logged Out) -->
+        <button id="header-auth-btn" class="login-btn" onclick="window.app && window.app.openAuthModal()">
+          LOGIN / SIGNUP
+        </button>
+      </div>
+    </header>
+
+    <!-- 3. Real-Time Winner Announcement Marquee -->
+    <div class="marquee-container">
+      <div class="marquee-icon">📢</div>
+      <div class="marquee-text" id="live-winners-marquee">
+        <span>🔥 Suraj V. won ₹18,400 on WinDaq Aviator!</span>
+        <span>🎉 Rahul G. won ₹25,000 on WinDaq Wingo!</span>
+        <span>💰 Amit T. won ₹9,800 on WinDaq Dragon vs Tiger!</span>
+        <span>⚡ Kartik M. won ₹42,000 on WinDaq Cricket Exchange!</span>
+      </div>
+    </div>
+
+    <!-- 4. Official Android APK / PWA Download Bar -->
+    <div id="android-apk-install-banner" class="android-apk-banner">
+      <div class="apk-icon-box">🤖</div>
+      <div class="apk-info-box">
+        <div class="apk-title">WINDAQ OFFICIAL ANDROID APP (.APK)</div>
+        <div class="apk-sub">Install on Home Screen for 2X Faster Gameplay & Instant Alerts</div>
+      </div>
+      <button class="apk-action-btn" onclick="window.app && window.app.installAndroidApp()">
+        INSTALL APP
+      </button>
+    </div>
+
+    <!-- 5. Addictive Quick-Hub (Daily Spin, VIP, Refer, Passbook) -->
+    <div class="quick-hub-container">
+      <div class="quick-card card-spin" onclick="window.app && window.app.openSpinModal()">
+        <div class="quick-icon-wrap">🎰</div>
+        <div class="quick-info">
+          <div class="quick-title">LUCKY SPIN</div>
+          <div class="quick-sub">WIN UP TO ₹2,500</div>
+        </div>
+        <span class="quick-pill pill-gold">FREE DAILY</span>
+      </div>
+
+      <div class="quick-card card-vip" onclick="window.app && window.app.openVipModal()">
+        <div class="quick-icon-wrap">👑</div>
+        <div class="quick-info">
+          <div class="quick-title">VIP CLUB</div>
+          <div class="quick-sub">12% CASHBACK</div>
+        </div>
+        <span class="quick-pill pill-purple">REWARDS</span>
+      </div>
+
+      <div class="quick-card card-refer" onclick="window.app && window.app.openReferralModal()">
+        <div class="quick-icon-wrap">🎁</div>
+        <div class="quick-info">
+          <div class="quick-title">REFER & EARN</div>
+          <div class="quick-sub">₹200 PER FRIEND</div>
+        </div>
+        <span class="quick-pill pill-green">30% COMM</span>
+      </div>
+
+      <div class="quick-card card-passbook" onclick="window.app && window.app.openPassbookModal()">
+        <div class="quick-icon-wrap">📜</div>
+        <div class="quick-info">
+          <div class="quick-title">PASSBOOK</div>
+          <div class="quick-sub">LIVE HISTORY</div>
+        </div>
+        <span class="quick-pill pill-blue">STATEMENT</span>
+      </div>
+    </div>
+
+    <!-- 6. Hero Promotional Banner -->
+    <div class="hero-slider">
+      <div class="banner-card">
+        <span class="banner-tag">OFFICIAL WINDAQ APP</span>
+        <div class="banner-title">CLAIM <span>₹500 FREE</span> CASH ON WINDAQ APP!</div>
+        <div class="banner-desc">Use promo code <b>WINDAQ</b> for instant 100% deposit match bonus.</div>
+        <div class="banner-actions">
+          <button class="app-dl-btn" onclick="window.app && window.app.installAndroidApp()">
+            <span>🤖</span> DOWNLOAD WINDAQ APP
+          </button>
+          <button class="open-deposit-btn" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-highlight); color: #FFF; font-weight: 700; font-size: 12px; padding: 8px 14px; border-radius: var(--radius-pill); cursor: pointer;">
+            + DEPOSIT NOW
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Search Bar -->
+    <div class="search-wrapper">
+      <div class="search-input-box">
+        <span style="color: var(--text-dim);">🔍</span>
+        <input type="text" id="game-search-input" placeholder="Search Aviator, Roulette, Teen Patti, Slots..." oninput="window.app && window.app.searchGames(this.value)" />
+      </div>
+    </div>
+
+    <!-- 8. Category Tabs Navigation -->
+    <div class="category-scroll">
+      <div class="cat-pill active" onclick="window.app && window.app.filterCategory('all', this)">⚡ All Games</div>
+      <div class="cat-pill" onclick="window.app && window.app.filterCategory('crash', this)">🚀 Crash Games</div>
+      <div class="cat-pill" onclick="window.app && window.app.filterCategory('trending', this)">🎨 Color Trading</div>
+      <div class="cat-pill" onclick="window.app && window.app.filterCategory('casino', this)">🎡 Roulette</div>
+      <div class="cat-pill" onclick="window.app && window.app.filterCategory('cards', this)">🃏 Teen Patti & Cards</div>
+      <div class="cat-pill" onclick="window.app && window.app.filterCategory('slots', this)">🎰 777 Slots</div>
+      <div class="cat-pill" onclick="window.app && window.app.filterCategory('sports', this)">🏏 Cricket Exchange</div>
+    </div>
+
+    <!-- 9. Games Section -->
+    <div class="section-wrapper">
+      <div class="section-header">
+        <div class="section-title">FEATURED GAMES (LIGHTNING FAST)</div>
+        <div class="section-more" onclick="window.app && window.app.filterCategory('all')">VIEW ALL</div>
+      </div>
+      <div id="main-games-grid" class="games-grid">
+        <!-- Dynamically rendered by app.js -->
+      </div>
+    </div>
+
+    <!-- 10. Floating Support Hub (WhatsApp & Telegram) -->
+    <div class="floating-hub">
+      <div class="float-btn float-whatsapp" title="WhatsApp 24/7 VIP Support" onclick="window.app && window.app.openWhatsAppSupport()">
+        💬
+      </div>
+      <div class="float-btn float-telegram" title="Telegram VIP Channel" onclick="window.app && window.app.openTelegramVIP()">
+        ✈️
+      </div>
+    </div>
+
+    <!-- 11. Floating Real-Time Winner Alert Toast -->
+    <div id="floating-winner-toast" class="floating-winner-toast" style="display: none;">
+      <!-- Populated dynamically by app.js -->
+    </div>
+
+    <!-- 12. Fixed Bottom Mobile Navigation -->
+    <nav class="bottom-nav">
+      <div class="nav-item active" onclick="window.app && window.app.filterCategory('all')">
+        <i>🏠</i>
+        <span>Home</span>
+      </div>
+      <div class="nav-item" onclick="window.app && window.app.filterCategory('crash')">
+        <i>🚀</i>
+        <span>Crash</span>
+      </div>
+      <div class="nav-item" onclick="window.app && window.app.filterCategory('casino')">
+        <i>🎡</i>
+        <span>Casino</span>
+      </div>
+      <div class="nav-item nav-spin-highlight" onclick="window.app && window.app.openSpinModal()">
+        <div class="nav-spin-bubble">🎰</div>
+        <span>Daily Spin</span>
+      </div>
+      <div class="nav-item open-deposit-btn">
+        <i>💰</i>
+        <span>Wallet</span>
+      </div>
+    </nav>
+
+    <!-- 13. Fullscreen Game Viewport Modal -->
+    <div id="game-viewport-modal">
+      <div class="game-viewport-bar">
+        <button onclick="window.app && window.app.closeGameViewport()" style="background: none; border: none; color: #FFF; font-size: 20px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-weight: 800;">
+          ◀ <span style="font-size: 13px;">LOBBY</span>
+        </button>
+        <div id="game-viewport-title" style="font-size: 14px; font-weight: 900; color: var(--gold);">WINDAQ GAME</div>
+        <div class="balance-chip open-deposit-btn" style="padding: 2px 8px; font-size: 12px;">
+          <span>₹<span id="game-bal-val">1000.00</span></span>
+        </div>
+      </div>
+      <div id="game-viewport-content" class="game-viewport-content">
+        <!-- Game engine mounts here -->
+      </div>
+    </div>
+
+    <!-- 14. Auth / OTP Modal -->
+    <div id="auth-modal" class="modal-backdrop">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div class="modal-title">WINDAQ LOGIN / SIGN UP</div>
+          <button class="modal-close" onclick="window.app && window.app.closeAuthModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div id="otp-step-1">
+            <label style="font-size: 11px; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 6px;">ENTER 10-DIGIT MOBILE NUMBER</label>
+            <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+              <span style="background: var(--bg-input); border: 1px solid var(--border); padding: 12px; border-radius: var(--radius-sm); color: #FFF; font-weight: 800;">+91</span>
+              <input type="tel" id="auth-phone-input" placeholder="9876543210" maxlength="10" style="flex: 1; background: var(--bg-input); border: 1px solid var(--border); padding: 12px; border-radius: var(--radius-sm); color: #FFF; font-size: 15px; font-weight: 800; outline: none;" />
+            </div>
+            <button class="btn-primary" onclick="window.app && window.app.sendOtp()">SEND OTP</button>
+          </div>
+
+          <div id="otp-step-2" style="display: none;">
+            <label style="font-size: 11px; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 6px;">ENTER 6-DIGIT OTP</label>
+            <input type="text" id="auth-otp-input" placeholder="123456" maxlength="6" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border); padding: 12px; border-radius: var(--radius-sm); color: var(--gold); font-size: 18px; font-weight: 900; letter-spacing: 4px; text-align: center; outline: none; margin-bottom: 14px;" />
+            <button class="btn-primary" onclick="window.app && window.app.verifyOtp()">VERIFY & PLAY</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 15. Deposit Modal -->
+    <div id="deposit-modal" class="modal-backdrop">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div class="modal-title">INSTANT UPI DEPOSIT</div>
+          <button class="modal-close" onclick="window.walletUI && window.walletUI.closeDepositModal()">✕</button>
+        </div>
+        <div id="deposit-modal-body" class="modal-body">
+          <!-- Rendered by wallet.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 16. Withdrawal Modal -->
+    <div id="withdraw-modal" class="modal-backdrop">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div class="modal-title">INSTANT WITHDRAWAL</div>
+          <button class="modal-close" onclick="window.walletUI && window.walletUI.closeWithdrawModal()">✕</button>
+        </div>
+        <div id="withdraw-modal-body" class="modal-body">
+          <!-- Rendered by wallet.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 17. Daily Lucky Spin Wheel Modal -->
+    <div id="spin-modal" class="modal-backdrop">
+      <div class="modal-box spin-modal-box">
+        <div class="modal-header">
+          <div class="modal-title">🎰 DAILY LUCKY SPIN WHEEL</div>
+          <button class="modal-close" onclick="window.app && window.app.closeSpinModal()">✕</button>
+        </div>
+        <div class="modal-body text-center">
+          <p class="spin-sub-text">Spin the neon wheel daily to win up to <b>₹2,500 Real Cash</b> directly to your wallet!</p>
+          
+          <div class="wheel-stage">
+            <div class="wheel-pointer">▼</div>
+            <canvas id="wheel-canvas" width="300" height="300"></canvas>
+            <div class="wheel-center-cap">WINDAQ</div>
+          </div>
+
+          <div id="spin-result-box" class="spin-result-box" style="display: none;"></div>
+
+          <button id="spin-action-btn" class="btn-primary btn-spin-cta" onclick="window.app && window.app.triggerSpin()">
+            🎲 SPIN NOW (FREE)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 18. VIP Loyalty Club Modal -->
+    <div id="vip-modal" class="modal-backdrop">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div class="modal-title">👑 WINDAQ VIP LOYALTY CLUB</div>
+          <button class="modal-close" onclick="window.app && window.app.closeVipModal()">✕</button>
+        </div>
+        <div id="vip-modal-body" class="modal-body">
+          <!-- Rendered dynamically by app.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 19. Refer & Earn Modal -->
+    <div id="referral-modal" class="modal-backdrop">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div class="modal-title">🎁 REFER & EARN WINDAQ CASH</div>
+          <button class="modal-close" onclick="window.app && window.app.closeReferralModal()">✕</button>
+        </div>
+        <div id="referral-modal-body" class="modal-body">
+          <!-- Rendered dynamically by app.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 20. Passbook / Transaction Statement Modal -->
+    <div id="passbook-modal" class="modal-backdrop">
+      <div class="modal-box passbook-modal-box">
+        <div class="modal-header">
+          <div class="modal-title">📜 WINDAQ PASSBOOK & STATEMENT</div>
+          <button class="modal-close" onclick="window.app && window.app.closePassbookModal()">✕</button>
+        </div>
+        <div class="passbook-tabs">
+          <button class="p-tab active" onclick="window.app && window.app.loadPassbook('ALL', this)">ALL</button>
+          <button class="p-tab" onclick="window.app && window.app.loadPassbook('DEPOSIT', this)">DEPOSITS</button>
+          <button class="p-tab" onclick="window.app && window.app.loadPassbook('WITHDRAWAL', this)">WITHDRAWALS</button>
+          <button class="p-tab" onclick="window.app && window.app.loadPassbook('BET', this)">BETS</button>
+          <button class="p-tab" onclick="window.app && window.app.loadPassbook('WIN', this)">WINS</button>
+        </div>
+        <div id="passbook-list" class="modal-body passbook-list">
+          <!-- Loaded dynamically from SQLite by app.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 21. Android Notifications Drawer -->
+    <div id="notif-modal" class="modal-backdrop">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div class="modal-title">🔔 SYSTEM NOTIFICATIONS</div>
+          <button class="modal-close" onclick="window.app && window.app.closeNotifModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="notif-card">
+            <div class="notif-icon">🎁</div>
+            <div class="notif-text">
+              <div class="notif-head">₹1,000 Welcome Bonus Active!</div>
+              <div class="notif-desc">Your initial gaming wallet has been credited with ₹1,000 sign up bonus. Start playing Aviator or Wingo now!</div>
+              <div class="notif-time">Just now</div>
+            </div>
+          </div>
+          <div class="notif-card">
+            <div class="notif-icon">⚡</div>
+            <div class="notif-text">
+              <div class="notif-head">Instant UPI Deposits Enabled</div>
+              <div class="notif-desc">PhonePe, Google Pay, and Paytm payments are credited automatically within 10 seconds via UTR confirmation.</div>
+              <div class="notif-time">10m ago</div>
+            </div>
+          </div>
+          <div class="notif-card">
+            <div class="notif-icon">🚀</div>
+            <div class="notif-text">
+              <div class="notif-head">Aviator 120X Crash Recorded!</div>
+              <div class="notif-desc">High multiplier hit today! Players cashed out over ₹2,40,000 in a single round.</div>
+              <div class="notif-time">1h ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Audio Synthesizer -->
+  <script src="/js/soundEngine.js"></script>
+  <!-- Wallet Engine -->
+  <script src="/js/wallet.js"></script>
+  <!-- Game Engines -->
+  <script src="/games/aviator.js"></script>
+  <script src="/games/wingo.js"></script>
+  <script src="/games/roulette.js"></script>
+  <script src="/games/dragontiger.js"></script>
+  <script src="/games/teenpatti.js"></script>
+  <script src="/games/andarbahar.js"></script>
+  <script src="/games/mines.js"></script>
+  <script src="/games/slots.js"></script>
+  <script src="/games/sports.js"></script>
+  <!-- Main Application Coordinator -->
+  <script src="/js/app.js"></script>
+
+  <!-- Service Worker Registration for Android PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('⚡ WinDaq Service Worker registered:', reg.scope))
+          .catch(err => console.warn('SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,732 @@
+/* ===================================================
+   WINDAQ GAMING PLATFORM (विन डैक) - LUXURY CASINO STYLESHEET
+   Obsidian Dark & Metallic Gold Theme
+   =================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --bg-main: #090B10;
+  --bg-card: #131722;
+  --bg-card-hover: #1C2233;
+  --bg-elevated: #1B2130;
+  --bg-input: #0E121A;
+  
+  --gold: #FFB800;
+  --gold-hover: #FFC72C;
+  --gold-glow: rgba(255, 184, 0, 0.35);
+  --gold-gradient: linear-gradient(135deg, #FFD700 0%, #FF9900 100%);
+  --gold-btn: linear-gradient(180deg, #FFB800 0%, #E68A00 100%);
+  
+  --green: #00E676;
+  --green-glow: rgba(0, 230, 118, 0.3);
+  --red: #FF3366;
+  --red-glow: rgba(255, 51, 102, 0.3);
+  --violet: #9C27B0;
+  --blue: #2979FF;
+  --blue-lay: #FCE4EC;
+  
+  --text-main: #FFFFFF;
+  --text-muted: #8E9BAE;
+  --text-dim: #556275;
+  --border: #222B3D;
+  --border-highlight: #34425D;
+  
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+  
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-gold: 0 4px 18px rgba(255, 184, 0, 0.35);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+body {
+  background-color: #040508;
+  color: var(--text-main);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* App Wrapper: Mobile view constraint on desktop, 100% on phone */
+#app-container {
+  width: 100%;
+  max-width: 480px;
+  background-color: var(--bg-main);
+  min-height: 100vh;
+  position: relative;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+  padding-bottom: 75px; /* Space for bottom navigation */
+}
+
+/* ================== HEADER ================== */
+.top-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(15, 19, 28, 0.95);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.brand-logo-img {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 15px rgba(255, 184, 0, 0.4);
+  object-fit: contain;
+}
+
+.brand-text-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-size: 20px;
+  font-weight: 900;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.brand-hindi {
+  font-size: 10px;
+  font-weight: 700;
+  color: #00F0FF;
+  letter-spacing: 1px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.balance-chip {
+  background: var(--bg-card);
+  border: 1px solid var(--border-highlight);
+  border-radius: var(--radius-pill);
+  padding: 4px 6px 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--gold);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.balance-chip:hover {
+  border-color: var(--gold);
+}
+
+.deposit-plus-btn {
+  background: var(--gold-btn);
+  color: #000;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.login-btn {
+  background: var(--gold-btn);
+  color: #000;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-gold);
+  transition: transform 0.15s;
+}
+
+.login-btn:active {
+  transform: scale(0.96);
+}
+
+/* ================== MARQUEE TICKER ================== */
+.marquee-container {
+  background: #0E131F;
+  border-bottom: 1px solid var(--border);
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--gold);
+  overflow: hidden;
+}
+
+.marquee-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.marquee-text {
+  white-space: nowrap;
+  animation: marqueeAnim 22s linear infinite;
+  color: #CBD5E1;
+}
+
+.marquee-text span {
+  color: var(--gold);
+  font-weight: 700;
+  margin: 0 10px;
+}
+
+@keyframes marqueeAnim {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ================== HERO BANNER ================== */
+.hero-slider {
+  padding: 14px 16px;
+  position: relative;
+}
+
+.banner-card {
+  background: linear-gradient(135deg, #1C2333 0%, #10141D 100%);
+  border: 1px solid var(--border-highlight);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.banner-card::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(255, 184, 0, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.banner-tag {
+  display: inline-block;
+  background: rgba(255, 184, 0, 0.15);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.banner-title {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.banner-title span {
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.banner-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.app-dl-btn {
+  background: var(--gold-btn);
+  color: #000;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: var(--shadow-gold);
+}
+
+/* ================== SEARCH & CATEGORY BAR ================== */
+.search-wrapper {
+  padding: 0 16px 10px;
+}
+
+.search-input-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-input-box input {
+  background: transparent;
+  border: none;
+  color: #FFF;
+  font-size: 13px;
+  width: 100%;
+  outline: none;
+}
+
+.search-input-box input::placeholder {
+  color: var(--text-dim);
+}
+
+.category-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 16px 14px;
+  scrollbar-width: none;
+}
+
+.category-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-pill {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.cat-pill.active {
+  background: var(--gold-btn);
+  color: #000;
+  border-color: var(--gold);
+  box-shadow: var(--shadow-gold);
+}
+
+/* ================== GAME SECTIONS & CARDS ================== */
+.section-wrapper {
+  padding: 0 16px 20px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #FFF;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 16px;
+  background: var(--gold);
+  border-radius: 2px;
+}
+
+.section-more {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  cursor: pointer;
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.games-grid.two-cols {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.game-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.2s, border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-card:active {
+  transform: scale(0.96);
+}
+
+.game-card:hover {
+  border-color: var(--gold);
+}
+
+.game-thumb-box {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  position: relative;
+  overflow: hidden;
+  background: #181E2C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-thumb-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.game-card:hover .game-thumb-box img {
+  transform: scale(1.08);
+}
+
+.game-tag-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  color: var(--gold);
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 184, 0, 0.4);
+}
+
+.game-overlay-hover {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.game-card:hover .game-overlay-hover {
+  opacity: 1;
+}
+
+.play-badge-btn {
+  background: var(--gold-btn);
+  color: #000;
+  font-weight: 900;
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-gold);
+}
+
+.game-info {
+  padding: 8px 10px;
+  background: var(--bg-card);
+}
+
+.game-name {
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #FFF;
+}
+
+.game-provider {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* ================== BOTTOM NAVIGATION ================== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: rgba(14, 18, 27, 0.98);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 8px 0;
+  z-index: 1000;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s;
+  position: relative;
+}
+
+.nav-item.active {
+  color: var(--gold);
+}
+
+.nav-item i {
+  font-size: 18px;
+}
+
+.nav-item:active {
+  transform: scale(0.92);
+}
+
+/* ================== FLOATING SUPPORT & TELEGRAM ================== */
+.floating-hub {
+  position: fixed;
+  bottom: 85px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 900;
+}
+
+.float-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  transition: transform 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.float-btn:hover {
+  transform: scale(1.1);
+}
+
+.float-whatsapp {
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: #FFF;
+  font-size: 24px;
+}
+
+.float-telegram {
+  background: linear-gradient(135deg, #0088CC 0%, #005580 100%);
+  color: #FFF;
+  font-size: 22px;
+}
+
+/* ================== MODALS & OVERLAYS ================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-backdrop.open {
+  display: flex;
+}
+
+.modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-highlight);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  animation: modalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #FFF;
+}
+
+.modal-close {
+  background: #1D2333;
+  border: none;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+/* Fullscreen Game Launcher Container */
+#game-viewport-modal {
+  position: fixed;
+  inset: 0;
+  background: #090B10;
+  z-index: 3000;
+  display: none;
+  flex-direction: column;
+}
+
+#game-viewport-modal.open {
+  display: flex;
+}
+
+.game-viewport-bar {
+  background: #111520;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.game-viewport-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================== UTILITIES & CHIPS ================== */
+.btn-primary {
+  width: 100%;
+  background: var(--gold-btn);
+  color: #000;
+  font-weight: 800;
+  font-size: 15px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-gold);
+  transition: transform 0.15s;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.chip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.amount-chip {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  flex: 1;
+  text-align: center;
+}
+
+.amount-chip.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(255, 184, 0, 0.1);
+}

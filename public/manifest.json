@@ -1,0 +1,49 @@
+{
+  "name": "WinDaq (विन डैक) - Official Real Money Gaming & Casino App",
+  "short_name": "WinDaq",
+  "description": "WinDaq (विन डैक) - Play high-speed real money games: Aviator, Color Prediction, Roulette, Teen Patti, Andar Bahar, Dragon Tiger, Slots and Live Cricket Betting.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0d14",
+  "theme_color": "#0a0d14",
+  "orientation": "portrait-primary",
+  "categories": ["games", "entertainment", "sports"],
+  "icons": [
+    {
+      "src": "/assets/windaq_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Aviator Crash",
+      "short_name": "Aviator",
+      "description": "Play Aviator Real Money Crash Game",
+      "url": "/#aviator",
+      "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Daily Lucky Spin",
+      "short_name": "Spin Wheel",
+      "description": "Spin the Lucky Wheel for Free Cash",
+      "url": "/#spin",
+      "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Instant UPI Deposit",
+      "short_name": "Deposit",
+      "description": "Deposit instantly via PhonePe, GPay, Paytm",
+      "url": "/#deposit",
+      "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

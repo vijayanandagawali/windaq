@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WINDAQ (विन डैक) - Master Admin Control Center</title>
+  <link rel="icon" type="image/png" href="/assets/windaq_logo.png">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { background: #06080E; padding: 20px; font-family: 'Outfit', sans-serif; color: #FFF; }
+    .admin-container { max-width: 1000px; margin: 0 auto; width: 100%; }
+    .admin-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border); padding-bottom: 14px; margin-bottom: 20px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px; }
+    .stat-val { font-size: 26px; font-weight: 900; color: var(--gold); margin-top: 4px; }
+    .panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; margin-bottom: 24px; }
+    .rtp-options { display: flex; gap: 12px; margin-top: 12px; }
+    .rtp-btn { flex: 1; padding: 14px; border-radius: var(--radius-sm); border: 2px solid var(--border); background: var(--bg-input); color: #FFF; font-weight: 800; cursor: pointer; text-align: center; }
+    .rtp-btn.active { border-color: var(--gold); background: rgba(255, 184, 0, 0.15); color: var(--gold); }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 12px; }
+    th { color: var(--text-muted); font-weight: 700; background: var(--bg-input); }
+    .btn-approve { background: #00E676; color: #000; border: none; padding: 5px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; margin-right: 4px; }
+    .btn-reject { background: #FF3366; color: #FFF; border: none; padding: 5px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; }
+    .input-box { background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: #FFF; font-weight: 700; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <img src="/assets/windaq_logo.png" style="width: 44px; height: 44px; border-radius: 8px;" alt="WinDaq Logo" />
+        <div>
+          <h1 style="font-size: 24px; font-weight: 900; color: var(--gold); line-height: 1.1;">WINDAQ <span style="font-size: 14px; color: #00F0FF;">(विन डैक)</span> ADMIN</h1>
+          <p style="font-size: 12px; color: var(--text-muted);">Real-Money Banking, Payments & House Margin Engine</p>
+        </div>
+      </div>
+      <a href="/" style="color: var(--gold); text-decoration: none; font-weight: 800; font-size: 14px; background: var(--bg-card); border: 1px solid var(--border); padding: 8px 16px; border-radius: var(--radius-pill);">
+        ◀ BACK TO LOBBY
+      </a>
+    </div>
+
+    <!-- Live Stats -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div style="font-size: 11px; color: var(--text-muted); font-weight: 800;">ACTIVE RTP MODE</div>
+        <div class="stat-val" id="admin-active-rtp" style="color: var(--green);">FAIR (97%)</div>
+      </div>
+      <div class="stat-card">
+        <div style="font-size: 11px; color: var(--text-muted); font-weight: 800;">TOTAL PLAYERS</div>
+        <div class="stat-val" id="admin-total-users">1</div>
+      </div>
+      <div class="stat-card">
+        <div style="font-size: 11px; color: var(--text-muted); font-weight: 800;">TOTAL DEPOSITS</div>
+        <div class="stat-val" id="admin-total-deposits">₹0</div>
+      </div>
+      <div class="stat-card">
+        <div style="font-size: 11px; color: var(--text-muted); font-weight: 800;">PENDING WITHDRAWALS</div>
+        <div class="stat-val" id="admin-total-withdrawals">0</div>
+      </div>
+    </div>
+
+    <!-- Merchant UPI ID Configuration -->
+    <div class="panel">
+      <h2 style="font-size: 16px; font-weight: 800; color: var(--gold);">MERCHANT UPI & PAYMENT SETTINGS</h2>
+      <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Deposits from players will be sent directly to this UPI address.</p>
+      <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center;">
+        <input type="text" id="merchant-upi-input" class="input-box" style="flex: 1;" placeholder="windaq@okhdfcbank" />
+        <button onclick="saveMerchantUpi()" style="background: var(--gold-btn); color: #000; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 800; cursor: pointer;">
+          SAVE UPI
+        </button>
+      </div>
+    </div>
+
+    <!-- RTP Mode Switcher -->
+    <div class="panel">
+      <h2 style="font-size: 16px; font-weight: 800; color: #FFF;">GAME RTP & HOUSE MARGIN CONTROLLER</h2>
+      <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Controls winning algorithm across Aviator, Roulette, Wingo, and Slots.</p>
+
+      <div class="rtp-options">
+        <div id="rtp-fair" class="rtp-btn active" onclick="setAdminRtp('fair')">
+          <div style="font-size: 14px;">FAIR (97%)</div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Standard Fair Play</div>
+        </div>
+        <div id="rtp-admin" class="rtp-btn" onclick="setAdminRtp('admin_profit')">
+          <div style="font-size: 14px;">HOUSE PROFIT (75%)</div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">High House Advantage</div>
+        </div>
+        <div id="rtp-player" class="rtp-btn" onclick="setAdminRtp('player_win')">
+          <div style="font-size: 14px;">PROMO LUCKY (115%)</div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">High Win Rate Promo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Withdrawal Payouts Queue -->
+    <div class="panel">
+      <h2 style="font-size: 16px; font-weight: 800; color: #FF3366;">PENDING WITHDRAWAL REQUESTS (PAYOUT QUEUE)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Req ID</th>
+            <th>Phone</th>
+            <th>Amount</th>
+            <th>UPI ID / Bank</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="admin-pending-withdrawals-table">
+          <!-- Rendered via JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Registered Players Table -->
+    <div class="panel">
+      <h2 style="font-size: 16px; font-weight: 800; color: #FFF;">REGISTERED PLAYERS & BALANCES</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>User Phone</th>
+            <th>Deposit Bal</th>
+            <th>Winning Bal</th>
+            <th>Total Bet</th>
+            <th>Total Won</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="admin-users-table">
+          <!-- Rendered via JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Recent UPI Deposits Table -->
+    <div class="panel">
+      <h2 style="font-size: 16px; font-weight: 800; color: #FFF;">RECENT UPI DEPOSITS</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Req ID</th>
+            <th>Phone</th>
+            <th>Amount</th>
+            <th>UTR Ref</th>
+            <th>Status</th>
+            <th>Timestamp</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="admin-deposits-table">
+          <!-- Rendered via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function loadAdminData() {
+      try {
+        const res = await fetch('/api/v1/admin/stats');
+        const data = await res.json();
+
+        // Load Settings
+        const sRes = await fetch('/api/v1/admin/settings');
+        const sData = await sRes.json();
+        if (sData.success && sData.settings.merchant_upi_id) {
+          document.getElementById('merchant-upi-input').value = sData.settings.merchant_upi_id;
+        }
+
+        // Load Banking Withdrawals
+        const wRes = await fetch('/api/v1/admin/banking/withdrawals');
+        const wData = await wRes.json();
+
+        if (data.success) {
+          document.getElementById('admin-total-users').innerText = data.totalUsers;
+          document.getElementById('admin-total-withdrawals').innerText = wData.pending ? wData.pending.length : 0;
+
+          // RTP Mode UI
+          const rtpMap = {
+            'fair': 'FAIR (97%)',
+            'admin_profit': 'ADMIN PROFIT (75%)',
+            'player_win': 'PROMO LUCKY (115%)'
+          };
+          document.getElementById('admin-active-rtp').innerText = rtpMap[data.rtpMode] || data.rtpMode;
+
+          document.querySelectorAll('.rtp-btn').forEach(b => b.classList.remove('active'));
+          if (data.rtpMode === 'fair') document.getElementById('rtp-fair').classList.add('active');
+          if (data.rtpMode === 'admin_profit') document.getElementById('rtp-admin').classList.add('active');
+          if (data.rtpMode === 'player_win') document.getElementById('rtp-player').classList.add('active');
+
+          // Users Table
+          const uTable = document.getElementById('admin-users-table');
+          uTable.innerHTML = data.users.map(u => `
+            <tr>
+              <td><b>${u.phone}</b></td>
+              <td>₹${u.depositBalance.toFixed(2)}</td>
+              <td style="color: var(--green); font-weight: 800;">₹${u.winningBalance.toFixed(2)}</td>
+              <td>₹${(u.totalBet || 0).toFixed(2)}</td>
+              <td>₹${(u.totalWon || 0).toFixed(2)}</td>
+              <td>
+                <button onclick="addBalance('${u.phone}')" style="background: var(--gold-btn); color: #000; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; cursor: pointer;">
+                  +₹500 Bonus
+                </button>
+              </td>
+            </tr>
+          `).join('');
+
+          // Pending Withdrawals Table
+          const pwTable = document.getElementById('admin-pending-withdrawals-table');
+          if (!wData.pending || wData.pending.length === 0) {
+            pwTable.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No pending withdrawal requests.</td></tr>`;
+          } else {
+            pwTable.innerHTML = wData.pending.map(w => `
+              <tr>
+                <td>${w.id}</td>
+                <td><b>${w.phone}</b></td>
+                <td style="color: #FF3366; font-weight: 800;">₹${w.amount}</td>
+                <td><code>${w.upi_id || w.bank_account}</code></td>
+                <td><span style="color: #FFB800;">● ${w.status}</span></td>
+                <td>
+                  <button class="btn-approve" onclick="processWithdrawal('${w.id}')">MARK PAID</button>
+                  <button class="btn-reject" onclick="rejectWithdrawal('${w.id}')">REFUND</button>
+                </td>
+              </tr>
+            `).join('');
+          }
+
+          // Deposits Table
+          let totalDepSum = 0;
+          const dRes = await fetch('/api/v1/admin/banking/deposits');
+          const dData = await dRes.json();
+          const dTable = document.getElementById('admin-deposits-table');
+          const depositsList = (dData.all && dData.all.length > 0) ? dData.all : data.deposits;
+
+          dTable.innerHTML = depositsList.map(d => {
+            totalDepSum += d.amount;
+            const isPending = d.status === 'PENDING';
+            return `
+              <tr>
+                <td>${d.id}</td>
+                <td>${d.phone}</td>
+                <td style="color: var(--gold); font-weight: 800;">₹${d.amount}</td>
+                <td><code>${d.utr}</code></td>
+                <td><span style="color: ${d.status === 'APPROVED' ? 'var(--green)' : '#FFB800'}; font-weight: 800;">● ${d.status}</span></td>
+                <td>${d.created_at ? new Date(d.created_at).toLocaleTimeString() : (d.time ? new Date(d.time).toLocaleTimeString() : '-')}</td>
+                <td>
+                  ${isPending ? `
+                    <button class="btn-approve" onclick="approveDeposit('${d.id}')">APPROVE</button>
+                    <button class="btn-reject" onclick="rejectDeposit('${d.id}')">REJECT</button>
+                  ` : `<span style="color: var(--text-muted); font-size: 11px;">Processed</span>`}
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+          document.getElementById('admin-total-deposits').innerText = `₹${totalDepSum.toLocaleString('en-IN')}`;
+        }
+      } catch (e) {
+        console.error('Admin fetch error:', e);
+      }
+    }
+
+    async function setAdminRtp(mode) {
+      await fetch('/api/v1/admin/rtp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+      });
+      loadAdminData();
+    }
+
+    async function saveMerchantUpi() {
+      const upi = document.getElementById('merchant-upi-input').value;
+      await fetch('/api/v1/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'merchant_upi_id', value: upi })
+      });
+      alert('Merchant UPI ID updated to: ' + upi);
+      loadAdminData();
+    }
+
+    async function approveDeposit(requestId) {
+      await fetch('/api/v1/admin/banking/approve-deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, adminNotes: 'Approved via Admin Panel' })
+      });
+      loadAdminData();
+    }
+
+    async function rejectDeposit(requestId) {
+      const reason = prompt('Enter rejection reason:') || 'Invalid UTR';
+      await fetch('/api/v1/admin/banking/reject-deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, reason })
+      });
+      loadAdminData();
+    }
+
+    async function processWithdrawal(requestId) {
+      await fetch('/api/v1/admin/banking/process-withdrawal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, adminNotes: 'Paid via NetBanking/UPI' })
+      });
+      loadAdminData();
+    }
+
+    async function rejectWithdrawal(requestId) {
+      const reason = prompt('Enter rejection reason (funds will be refunded):') || 'Details mismatch';
+      await fetch('/api/v1/admin/banking/reject-withdrawal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, reason })
+      });
+      loadAdminData();
+    }
+
+    async function addBalance(phone) {
+      await fetch('/api/v1/wallet/deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, amount: 500, upiApp: 'AdminGrant', utr: 'ADMIN_' + Date.now() })
+      });
+      loadAdminData();
+    }
+
+    loadAdminData();
+    setInterval(loadAdminData, 4000);
+  </script>
+</body>
+</html>

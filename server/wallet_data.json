@@ -1,0 +1,45 @@
+{
+  "users": [
+    {
+      "id": "usr_nutfukc",
+      "phone": "9876543210",
+      "name": "Demo Player",
+      "depositBalance": 980,
+      "winningBalance": 0,
+      "createdAt": "2026-09-19T11:46:02.086Z",
+      "totalWon": 0,
+      "totalBet": 20
+    }
+  ],
+  "transactions": [
+    {
+      "id": "tx_1wvsrm1",
+      "phone": "9876543210",
+      "type": "BET",
+      "amount": -10,
+      "description": "Bet on Wingo (Big)",
+      "status": "SUCCESS",
+      "timestamp": "2026-09-19T12:20:46.080Z"
+    },
+    {
+      "id": "tx_badte97",
+      "phone": "9876543210",
+      "type": "BET",
+      "amount": -10,
+      "description": "Bet on Wingo (1)",
+      "status": "SUCCESS",
+      "timestamp": "2026-09-19T12:16:29.428Z"
+    },
+    {
+      "id": "tx_q8ygboy",
+      "phone": "9876543210",
+      "type": "BONUS",
+      "amount": 1000,
+      "description": "Welcome Sign Up Bonus",
+      "status": "SUCCESS",
+      "timestamp": "2026-09-19T11:46:02.097Z"
+    }
+  ],
+  "depositRequests": [],
+  "withdrawRequests": []
+}
