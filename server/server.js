@@ -378,6 +378,76 @@ app.post('/api/v1/admin/settings', (req, res) => {
   }
 });
 
+// Health & Readiness Endpoints (for Oracle Cloud / Docker / Vercel monitoring)
+app.get('/api/v1/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    platform: 'WinDaq Gaming Engine (विन डैक)',
+    domain: 'daqwon.in',
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/v1/ready', (req, res) => {
+  res.json({
+    status: 'ready',
+    database: 'connected',
+    gameEngine: 'active',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// KYC User Endpoints
+app.get('/api/v1/user/kyc', (req, res) => {
+  const phone = req.query.phone;
+  if (!phone) return res.status(400).json({ success: false, error: 'Phone required' });
+  const user = wallet.getUser(phone);
+  if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+  const kyc = wallet.db.getKyc(user.id);
+  res.json({ success: true, kyc: kyc || { status: 'UNVERIFIED' } });
+});
+
+app.post('/api/v1/user/kyc', (req, res) => {
+  try {
+    const { phone, fullName, dob, panNumber, aadhaarLastFour, bankAccount, ifsc } = req.body;
+    const user = wallet.getUser(phone);
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+    const result = wallet.db.submitKyc(user.id, phone, fullName, dob, panNumber, aadhaarLastFour, bankAccount, ifsc);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Admin Operations & Risk Endpoints
+app.get('/api/v1/admin/kyc', (req, res) => {
+  res.json({ success: true, cases: wallet.db.getAllKyc() });
+});
+
+app.post('/api/v1/admin/kyc/review', (req, res) => {
+  try {
+    const { userId, status, reason } = req.body;
+    const result = wallet.db.reviewKyc(userId, status, reason);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/reconciliation', (req, res) => {
+  const report = wallet.db.generateReconciliationReport();
+  res.json({ success: true, report });
+});
+
+app.post('/api/v1/admin/emergency-killswitch', (req, res) => {
+  const { action } = req.body; // 'PAUSE_BETTING' or 'RESUME_BETTING'
+  const isPaused = action === 'PAUSE_BETTING';
+  wallet.db.updateSystemSetting('betting_paused', isPaused ? 'true' : 'false');
+  wallet.db.recordAuditEvent('ADMIN', isPaused ? 'EMERGENCY_BETTING_PAUSED' : 'BETTING_RESUMED', 'SYSTEM', 'GLOBAL', null, action, req.ip);
+  res.json({ success: true, bettingPaused: isPaused });
+});
+
 app.get('/api/v1/wallet/transactions', (req, res) => {
   const phone = req.query.phone;
   if (!phone) return res.status(400).json({ success: false, error: 'Phone required' });

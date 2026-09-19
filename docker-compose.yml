@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  windaq-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: windaq_backend
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - MERCHANT_UPI_ID=s0090792546529042@slc
+      - DOMAIN=daqwon.in
+    volumes:
+      - ./server:/app/server
+      - ./server/gambling_platform.db:/app/server/gambling_platform.db
+      - ./logs:/app/logs
+
+  windaq-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: windaq_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    depends_on:
+      - windaq-backend

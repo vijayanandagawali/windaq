@@ -93,6 +93,42 @@
       </div>
     </div>
 
+    <!-- Emergency Killswitch Panel -->
+    <div class="panel" style="border-color: rgba(255, 93, 108, 0.4); background: rgba(255, 93, 108, 0.05);">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <h2 style="font-size: 16px; font-weight: 800; color: #FF5D6C;">EMERGENCY OPERATIONS & KILLSWITCH</h2>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Instantly freeze all betting engine activity across Aviator, Color Trading, and Sportsbook.</p>
+        </div>
+        <button id="killswitch-btn" onclick="toggleEmergencyKillswitch()" style="background: #FF5D6C; color: #FFF; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 900; cursor: pointer;">
+          🔴 PAUSE ALL BETTING
+        </button>
+      </div>
+    </div>
+
+    <!-- KYC Review Queue -->
+    <div class="panel">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <h2 style="font-size: 16px; font-weight: 800; color: #00F0FF;">PLAYER KYC VERIFICATION QUEUE</h2>
+        <span id="kyc-pending-count" style="font-size: 11px; background: rgba(0, 240, 255, 0.15); color: #00F0FF; padding: 4px 10px; border-radius: 20px; font-weight: 800;">0 PENDING</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>User Phone</th>
+            <th>Full Name</th>
+            <th>PAN #</th>
+            <th>Bank & IFSC</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="admin-kyc-table">
+          <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading KYC records...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
     <!-- Pending Withdrawal Payouts Queue -->
     <div class="panel">
       <h2 style="font-size: 16px; font-weight: 800; color: #FF3366;">PENDING WITHDRAWAL REQUESTS (PAYOUT QUEUE)</h2>
@@ -319,17 +355,84 @@
       loadAdminData();
     }
 
-    async function addBalance(phone) {
-      await fetch('/api/v1/wallet/deposit', {
+    async function loadKycData() {
+      try {
+        const res = await fetch('/api/v1/admin/kyc');
+        const data = await res.json();
+        const tbody = document.getElementById('admin-kyc-table');
+        if (!data.cases || data.cases.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No KYC cases submitted yet.</td></tr>';
+          document.getElementById('kyc-pending-count').innerText = '0 PENDING';
+          return;
+        }
+
+        const pendingCount = data.cases.filter(c => c.status === 'PENDING').length;
+        document.getElementById('kyc-pending-count').innerText = `${pendingCount} PENDING`;
+
+        tbody.innerHTML = data.cases.map(c => {
+          const isPending = c.status === 'PENDING';
+          return `
+            <tr>
+              <td><b>${c.phone}</b></td>
+              <td>${c.full_name}</td>
+              <td><code>${c.pan_number || '-'}</code></td>
+              <td><code>${c.bank_account || '-'} (${c.ifsc || '-'})</code></td>
+              <td><span style="color: ${c.status === 'VERIFIED' ? 'var(--green)' : '#FFB800'}; font-weight: 800;">● ${c.status}</span></td>
+              <td>
+                ${isPending ? `
+                  <button class="btn-approve" onclick="reviewKyc('${c.user_id}', 'VERIFIED')">APPROVE</button>
+                  <button class="btn-reject" onclick="reviewKyc('${c.user_id}', 'REJECTED')">REJECT</button>
+                ` : `<span style="color: var(--text-muted); font-size: 11px;">${c.status}</span>`}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        console.warn('KYC load error:', e);
+      }
+    }
+
+    async function reviewKyc(userId, status) {
+      const reason = status === 'REJECTED' ? (prompt('Enter rejection reason:') || 'Documents unclear') : null;
+      await fetch('/api/v1/admin/kyc/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, amount: 500, upiApp: 'AdminGrant', utr: 'ADMIN_' + Date.now() })
+        body: JSON.stringify({ userId, status, reason })
       });
-      loadAdminData();
+      loadKycData();
+    }
+
+    let isBettingPaused = false;
+    async function toggleEmergencyKillswitch() {
+      const newAction = isBettingPaused ? 'RESUME_BETTING' : 'PAUSE_BETTING';
+      if (!confirm(`Are you sure you want to ${newAction}?`)) return;
+
+      const res = await fetch('/api/v1/admin/emergency-killswitch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: newAction })
+      });
+      const data = await res.json();
+      isBettingPaused = data.bettingPaused;
+
+      const btn = document.getElementById('killswitch-btn');
+      if (isBettingPaused) {
+        btn.innerText = '🟢 RESUME BETTING';
+        btn.style.background = '#00E676';
+        btn.style.color = '#000';
+      } else {
+        btn.innerText = '🔴 PAUSE ALL BETTING';
+        btn.style.background = '#FF5D6C';
+        btn.style.color = '#FFF';
+      }
     }
 
     loadAdminData();
-    setInterval(loadAdminData, 4000);
+    loadKycData();
+    setInterval(() => {
+      loadAdminData();
+      loadKycData();
+    }, 4000);
   </script>
 </body>
 </html>
