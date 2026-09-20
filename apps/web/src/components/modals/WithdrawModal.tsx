@@ -85,17 +85,18 @@ export default function WithdrawModal() {
           initial={{ scale: 0.85, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.85, opacity: 0, y: 20 }}
-          className="relative z-10 w-full max-w-sm bg-gradient-to-b from-[#181326] via-[#101322] to-[#070a12] border border-red-500/40 rounded-3xl p-5 shadow-[0_0_50px_rgba(239,68,68,0.2)] text-left"
+          className="relative z-10 w-full max-w-sm max-h-[88dvh] overflow-y-auto overscroll-contain bg-gradient-to-b from-[#181326] via-[#101322] to-[#070a12] border border-red-500/40 rounded-3xl p-5 shadow-[0_0_50px_rgba(239,68,68,0.2)] text-left pb-safe"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 sticky -top-5 bg-[#181326]/95 backdrop-blur-md pt-1 pb-2 z-10">
             <div className="flex items-center gap-2">
               <span className="text-xl">💸</span>
               <h3 className="text-white font-black text-base tracking-wide">INSTANT WITHDRAWAL</h3>
             </div>
             <button 
               onClick={() => setWithdrawing(false)}
-              className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white"
+              className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white cursor-pointer"
+              aria-label="Close Withdrawal Modal"
             >
               <X size={18} />
             </button>

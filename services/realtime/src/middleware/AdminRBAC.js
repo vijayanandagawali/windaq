@@ -9,7 +9,7 @@ const requireRole = (allowedRoles) => {
   return async (req, res, next) => {
     try {
       let adminId = req.headers['x-admin-user-id'] || req.user?.userId;
-      if (adminId === 'mock-super-admin-id') {
+      if (adminId === 'mock-super-admin-id' || adminId === 'SUPER_ADMIN_DEMO_001') {
         adminId = 'sbx-usr-admin-004';
       }
       

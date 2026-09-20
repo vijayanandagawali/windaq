@@ -70,6 +70,15 @@ export default function DepositModal() {
       setLoading(false);
       toast.success(`🎉 Sandbox Payment Verified! ₹${amount.toLocaleString('en-IN')} credited to your wallet.`);
       deposit(amount, mockUtr, app);
+      // Synchronize with backend double-entry ledger for transaction persistence
+      fetch(getApiUrl('/api/ledger/deposit/instant'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': activeUserId
+        },
+        body: JSON.stringify({ amount, utr: mockUtr, method: app })
+      }).catch(() => {});
       setStep('pay');
       setDepositing(false);
     }, 2000);
@@ -83,13 +92,20 @@ export default function DepositModal() {
     }
 
     setLoading(true);
-    // Simulate webhook since we can't actually pay from the browser
     try {
-      // Find the intent via some state or just let the user know we're checking
       setTimeout(() => {
         setLoading(false);
         toast.success(`🎉 Payment Verified! ₹${amount.toLocaleString('en-IN')} credited to your WinDaq wallet (Mocked for Demo).`);
         deposit(amount, cleanUtr, 'UPI');
+        // Synchronize with backend double-entry ledger
+        fetch(getApiUrl('/api/ledger/deposit/instant'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': activeUserId
+          },
+          body: JSON.stringify({ amount, utr: cleanUtr, method: 'UPI' })
+        }).catch(() => {});
         setStep('pay');
         setUtr('');
         setDepositing(false);
@@ -114,10 +130,10 @@ export default function DepositModal() {
           initial={{ scale: 0.85, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.85, opacity: 0, y: 20 }}
-          className="relative z-10 w-full max-w-sm bg-gradient-to-b from-[#10192e] via-[#0d1320] to-[#070a12] border border-neon-mint/40 rounded-3xl p-5 shadow-[0_0_50px_rgba(0,255,163,0.2)] text-left"
+          className="relative z-10 w-full max-w-sm max-h-[88dvh] overflow-y-auto overscroll-contain bg-gradient-to-b from-[#10192e] via-[#0d1320] to-[#070a12] border border-neon-mint/40 rounded-3xl p-5 shadow-[0_0_50px_rgba(0,255,163,0.2)] text-left pb-safe"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 sticky -top-5 bg-[#10192e]/95 backdrop-blur-md pt-1 pb-2 z-10">
             <div className="flex items-center gap-2">
               <span className="text-xl">💳</span>
               <div>
@@ -127,7 +143,8 @@ export default function DepositModal() {
             </div>
             <button 
               onClick={() => setDepositing(false)}
-              className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white"
+              className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white cursor-pointer"
+              aria-label="Close Deposit Modal"
             >
               <X size={18} />
             </button>
@@ -144,6 +161,7 @@ export default function DepositModal() {
                   {PRESETS.map(val => (
                     <button
                       key={val}
+                      data-testid={`deposit-preset-${val}`}
                       onClick={() => setAmount(val)}
                       className={`py-2 rounded-xl text-xs font-black transition-all ${
                         amount === val
@@ -160,6 +178,7 @@ export default function DepositModal() {
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neon-mint font-black text-base">₹</span>
                   <input
                     type="number"
+                    data-testid="deposit-amount-input"
                     value={amount}
                     onChange={(e) => setAmount(Number(e.target.value))}
                     className="w-full bg-deep-ocean border border-white/15 rounded-xl py-2.5 pl-8 pr-3 text-white font-black text-base outline-none focus:border-neon-mint"
@@ -189,6 +208,7 @@ export default function DepositModal() {
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
+                    data-testid="deposit-phonepe-btn"
                     onClick={() => handleOpenUpiApp('PhonePe')}
                     className="py-3 px-1 rounded-2xl bg-[#5f259f]/20 border border-[#5f259f]/50 text-white font-extrabold text-[11px] flex flex-col items-center gap-1 shadow-lg hover:bg-[#5f259f]/30 active:scale-95 transition-all"
                   >
@@ -197,6 +217,7 @@ export default function DepositModal() {
                   </button>
 
                   <button
+                    data-testid="deposit-gpay-btn"
                     onClick={() => handleOpenUpiApp('Google Pay')}
                     className="py-3 px-1 rounded-2xl bg-[#4285F4]/20 border border-[#4285F4]/50 text-white font-extrabold text-[11px] flex flex-col items-center gap-1 shadow-lg hover:bg-[#4285F4]/30 active:scale-95 transition-all"
                   >
@@ -205,6 +226,7 @@ export default function DepositModal() {
                   </button>
 
                   <button
+                    data-testid="deposit-paytm-btn"
                     onClick={() => handleOpenUpiApp('Paytm')}
                     className="py-3 px-1 rounded-2xl bg-[#00B9F1]/20 border border-[#00B9F1]/50 text-white font-extrabold text-[11px] flex flex-col items-center gap-1 shadow-lg hover:bg-[#00B9F1]/30 active:scale-95 transition-all"
                   >

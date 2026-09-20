@@ -61,7 +61,7 @@ export default function AppShell({ children }: AppShellProps) {
         <Header />
 
         {/* Main Content Area */}
-        <main className={`flex-1 ${isImmersiveGame ? 'pb-0' : 'pb-20 lg:pb-0'}`}>
+        <main className={`flex-1 ${isImmersiveGame ? 'pb-0' : 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-0'}`}>
           {children}
         </main>
 

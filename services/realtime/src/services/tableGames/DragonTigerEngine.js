@@ -57,23 +57,36 @@ class DragonTigerEngine extends BaseTableEngine {
     }
   }
 
-  calculatePayouts(market, result) {
+  calculatePayouts(market, result, rules = null) {
     const w = result?.winner;
+    const payoutRules = rules || this.snapshottedPayoutRules || {
+      DRAGON: 2.0,
+      TIGER: 2.0,
+      TIE: 9.0,
+      SUITED_TIE: 50.0
+    };
 
     if (market === 'DRAGON') {
-      if (w === 'DRAGON') return 2.0; // 1:1 payout + original stake
-      if (w === 'TIE') return 0.5;    // Returns half stake on tie
+      if (w === 'DRAGON') return Number(payoutRules.DRAGON || 2.0);
+      if (w === 'TIE') return 0.5; // Returns half stake on tie
       return 0.0;
     }
 
     if (market === 'TIGER') {
-      if (w === 'TIGER') return 2.0;
+      if (w === 'TIGER') return Number(payoutRules.TIGER || 2.0);
       if (w === 'TIE') return 0.5;
       return 0.0;
     }
 
     if (market === 'TIE') {
-      if (w === 'TIE') return 9.0; // 8:1 payout + original stake
+      if (w === 'TIE') return Number(payoutRules.TIE || 9.0);
+      return 0.0;
+    }
+
+    if (market === 'SUITED_TIE') {
+      if (w === 'TIE' && result?.dragon?.suit === result?.tiger?.suit) {
+        return Number(payoutRules.SUITED_TIE || 50.0);
+      }
       return 0.0;
     }
 

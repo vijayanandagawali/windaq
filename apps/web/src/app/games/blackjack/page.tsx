@@ -7,6 +7,7 @@ import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
+import WinLossCelebration from '@/components/games/WinLossCelebration';
 
 export default function BlackjackGame() {
   const { balance, fetchBalance } = useWalletStore();
@@ -17,6 +18,14 @@ export default function BlackjackGame() {
   
   const [selectedChips, setSelectedChips] = useState<number>(50);
   const CHIP_VALUES = [10, 50, 100, 500, 1000];
+
+  // Win / Loss Celebration
+  const [celebration, setCelebration] = useState<{
+    status: 'IDLE' | 'WON' | 'LOST';
+    amount: number;
+    multiplier?: number;
+    message?: string;
+  }>({ status: 'IDLE', amount: 0 });
 
   useEffect(() => {
     const s = io('http://localhost:4000', { auth: { token: null } });
@@ -34,6 +43,29 @@ export default function BlackjackGame() {
     s.on('bj:state', (state: any) => {
       setGameState(state);
       fetchBalance();
+
+      // Trigger win/loss celebration on SETTLED state
+      if (state.status === 'SETTLED' && state.hands && state.hands.length > 0) {
+        const totalPayout = state.hands.reduce((sum: number, h: any) => sum + (h.payout || 0), 0);
+        const hasWin = state.hands.some((h: any) => h.status === 'WON' || h.status === 'BLACKJACK');
+        const hasLoss = state.hands.some((h: any) => h.status === 'BUST' || h.status === 'LOST');
+
+        if (hasWin && totalPayout > 0) {
+          const isBj = state.hands.some((h: any) => h.status === 'BLACKJACK');
+          setCelebration({
+            status: 'WON',
+            amount: totalPayout,
+            multiplier: isBj ? 2.5 : 2.0,
+            message: isBj ? 'NATURAL BLACKJACK!' : 'YOU WON THE HAND!'
+          });
+        } else if (hasLoss) {
+          setCelebration({
+            status: 'LOST',
+            amount: state.hands[0]?.bet || 0,
+            message: 'Dealer Takes Hand'
+          });
+        }
+      }
     });
 
     return () => { s.disconnect(); };
@@ -246,6 +278,15 @@ export default function BlackjackGame() {
            </div>
         )}
       </div>
+
+      {/* Win & Loss Animation Overlay */}
+      <WinLossCelebration
+        status={celebration.status}
+        amount={celebration.amount}
+        multiplier={celebration.multiplier}
+        message={celebration.message}
+        onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
+      />
 
     </main>
   );

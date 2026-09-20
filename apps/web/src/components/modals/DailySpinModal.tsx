@@ -172,7 +172,7 @@ export default function DailySpinModal() {
           initial={{ scale: 0.85, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.85, opacity: 0, y: 20 }}
-          className="relative z-10 w-full max-w-sm bg-gradient-to-b from-[#141b2d] to-[#0a0e1a] border border-yellow-500/40 rounded-3xl p-5 text-center shadow-[0_0_50px_rgba(234,179,8,0.25)]"
+          className="relative z-10 w-full max-w-sm max-h-[88dvh] overflow-y-auto overscroll-contain pb-safe bg-gradient-to-b from-[#141b2d] to-[#0a0e1a] border border-yellow-500/40 rounded-3xl p-5 text-center shadow-[0_0_50px_rgba(234,179,8,0.25)]"
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-2">
@@ -182,7 +182,8 @@ export default function DailySpinModal() {
             </div>
             <button 
               onClick={() => !spinning && setSpinOpen(false)}
-              className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white"
+              className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white cursor-pointer"
+              aria-label="Close Daily Spin Modal"
             >
               <X size={18} />
             </button>

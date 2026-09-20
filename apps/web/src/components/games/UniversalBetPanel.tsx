@@ -7,6 +7,8 @@ import {
   Zap, Clock, DollarSign
 } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
+import { audioEngine } from '@/lib/audioEngine';
+import { stateRecovery } from '@/lib/stateRecovery';
 
 export interface UniversalBetPanelProps {
   /** Current market name or label (e.g., 'DRAGON', 'RED', 'OVER 7', 'MULTIPLIER') */
@@ -82,6 +84,20 @@ export default function UniversalBetPanel({
     }
   }, [externalBetState]);
 
+  // Settle sound & haptics
+  useEffect(() => {
+    if (!settlement) return;
+    if (settlement.status === 'WON') {
+      if (settlement.profit >= amount * 5 && settlement.profit >= 1000) {
+        audioEngine.play('jackpot');
+      } else {
+        audioEngine.play('win');
+      }
+    } else if (settlement.status === 'LOST') {
+      audioEngine.play('loss');
+    }
+  }, [settlement, amount]);
+
   const isLoading = externalLoading || internalLoading;
 
   // Potential payout calculations
@@ -106,6 +122,7 @@ export default function UniversalBetPanel({
 
   // Amount Handlers
   const handleStepper = (delta: number) => {
+    audioEngine.play('click');
     setAmount(prev => {
       const next = Math.max(minBet, Math.min(maxBet, prev + delta));
       return next;
@@ -113,6 +130,7 @@ export default function UniversalBetPanel({
   };
 
   const handleMultiplier = (factor: number) => {
+    audioEngine.play('click');
     setAmount(prev => {
       const next = Math.max(minBet, Math.min(maxBet, Math.floor(prev * factor)));
       return next;
@@ -120,11 +138,13 @@ export default function UniversalBetPanel({
   };
 
   const handleSetMax = () => {
+    audioEngine.play('click');
     const maxAffordable = Math.min(maxBet, Math.floor(balance));
     setAmount(Math.max(minBet, maxAffordable));
   };
 
   const handleChipClick = (chip: number) => {
+    audioEngine.play('click');
     setAmount(chip);
   };
 
@@ -133,26 +153,38 @@ export default function UniversalBetPanel({
     if (!isValid || isLoading) return;
 
     try {
+      audioEngine.play('bet');
       setInternalLoading(true);
       setStatusState('LOADING');
       setStatusMessage('Placing bet...');
 
+      const idempotencyKey = stateRecovery.generateIdempotencyKey('ubp');
+
       const result = await onPlaceBet(amount, {
         market: marketName,
         odds,
-        autoCashout: variant === 'crash' ? autoCashout : undefined
+        autoCashout: variant === 'crash' ? autoCashout : undefined,
+        idempotencyKey
       });
 
       if (result && !result.success) {
+        audioEngine.play('loss');
         setStatusState('REJECTED');
         setStatusMessage(result.message || 'Bet rejected by server');
         setTimeout(() => setStatusState('IDLE'), 3500);
       } else {
+        audioEngine.play('accepted');
         setStatusState('ACCEPTED');
         setStatusMessage(`Placed ₹${amount} on ${marketName}`);
         if (result && result.betId) {
           setBetReceiptId(result.betId);
         }
+        stateRecovery.broadcast({
+          type: 'BET_PLACED',
+          market: marketName,
+          amount,
+          idempotencyKey
+        });
         setTimeout(() => {
           if (statusState === 'ACCEPTED') {
             setStatusState('IDLE');
@@ -160,6 +192,7 @@ export default function UniversalBetPanel({
         }, 4000);
       }
     } catch (err: any) {
+      audioEngine.play('loss');
       setStatusState('REJECTED');
       setStatusMessage(err.message || 'Bet failed');
       setTimeout(() => setStatusState('IDLE'), 3500);
@@ -217,7 +250,7 @@ export default function UniversalBetPanel({
               max="1000"
               value={autoCashout}
               onChange={(e) => setAutoCashout(parseFloat(e.target.value) || 1.01)}
-              className="w-16 bg-black/60 border border-white/15 rounded-lg px-2 py-1 text-white text-xs font-mono font-bold text-center outline-none focus:border-amber-400"
+              className="w-16 bg-black/60 border border-white/15 rounded-lg px-2 py-1 text-white text-base sm:text-xs font-mono font-bold text-center outline-none focus:border-amber-400"
               disabled={statusState === 'ACCEPTED'}
             />
             <span className="text-xs font-mono font-bold text-amber-400">x</span>
@@ -226,14 +259,14 @@ export default function UniversalBetPanel({
       )}
 
       {/* Stake Amount Input with Stepper */}
-      <div className="bg-black/50 border border-white/10 rounded-xl p-2 flex items-center justify-between gap-2 mb-2.5">
+      <div className="bg-black/50 border border-white/10 rounded-xl p-1.5 sm:p-2 flex items-center justify-between gap-1 sm:gap-2 mb-2.5">
         <div className="flex items-center gap-1">
           <button
             type="button"
             data-testid="btn-stepper-minus"
             onClick={() => handleStepper(-10)}
             disabled={amount <= minBet || isLoading}
-            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 flex items-center justify-center text-white font-bold transition-colors cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 flex items-center justify-center text-white font-bold transition-colors cursor-pointer"
             title="Decrease by ₹10"
           >
             <Minus size={14} />
@@ -243,7 +276,7 @@ export default function UniversalBetPanel({
             data-testid="btn-half"
             onClick={() => handleMultiplier(0.5)}
             disabled={amount <= minBet || isLoading}
-            className="px-2 h-8 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 text-[11px] font-bold text-white/70 hover:text-white transition-colors cursor-pointer"
+            className="px-2 h-8 sm:h-9 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 text-[11px] font-bold text-white/70 hover:text-white transition-colors cursor-pointer"
             title="Half Bet"
           >
             ½
@@ -262,7 +295,7 @@ export default function UniversalBetPanel({
               step="10"
               value={amount}
               onChange={(e) => setAmount(Math.max(0, parseInt(e.target.value) || 0))}
-              className="w-24 text-center bg-transparent font-mono font-black text-lg text-white outline-none"
+              className="w-24 text-center bg-transparent font-mono font-black text-base sm:text-lg text-white outline-none"
               disabled={isLoading}
             />
           </div>
@@ -277,7 +310,7 @@ export default function UniversalBetPanel({
             data-testid="btn-double"
             onClick={() => handleMultiplier(2)}
             disabled={amount * 2 > maxBet || isLoading}
-            className="px-2 h-8 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 text-[11px] font-bold text-white/70 hover:text-white transition-colors cursor-pointer"
+            className="px-2 h-8 sm:h-9 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 text-[11px] font-bold text-white/70 hover:text-white transition-colors cursor-pointer"
             title="Double Bet"
           >
             2x
@@ -287,7 +320,7 @@ export default function UniversalBetPanel({
             data-testid="btn-stepper-plus"
             onClick={() => handleStepper(10)}
             disabled={amount >= maxBet || isLoading}
-            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 flex items-center justify-center text-white font-bold transition-colors cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 flex items-center justify-center text-white font-bold transition-colors cursor-pointer"
             title="Increase by ₹10"
           >
             <Plus size={14} />
@@ -297,7 +330,7 @@ export default function UniversalBetPanel({
             data-testid="btn-max"
             onClick={handleSetMax}
             disabled={isLoading}
-            className="px-2 h-8 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-[10px] font-black text-amber-400 transition-colors cursor-pointer"
+            className="px-1.5 sm:px-2 h-8 sm:h-9 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-[10px] font-black text-amber-400 transition-colors cursor-pointer"
             title="Maximum Bet"
           >
             MAX
@@ -306,7 +339,7 @@ export default function UniversalBetPanel({
       </div>
 
       {/* Quick Amount Chips */}
-      <div className="grid grid-cols-6 gap-1.5 mb-3">
+      <div className="grid grid-cols-6 gap-1 sm:gap-1.5 mb-3">
         {quickChips.map((chip) => (
           <button
             key={chip}
@@ -314,7 +347,7 @@ export default function UniversalBetPanel({
             data-testid={`chip-${chip}`}
             onClick={() => handleChipClick(chip)}
             disabled={isLoading}
-            className={`py-1.5 rounded-lg text-xs font-mono font-bold transition-all border cursor-pointer ${
+            className={`py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition-all border cursor-pointer min-h-[36px] flex items-center justify-center ${
               amount === chip
                 ? 'bg-neon-mint/20 border-neon-mint text-neon-mint shadow-[0_0_10px_rgba(0,255,163,0.3)]'
                 : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'

@@ -199,7 +199,7 @@ class BaseTableEngine extends UniversalRoundEngine {
       let winnersCount = 0;
 
       for (const bet of bets) {
-        const multiplier = this.calculatePayouts(bet.market, result);
+        const multiplier = this.calculatePayouts(bet.market, result, this.snapshottedPayoutRules);
 
         if (multiplier > 0) {
           const payout = BigInt(Math.floor(Number(bet.amount) * multiplier));

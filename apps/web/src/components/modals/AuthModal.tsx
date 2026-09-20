@@ -58,7 +58,7 @@ export default function AuthModal() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
       <div 
-        className="relative w-full max-w-md bg-[#0a0f1d] border border-white/15 rounded-3xl p-6 shadow-[0_10px_50px_rgba(0,0,0,0.8)] overflow-hidden"
+        className="relative w-full max-w-md max-h-[88dvh] overflow-y-auto overscroll-contain pb-safe bg-[#0a0f1d] border border-white/15 rounded-3xl p-6 shadow-[0_10px_50px_rgba(0,0,0,0.8)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Glow ambient background */}
@@ -68,7 +68,8 @@ export default function AuthModal() {
         {/* Close Button */}
         <button
           onClick={closeAuthModal}
-          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
+          data-testid="auth-close-btn"
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10 cursor-pointer"
           aria-label="Close modal"
         >
           <X size={18} />
@@ -93,6 +94,7 @@ export default function AuthModal() {
         <div className="grid grid-cols-3 bg-white/5 p-1 rounded-2xl border border-white/10 mb-5">
           <button
             type="button"
+            data-testid="auth-tab-login"
             onClick={() => { setActiveTab('LOGIN'); clearError(); }}
             className={`py-2 text-xs font-black rounded-xl transition-all ${
               activeTab === 'LOGIN'
@@ -104,6 +106,7 @@ export default function AuthModal() {
           </button>
           <button
             type="button"
+            data-testid="auth-tab-register"
             onClick={() => { setActiveTab('REGISTER'); clearError(); }}
             className={`py-2 text-xs font-black rounded-xl transition-all ${
               activeTab === 'REGISTER'
@@ -115,6 +118,7 @@ export default function AuthModal() {
           </button>
           <button
             type="button"
+            data-testid="auth-tab-guest"
             onClick={() => { setActiveTab('GUEST'); clearError(); }}
             className={`py-2 text-xs font-black rounded-xl transition-all ${
               activeTab === 'GUEST'
@@ -181,6 +185,7 @@ export default function AuthModal() {
                 </div>
                 <input
                   type="tel"
+                  data-testid="auth-phone-input"
                   maxLength={10}
                   required
                   placeholder="9876543210"
@@ -210,6 +215,7 @@ export default function AuthModal() {
                   <KeyRound size={16} className="absolute left-3.5 text-neon-mint pointer-events-none" />
                   <input
                     type="text"
+                    data-testid="auth-otp-input"
                     maxLength={4}
                     placeholder="Enter 1234"
                     value={otp}
@@ -246,6 +252,7 @@ export default function AuthModal() {
             {/* Submit Button */}
             <button
               type="submit"
+              data-testid="auth-submit-btn"
               disabled={isLoading || phone.length < 10}
               className="w-full py-3.5 bg-neon-mint text-deep-ocean font-black text-sm rounded-2xl shadow-[0_0_20px_rgba(0,255,163,0.35)] hover:bg-[#1ed49c] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >

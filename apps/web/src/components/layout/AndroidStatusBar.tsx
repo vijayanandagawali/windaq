@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Volume2, VolumeX, Wifi } from 'lucide-react';
+import { useAudioStore } from '@/store/audioStore';
 
 export default function AndroidStatusBar() {
   const [time, setTime] = useState('12:00');
-  const [isMuted, setIsMuted] = useState(false);
+  const { soundEnabled, toggleSound } = useAudioStore();
 
   useEffect(() => {
     const updateClock = () => {
@@ -19,14 +20,6 @@ export default function AndroidStatusBar() {
     return () => clearInterval(interval);
   }, []);
 
-  const toggleSound = () => {
-    setIsMuted(!isMuted);
-    // Haptic feedback
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(20);
-    }
-  };
-
   return (
     <div className="bg-[#05070d] text-gray-400 text-[11px] font-bold px-4 py-1.5 flex items-center justify-between border-b border-white/5 select-none z-50">
       <div className="flex items-center gap-1.5 text-white font-extrabold tracking-wide">
@@ -36,9 +29,10 @@ export default function AndroidStatusBar() {
         <button 
           onClick={toggleSound} 
           className="hover:text-neon-mint transition-colors cursor-pointer"
-          title={isMuted ? "Unmute Sound" : "Mute Sound"}
+          title={soundEnabled ? "Mute Sound" : "Unmute Sound"}
+          aria-label={soundEnabled ? "Mute Sound" : "Unmute Sound"}
         >
-          {isMuted ? <VolumeX size={13} className="text-red-400" /> : <Volume2 size={13} className="text-neon-mint" />}
+          {soundEnabled ? <Volume2 size={13} className="text-neon-mint" /> : <VolumeX size={13} className="text-red-400" />}
         </button>
         <span className="text-[10px] text-gray-300 font-black tracking-wider">5G</span>
         <Wifi size={12} className="text-gray-300" />

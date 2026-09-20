@@ -3,6 +3,7 @@ const prisma = new PrismaClient();
 const walletService = require('../services/walletService');
 const riskService = require('../services/riskService');
 const complianceService = require('../services/complianceService');
+const adminGameConfigService = require('../services/adminGameConfigService');
 
 function handleTableSockets(socket, io, engines) {
   
@@ -16,6 +17,12 @@ function handleTableSockets(socket, io, engines) {
     socket.join(`tg:${gameId}:${room}`);
     socket.join(`${gameId}:${room}`);
     console.log(`Client ${socket.id} joined tg:${gameId}:${room} (user: ${userId})`);
+
+    // Check operational status
+    const op = adminGameConfigService.isGameOperational(gameId, room);
+    if (!op.operational) {
+      socket.emit('game:status', { operational: false, message: op.message, reason: op.reason });
+    }
 
     // Retrieve engine
     const engineKey = `${gameId.replace('-', '')}Engine`;
@@ -54,11 +61,25 @@ function handleTableSockets(socket, io, engines) {
 
   // Handle Bet placement
   socket.on('tg:bet', async (data, callback) => {
-    const { userId = socket.user?.id || 'guest', gameId, room = 'Standard', market, amount } = data;
+    const { userId = socket.user?.id || 'guest', gameId, room = 'Standard', market, amount, idempotencyKey } = data;
     const betAmount = BigInt(Math.floor(amount * 100)); // converting to paise
 
-    if (betAmount < 1000n) { // Minimum 10 INR
-      return callback({ success: false, message: 'Minimum bet is ₹10.' });
+    // Check if game or variant is operational (admin controls)
+    const op = adminGameConfigService.isGameOperational(gameId, room);
+    if (!op.operational) {
+      return callback({ success: false, message: op.message });
+    }
+
+    const minBetLimit = op.minBet || 10;
+    const maxBetLimit = op.maxBet || 50000;
+    const minPaise = BigInt(minBetLimit * 100);
+    const maxPaise = BigInt(maxBetLimit * 100);
+
+    if (betAmount < minPaise) {
+      return callback({ success: false, message: `Minimum bet is ₹${minBetLimit}.` });
+    }
+    if (betAmount > maxPaise) {
+      return callback({ success: false, message: `Maximum bet limit is ₹${maxBetLimit}.` });
     }
 
     const engineKey = `${gameId?.replace('-', '')}Engine`;
@@ -66,6 +87,9 @@ function handleTableSockets(socket, io, engines) {
 
     // Server-authoritative phase check
     if (engine && !engine.isBettingAcceptable()) {
+      if (engine.isMaintenance) {
+        return callback({ success: false, message: engine.maintenanceMessage || 'Game is currently undergoing scheduled maintenance.' });
+      }
       return callback({ success: false, message: 'Betting is currently closed for this round.' });
     }
 
@@ -86,8 +110,29 @@ function handleTableSockets(socket, io, engines) {
 
         await walletService.ensureUserAndWallet(tx, userId);
 
+        // Idempotency check: if an idempotencyKey is provided, check if a bet already exists
+        if (idempotencyKey) {
+          const existingBet = await tx.tableGameBet.findFirst({
+            where: { id: idempotencyKey }
+          });
+          if (existingBet) {
+            console.log(`[Idempotency] Duplicate bet detected for key ${idempotencyKey}, returning existing receipt`);
+            const wallet = await tx.wallet.findFirst({ where: { userId, currency: 'INR' } });
+            return {
+              betId: existingBet.id,
+              roundId: existingBet.roundId,
+              market: existingBet.market,
+              amount: Number(existingBet.amount) / 100,
+              newBalance: wallet ? wallet.balance.toString() : '0',
+              duplicate: true
+            };
+          }
+        }
+
+        const betId = idempotencyKey || undefined;
         const bet = await tx.tableGameBet.create({
           data: {
+            id: betId,
             userId,
             roundId: round.id,
             gameId,

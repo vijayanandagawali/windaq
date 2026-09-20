@@ -9,6 +9,7 @@ import ReferralModal from '@/components/modals/ReferralModal';
 import DailySpinModal from '@/components/modals/DailySpinModal';
 import NotifDrawer from '@/components/modals/NotifDrawer';
 import AuthModal from '@/components/modals/AuthModal';
+import AudioControlsModal from '@/components/modals/AudioControlsModal';
 import { useAuthStore } from '@/store/authStore';
 
 export default function GlobalModalProvider() {
@@ -21,6 +22,7 @@ export default function GlobalModalProvider() {
   return (
     <>
       <AuthModal />
+      <AudioControlsModal />
       <DepositModal />
       <WithdrawModal />
       <PassbookModal />

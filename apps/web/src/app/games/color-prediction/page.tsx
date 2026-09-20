@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
+import WinLossCelebration from '@/components/games/WinLossCelebration';
 
 const COLORS = [
   { id: 'green', label: 'Join Green', multiplier: 2, bg: 'bg-green-500', shadow: 'shadow-[0_0_20px_rgba(34,197,94,0.5)]' },
@@ -32,6 +33,8 @@ export default function ColorPrediction() {
   const [selectedBet, setSelectedBet] = useState<{type: 'color'|'number', val: string|number, color: string} | null>(null);
   const [betAmount, setBetAmount] = useState(100);
   const [placingBet, setPlacingBet] = useState(false);
+  const [activeBets, setActiveBets] = useState<Array<{ type: string; val: string | number; amount: number }>>([]);
+  const [celebration, setCelebration] = useState<{ type: 'win' | 'loss'; amount: number; multiplier?: string } | null>(null);
 
   // Initialize Socket
   useEffect(() => {
@@ -73,7 +76,40 @@ export default function ColorPrediction() {
     };
     
     const onResult = (data: any) => {
-      // Trigger confetti if we want, or just update history
+      // Evaluate active user bets for win/loss celebration
+      if (activeBets.length > 0) {
+        let totalWin = 0;
+        let totalStake = 0;
+        activeBets.forEach(b => {
+          totalStake += b.amount;
+          if (b.type === 'color') {
+            if (b.val === data.color) {
+              totalWin += b.amount * (b.val === 'violet' ? 4.5 : 2);
+            }
+          } else if (b.type === 'number') {
+            if (Number(b.val) === Number(data.number)) {
+              totalWin += b.amount * 9;
+            }
+          }
+        });
+
+        if (totalWin > 0) {
+          addWinnings(totalWin);
+          setCelebration({
+            type: 'win',
+            amount: totalWin,
+            multiplier: `${(totalWin / totalStake).toFixed(1)}x`
+          });
+        } else {
+          setCelebration({
+            type: 'loss',
+            amount: totalStake
+          });
+        }
+        setActiveBets([]);
+      }
+
+      // Trigger confetti on win color
       if (data.color === 'green' || data.color === 'violet' || data.color === 'red') {
         confetti({
           particleCount: 50,
@@ -132,6 +168,7 @@ export default function ColorPrediction() {
       if (res.success) {
         if (navigator.vibrate) navigator.vibrate(50);
         deductBalance(betAmount);
+        setActiveBets(prev => [...prev, { type: selectedBet.type, val: selectedBet.val, amount: betAmount }]);
         setBetModalOpen(false);
         toast.success(`₹${betAmount} placed successfully!`);
       } else {
@@ -287,6 +324,11 @@ export default function ColorPrediction() {
           </>
         )}
       </AnimatePresence>
+
+      <WinLossCelebration
+        celebration={celebration}
+        onComplete={() => setCelebration(null)}
+      />
     </main>
   );
 }

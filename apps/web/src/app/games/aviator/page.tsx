@@ -9,6 +9,7 @@ import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { createGameSocket } from '@/lib/config';
+import { audioEngine } from '@/lib/audioEngine';
 
 export default function AviatorGame() {
   const { balance, deductBalance, addWinnings, userId } = useWalletStore();
@@ -37,18 +38,22 @@ export default function AviatorGame() {
       setGameState('waiting');
       setCountdown(data.countdown);
       if (data.hash) setProvablyFairHash(data.hash);
+      if (data.countdown <= 3 && data.countdown > 0) {
+        audioEngine.play('countdown', { urgent: true });
+      }
       
       // Reset bets for new round if they were not placed for *next* round
       setBet1(prev => ({ ...prev, cashedOut: false, won: 0, placed: prev.placed && !prev.cashedOut ? true : false }));
       setBet2(prev => ({ ...prev, cashedOut: false, won: 0, placed: prev.placed && !prev.cashedOut ? true : false }));
     });
 
-    newSocket.on('aviator:start', () => {
-      setGameState('flying');
-      setMultiplier('1.00');
-    });
-
     newSocket.on('aviator:tick', (data) => {
+      setGameState(prev => {
+        if (prev !== 'flying') {
+          audioEngine.play('roundStart');
+        }
+        return 'flying';
+      });
       setMultiplier(data.multiplier);
       drawCurve(parseFloat(data.multiplier));
     });
@@ -57,13 +62,11 @@ export default function AviatorGame() {
       setGameState('crashed');
       setMultiplier(data.multiplier);
       drawCrashed(parseFloat(data.multiplier));
+      audioEngine.play('loss');
       
       // Reset placed status for next round
       setBet1(prev => ({ ...prev, placed: false }));
       setBet2(prev => ({ ...prev, placed: false }));
-      
-      // Haptic feedback for crash
-      if (navigator.vibrate) navigator.vibrate(200);
     });
 
     return () => {
@@ -94,8 +97,8 @@ export default function AviatorGame() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Grid
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    // Background Grid
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
     ctx.lineWidth = 1;
     for (let i = 0; i < canvas.width; i += 40) {
       ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
@@ -104,26 +107,95 @@ export default function AviatorGame() {
       ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
     }
 
-    // Parabolic Curve
+    // Parabolic Curve math
+    const progress = Math.min(1, Math.log10(currentMulti) / 2); // 0 to 1
+    const x = progress * (canvas.width - 60);
+    const y = canvas.height - (progress * (canvas.height - 60));
+
+    // Under-curve glowing neon fill
+    const fillGrad = ctx.createLinearGradient(0, y, 0, canvas.height);
+    fillGrad.addColorStop(0, 'rgba(0, 255, 163, 0.35)');
+    fillGrad.addColorStop(0.5, 'rgba(0, 255, 163, 0.1)');
+    fillGrad.addColorStop(1, 'rgba(0, 255, 163, 0.0)');
     ctx.beginPath();
     ctx.moveTo(0, canvas.height);
-    
-    const progress = Math.min(1, Math.log10(currentMulti) / 2); // Scales with multiplier
-    const x = progress * (canvas.width - 40);
-    const y = canvas.height - (progress * (canvas.height - 40));
-    
     ctx.quadraticCurveTo(x * 0.5, canvas.height, x, y);
-    ctx.strokeStyle = '#00FFA3'; // Neon Mint
+    ctx.lineTo(x, canvas.height);
+    ctx.closePath();
+    ctx.fillStyle = fillGrad;
+    ctx.fill();
+
+    // The Stroke Curve
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height);
+    ctx.quadraticCurveTo(x * 0.5, canvas.height, x, y);
+    ctx.strokeStyle = '#00FFA3';
     ctx.lineWidth = 4;
+    ctx.shadowColor = '#00FFA3';
+    ctx.shadowBlur = 12;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Aerodynamic Jet Plane Sprite
+    ctx.save();
+    ctx.translate(x, y);
+    
+    // Flight angle tangent
+    const angle = -Math.PI / 6 * (1 - progress * 0.3); // Smooth upward angle
+    ctx.rotate(angle);
+
+    // Jet Engine Exhaust Flame
+    const flameLen = 14 + Math.random() * 10;
+    const flameGrad = ctx.createLinearGradient(-15 - flameLen, 0, -15, 0);
+    flameGrad.addColorStop(0, 'rgba(239, 68, 68, 0)');
+    flameGrad.addColorStop(0.5, '#f59e0b');
+    flameGrad.addColorStop(1, '#fde047');
+
+    ctx.beginPath();
+    ctx.moveTo(-15, -3);
+    ctx.lineTo(-15 - flameLen, 0);
+    ctx.lineTo(-15, 3);
+    ctx.closePath();
+    ctx.fillStyle = flameGrad;
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Aircraft Fuselage (Sleek Red Jet)
+    ctx.beginPath();
+    ctx.moveTo(22, 0); // Nose tip
+    ctx.quadraticCurveTo(8, -6, -14, -5); // Top curve
+    ctx.lineTo(-16, 0); // Tail
+    ctx.lineTo(-14, 5); // Bottom curve
+    ctx.quadraticCurveTo(8, 6, 22, 0);
+    ctx.closePath();
+    ctx.fillStyle = '#dc2626'; // Deep Red
+    ctx.fill();
+    ctx.strokeStyle = '#fca5a5';
+    ctx.lineWidth = 1;
     ctx.stroke();
 
-    // The Plane / Dot
+    // Swept Wing
     ctx.beginPath();
-    ctx.arc(x, y, 6, 0, Math.PI * 2);
-    ctx.fillStyle = '#FFFFFF';
+    ctx.moveTo(2, -4);
+    ctx.lineTo(-8, -18);
+    ctx.lineTo(-14, -16);
+    ctx.lineTo(-8, -4);
+    ctx.closePath();
+    ctx.fillStyle = '#b91c1c';
     ctx.fill();
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = '#00FFA3';
+
+    // Cockpit Window Glass
+    ctx.beginPath();
+    ctx.ellipse(8, -2, 6, 2.5, -0.1, 0, Math.PI * 2);
+    ctx.fillStyle = '#67e8f9'; // Cyan glass
+    ctx.shadowColor = '#67e8f9';
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
   };
 
   const drawCrashed = (finalMulti: number) => {
@@ -131,8 +203,24 @@ export default function AviatorGame() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (ctx && canvas) {
-      // Red Flash overlay
-      ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+      const progress = Math.min(1, Math.log10(finalMulti) / 2);
+      const x = progress * (canvas.width - 60);
+      const y = canvas.height - (progress * (canvas.height - 60));
+
+      // Explosion Radial Shockwave
+      const explGrad = ctx.createRadialGradient(x, y, 5, x, y, 90);
+      explGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+      explGrad.addColorStop(0.2, 'rgba(250, 204, 21, 0.8)');
+      explGrad.addColorStop(0.5, 'rgba(239, 68, 68, 0.6)');
+      explGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+      
+      ctx.beginPath();
+      ctx.arc(x, y, 90, 0, Math.PI * 2);
+      ctx.fillStyle = explGrad;
+      ctx.fill();
+
+      // Screen Flash
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
   };
@@ -144,8 +232,7 @@ export default function AviatorGame() {
       return;
     }
     
-    // Haptic feedback
-    if (navigator.vibrate) navigator.vibrate(50);
+    audioEngine.play('bet');
     
     deductBalance(amount);
     if (socket) {
@@ -158,8 +245,7 @@ export default function AviatorGame() {
   };
 
   const handleCashout = (panel: 1 | 2, currentMulti: number) => {
-    // Haptic feedback
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    audioEngine.play('win');
     
     // Confetti
     confetti({
@@ -245,11 +331,26 @@ export default function AviatorGame() {
                 animate={{ opacity: 1, y: 0 }}
                 className="text-center"
               >
-                <h1 className={`text-7xl md:text-9xl font-black tracking-tighter ${gameState === 'crashed' ? 'text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]' : 'text-white drop-shadow-2xl'}`}>
+                <h1 className={`text-7xl md:text-9xl font-black tracking-tighter transition-colors duration-300 ${
+                  gameState === 'crashed' 
+                    ? 'text-red-500 drop-shadow-[0_0_25px_rgba(239,68,68,0.9)] animate-pulse' 
+                    : parseFloat(multiplier) >= 10.0
+                    ? 'text-purple-400 drop-shadow-[0_0_25px_rgba(192,132,252,0.8)]'
+                    : parseFloat(multiplier) >= 2.0
+                    ? 'text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.7)]'
+                    : 'text-neon-mint drop-shadow-[0_0_20px_rgba(0,255,163,0.6)]'
+                }`}>
                   {multiplier}x
                 </h1>
                 {gameState === 'crashed' && (
-                  <p className="text-red-400 font-bold uppercase tracking-widest mt-2 animate-bounce">Flew Away!</p>
+                  <motion.p 
+                    initial={{ scale: 0.5 }}
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ repeat: Infinity, duration: 1 }}
+                    className="text-red-400 font-black text-xl uppercase tracking-widest mt-3 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]"
+                  >
+                    💥 FLEW AWAY!
+                  </motion.p>
                 )}
               </motion.div>
             )}
@@ -336,6 +437,7 @@ function BetPanel({ panelNum, betState, setBetState, gameState, currentMulti, on
       {/* Big Action Button */}
       {!betState.placed ? (
         <button 
+          data-testid={`aviator-bet-btn-${panelNum}`}
           onClick={onPlaceBet}
           disabled={gameState === 'flying'}
           className={`w-full py-3 rounded-lg font-bold text-sm uppercase tracking-wide transition-all ${gameState === 'flying' ? 'bg-gray-700 text-gray-400' : 'btn-neon'}`}
@@ -344,6 +446,7 @@ function BetPanel({ panelNum, betState, setBetState, gameState, currentMulti, on
         </button>
       ) : (
         <button 
+          data-testid={`aviator-cashout-btn-${panelNum}`}
           onClick={onCashout}
           disabled={gameState === 'crashed' || gameState === 'waiting'}
           className={`w-full py-3 rounded-lg font-black text-sm uppercase tracking-wide transition-all shadow-[0_0_15px_rgba(255,165,0,0.5)] bg-gradient-to-r from-yellow-500 to-orange-500 text-white ${gameState === 'crashed' || gameState === 'waiting' ? 'opacity-50' : ''}`}

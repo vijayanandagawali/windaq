@@ -4,9 +4,12 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Volume2, VolumeX, Camera, Info, ShieldCheck, 
-  RotateCcw, Sparkles, AlertCircle, CheckCircle2, ChevronDown, ChevronUp
+  RotateCcw, Sparkles, AlertCircle, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { audioEngine } from '@/lib/audioEngine';
+import { useAudioStore } from '@/store/audioStore';
+import WinLossCelebration from './WinLossCelebration';
 
 // Types
 export interface TableCard {
@@ -43,6 +46,13 @@ export interface SimulatedLiveState {
   clientSeed?: string | null;
   history: Array<{ roundId: string; result: DragonTigerResult; resultTime: string | Date }>;
   myBets?: Record<string, number>;
+  isMaintenance?: boolean;
+  maintenanceMessage?: string;
+  minBet?: number;
+  maxBet?: number;
+  payoutVersion?: number;
+  isEnabled?: boolean;
+  dealerSpeed?: number;
 }
 
 interface Props {
@@ -71,12 +81,18 @@ export default function SimulatedLiveTable({
 }: Props) {
   // Camera angles: 'studio' (wide), 'felt' (close-up on betting), 'spotlight' (dramatic card view)
   const [cameraAngle, setCameraAngle] = useState<'studio' | 'felt' | 'spotlight'>('studio');
-  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const { soundEnabled, toggleSound } = useAudioStore();
   const [selectedChip, setSelectedChip] = useState<number>(100);
   const [myBets, setMyBets] = useState<Record<string, number>>({});
   const [previousBets, setPreviousBets] = useState<Record<string, number>>({});
   const [showProvablyFair, setShowProvablyFair] = useState<boolean>(false);
   const [showRoadmap, setShowRoadmap] = useState<boolean>(true);
+  const [celebration, setCelebration] = useState<{
+    status: 'IDLE' | 'WON' | 'LOST';
+    amount: number;
+    multiplier?: number;
+    message?: string;
+  }>({ status: 'IDLE', amount: 0 });
 
   // Sync active bets from server snapshot (for refresh state recovery)
   useEffect(() => {
@@ -85,147 +101,79 @@ export default function SimulatedLiveTable({
     }
   }, [state.myBets]);
 
-  // Sound Synthesizer using Web Audio API
-  const audioCtxRef = useRef<AudioContext | null>(null);
-
-  const getAudioContext = () => {
-    if (!audioCtxRef.current && typeof window !== 'undefined') {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        audioCtxRef.current = new AudioCtx();
-      }
-    }
-    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume();
-    }
-    return audioCtxRef.current;
-  };
-
-  const playSound = (type: 'tick' | 'tick-urgent' | 'card-slide' | 'card-flip' | 'chip' | 'win' | 'lock') => {
-    if (isMuted) return;
-    try {
-      const ctx = getAudioContext();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-
-      if (type === 'tick' || type === 'tick-urgent') {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(type === 'tick-urgent' ? 880 : 440, now);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.08);
-      } else if (type === 'chip') {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(1200, now);
-        osc.frequency.exponentialRampToValueAtTime(400, now + 0.06);
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.06);
-      } else if (type === 'card-slide') {
-        // Noise buffer for swoosh
-        const bufferSize = ctx.sampleRate * 0.12;
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
-        }
-        const noise = ctx.createBufferSource();
-        noise.buffer = buffer;
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(1000, now);
-        filter.frequency.linearRampToValueAtTime(400, now + 0.12);
-        const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-        noise.start(now);
-      } else if (type === 'card-flip') {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(320, now);
-        osc.frequency.exponentialRampToValueAtTime(120, now + 0.08);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.08);
-      } else if (type === 'win') {
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-        notes.forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, now + idx * 0.08);
-          gain.gain.setValueAtTime(0.12, now + idx * 0.08);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(now + idx * 0.08);
-          osc.stop(now + idx * 0.08 + 0.35);
-        });
-      } else if (type === 'lock') {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(350, now);
-        osc.frequency.linearRampToValueAtTime(250, now + 0.15);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.15);
-      }
-    } catch {
-      // Audio context might fail without user interaction, ignore safely
-    }
-  };
-
   // Sound triggers on state changes
   useEffect(() => {
     if (state.phase === 'BETTING_OPEN' && state.phaseTimeLeft <= 3 && state.phaseTimeLeft > 0) {
-      playSound('tick-urgent');
+      audioEngine.play('countdown', { urgent: true });
     } else if (state.phase === 'BETTING_OPEN' && state.phaseTimeLeft <= 10 && state.phaseTimeLeft > 0) {
-      playSound('tick');
+      audioEngine.play('countdown');
     }
   }, [state.phaseTimeLeft, state.phase]);
 
   useEffect(() => {
     if (state.phase === 'BETTING_CLOSED') {
-      playSound('lock');
+      audioEngine.play('roundStart');
     } else if (state.phase === 'DEALING') {
-      playSound('card-slide');
-      setTimeout(() => playSound('card-flip'), 400);
-    } else if (state.phase === 'RESULT') {
-      playSound('win');
+      audioEngine.play('card');
+    } else if (state.phase === 'RESULT' || state.phase === 'SETTLEMENT') {
+      audioEngine.play('win');
+      // Trigger winning / losing animation based on user's active bets
+      const winner = state.result?.winner;
+      if (winner) {
+        const totalBet = Object.values(myBets).reduce((a, b) => a + b, 0);
+        const wonBet = myBets[winner] || 0;
+        if (wonBet > 0) {
+          const mult = winner === 'TIE' ? 8 : 2;
+          const payout = wonBet * mult;
+          setCelebration({
+            status: 'WON',
+            amount: payout,
+            multiplier: mult,
+            message: `${winner} WINS!`
+          });
+        } else if (totalBet > 0) {
+          setCelebration({
+            status: 'LOST',
+            amount: totalBet,
+            message: `${winner} Won • Bet Lost`
+          });
+        }
+      }
     } else if (state.phase === 'NEXT_ROUND') {
+      audioEngine.play('roundEnd');
       // Archive current bets for repeat
       if (Object.keys(myBets).length > 0) {
         setPreviousBets(myBets);
       }
       setMyBets({});
+      setCelebration({ status: 'IDLE', amount: 0 });
     }
-  }, [state.phase]);
+  }, [state.phase, state.result?.winner]);
 
   // Handle betting
   const handleBetClick = async (market: 'DRAGON' | 'TIGER' | 'TIE') => {
+    if (state.isMaintenance) {
+      toast.error(`Maintenance: ${state.maintenanceMessage || 'Game is currently under maintenance. Betting is paused.'}`, { id: 'maint' });
+      return;
+    }
+
+    if (state.isEnabled === false) {
+      toast.error('This game is currently deactivated by administrator.', { id: 'disabled' });
+      return;
+    }
+
     if (state.phase !== 'BETTING_OPEN') {
       toast.error('Bets are locked for this round!', { id: 'bet-locked' });
+      return;
+    }
+
+    if (state.minBet && selectedChip < state.minBet) {
+      toast.error(`Minimum bet limit is ₹${state.minBet}`, { id: 'min-bet' });
+      return;
+    }
+
+    if (state.maxBet && selectedChip > state.maxBet) {
+      toast.error(`Maximum bet limit is ₹${state.maxBet}`, { id: 'max-bet' });
       return;
     }
 
@@ -234,7 +182,7 @@ export default function SimulatedLiveTable({
       return;
     }
 
-    playSound('chip');
+    audioEngine.play('bet');
     const success = await onPlaceBet(market, selectedChip);
     if (success) {
       setMyBets(prev => ({
@@ -260,7 +208,7 @@ export default function SimulatedLiveTable({
       await onPlaceBet(mkt as any, amt);
     }
     setMyBets(previousBets);
-    playSound('chip');
+    audioEngine.play('bet');
     toast.success('Previous bets repeated');
   };
 
@@ -283,12 +231,13 @@ export default function SimulatedLiveTable({
       }
       return doubled;
     });
-    playSound('chip');
+    audioEngine.play('bet');
     toast.success('Bets doubled!');
   };
 
   const handleClearBets = () => {
     if (state.phase !== 'BETTING_OPEN') return;
+    audioEngine.play('click');
     setMyBets({});
     toast('Bets cleared', { icon: '🧹' });
   };
@@ -297,10 +246,10 @@ export default function SimulatedLiveTable({
   const renderCard = (card?: TableCard | null, isRevealed = false) => {
     if (!card || !isRevealed) {
       return (
-        <div className="w-20 h-28 sm:w-24 sm:h-36 rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border-2 border-red-500/40 shadow-2xl flex items-center justify-center relative overflow-hidden">
+        <div className="w-16 h-24 sm:w-24 sm:h-36 rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border-2 border-red-500/40 shadow-2xl flex items-center justify-center relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-500/10 via-transparent to-black/60" />
-          <div className="w-12 h-16 border border-yellow-500/30 rounded-lg flex items-center justify-center">
-            <span className="text-yellow-500/50 font-serif font-black text-xl">W</span>
+          <div className="w-10 h-14 sm:w-12 sm:h-16 border border-yellow-500/30 rounded-lg flex items-center justify-center">
+            <span className="text-yellow-500/50 font-serif font-black text-lg sm:text-xl">W</span>
           </div>
         </div>
       );
@@ -326,11 +275,11 @@ export default function SimulatedLiveTable({
         initial={{ rotateY: 180, scale: 0.8, y: -40, opacity: 0 }}
         animate={{ rotateY: 0, scale: 1, y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 180, damping: 18 }}
-        className="w-20 h-28 sm:w-24 sm:h-36 rounded-xl bg-gradient-to-b from-white via-zinc-100 to-zinc-200 border-2 border-zinc-300 shadow-[0_15px_35px_rgba(0,0,0,0.8)] p-2 flex flex-col justify-between select-none relative overflow-hidden"
+        className="w-16 h-24 sm:w-24 sm:h-36 rounded-xl bg-gradient-to-b from-white via-zinc-100 to-zinc-200 border-2 border-zinc-300 shadow-[0_15px_35px_rgba(0,0,0,0.8)] p-1.5 sm:p-2 flex flex-col justify-between select-none relative overflow-hidden"
       >
         <div className="flex items-center justify-between leading-none">
-          <span className={`text-xl sm:text-2xl font-black ${suitInfo.color}`}>{label}</span>
-          <span className={`text-base sm:text-lg ${suitInfo.color}`}>{suitInfo.icon}</span>
+          <span className={`text-base sm:text-2xl font-black ${suitInfo.color}`}>{label}</span>
+          <span className={`text-sm sm:text-lg ${suitInfo.color}`}>{suitInfo.icon}</span>
         </div>
         <div className={`text-3xl sm:text-5xl self-center ${suitInfo.color} drop-shadow-sm`}>
           {suitInfo.icon}
@@ -429,15 +378,17 @@ export default function SimulatedLiveTable({
 
           {/* Sound Toggle */}
           <button
-            onClick={() => setIsMuted(!isMuted)}
-            className={`p-2 rounded-lg border transition-colors ${
-              isMuted 
+            onClick={toggleSound}
+            data-testid="table-sound-toggle-btn"
+            className={`p-2 rounded-lg border transition-colors cursor-pointer ${
+              !soundEnabled 
                 ? 'bg-red-500/20 border-red-500/40 text-red-400' 
                 : 'bg-white/5 border-white/10 text-white/80 hover:text-white'
             }`}
-            title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
+            title={soundEnabled ? 'Mute Sound' : 'Unmute Sound'}
+            aria-label={soundEnabled ? 'Mute Sound' : 'Unmute Sound'}
           >
-            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
 
           {/* Provably Fair Info */}
@@ -608,20 +559,35 @@ export default function SimulatedLiveTable({
             </div>
           </div>
 
+          {/* Maintenance Mode Visual Alert */}
+          {state.isMaintenance && (
+            <div className="w-full max-w-2xl bg-amber-950/80 border border-amber-500/60 rounded-xl p-3 mb-2 text-amber-200 flex items-center justify-between shadow-lg animate-pulse">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                <span className="font-semibold text-xs">
+                  {state.maintenanceMessage || 'Scheduled game maintenance in progress. Gameplay is temporarily paused.'}
+                </span>
+              </div>
+              <span className="text-[10px] bg-amber-500 text-slate-950 font-mono px-2 py-0.5 rounded font-black uppercase tracking-wider">
+                Maintenance
+              </span>
+            </div>
+          )}
+
           {/* The Battle Felt: Dragon vs Tiger Cards */}
-          <div className="w-full max-w-2xl flex items-center justify-center gap-6 sm:gap-16 relative">
+          <div className="w-full max-w-2xl flex items-center justify-center gap-2 sm:gap-8 md:gap-16 relative scale-95 sm:scale-100 origin-center">
             
             {/* DRAGON BOX */}
-            <div className={`relative flex flex-col items-center p-3 sm:p-5 rounded-2xl transition-all duration-500 ${
+            <div className={`relative flex flex-col items-center p-2 sm:p-5 rounded-xl sm:rounded-2xl transition-all duration-500 ${
               state.result?.winner === 'DRAGON' && state.phase !== 'BETTING_OPEN'
                 ? 'bg-red-600/30 border-2 border-red-500 shadow-[0_0_40px_rgba(239,68,68,0.7)] scale-105'
                 : 'bg-red-950/20 border border-red-500/30'
             }`}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-red-400 font-black text-sm sm:text-base tracking-widest uppercase drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                <span className="text-red-400 font-black text-xs sm:text-base tracking-wider sm:tracking-widest uppercase drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
                   DRAGON
                 </span>
-                <span className="text-[10px] text-red-300/70 font-semibold bg-red-900/40 px-1.5 py-0.5 rounded">1:1</span>
+                <span className="text-[9px] sm:text-[10px] text-red-300/70 font-semibold bg-red-900/40 px-1 sm:px-1.5 py-0.5 rounded">1:1</span>
               </div>
               
               {/* Dragon Card Slot */}
@@ -631,33 +597,33 @@ export default function SimulatedLiveTable({
             </div>
 
             {/* VS Emblem & Result Announcement */}
-            <div className="flex flex-col items-center z-20">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-b from-amber-400 to-amber-700 border-2 border-amber-200 shadow-xl flex items-center justify-center text-black font-black text-sm sm:text-base tracking-tighter">
+            <div className="flex flex-col items-center z-20 shrink-0">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-b from-amber-400 to-amber-700 border-2 border-amber-200 shadow-xl flex items-center justify-center text-black font-black text-xs sm:text-base tracking-tighter">
                 VS
               </div>
 
               {/* TIE Market Banner */}
-              <div className={`mt-3 px-3 py-1 rounded-xl text-center border transition-all ${
+              <div className={`mt-2 sm:mt-3 px-2 sm:px-3 py-0.5 sm:py-1 rounded-xl text-center border transition-all ${
                 state.result?.winner === 'TIE' && state.phase !== 'BETTING_OPEN'
                   ? 'bg-emerald-600 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.8)] scale-110 text-white font-black'
                   : 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400'
               }`}>
-                <div className="text-xs font-black tracking-widest">TIE</div>
-                <div className="text-[10px] font-bold text-emerald-300/70">8:1</div>
+                <div className="text-[10px] sm:text-xs font-black tracking-widest">TIE</div>
+                <div className="text-[8px] sm:text-[10px] font-bold text-emerald-300/70">8:1</div>
               </div>
             </div>
 
             {/* TIGER BOX */}
-            <div className={`relative flex flex-col items-center p-3 sm:p-5 rounded-2xl transition-all duration-500 ${
+            <div className={`relative flex flex-col items-center p-2 sm:p-5 rounded-xl sm:rounded-2xl transition-all duration-500 ${
               state.result?.winner === 'TIGER' && state.phase !== 'BETTING_OPEN'
                 ? 'bg-yellow-500/30 border-2 border-yellow-400 shadow-[0_0_40px_rgba(234,179,8,0.7)] scale-105'
                 : 'bg-yellow-950/20 border border-yellow-500/30'
             }`}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-yellow-400 font-black text-sm sm:text-base tracking-widest uppercase drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]">
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                <span className="text-yellow-400 font-black text-xs sm:text-base tracking-wider sm:tracking-widest uppercase drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]">
                   TIGER
                 </span>
-                <span className="text-[10px] text-yellow-300/70 font-semibold bg-yellow-900/40 px-1.5 py-0.5 rounded">1:1</span>
+                <span className="text-[9px] sm:text-[10px] text-yellow-300/70 font-semibold bg-yellow-900/40 px-1 sm:px-1.5 py-0.5 rounded">1:1</span>
               </div>
               
               {/* Tiger Card Slot */}
@@ -731,24 +697,25 @@ export default function SimulatedLiveTable({
 
         {/* Interactive Betting Layout Grid */}
         <div className="relative z-10 p-3 sm:p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
-          <div className="max-w-3xl mx-auto grid grid-cols-3 gap-3">
+          <div className="max-w-3xl mx-auto grid grid-cols-3 gap-1.5 sm:gap-3">
             
             {/* Dragon Betting Spot */}
             <button
+              data-testid="bet-spot-dragon"
               onClick={() => handleBetClick('DRAGON')}
               disabled={state.phase !== 'BETTING_OPEN'}
-              className={`relative rounded-2xl p-4 flex flex-col items-center justify-center border-2 transition-all ${
+              className={`relative rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-center border-2 transition-all ${
                 state.phase === 'BETTING_OPEN'
                   ? 'bg-gradient-to-b from-red-950/60 to-red-900/30 border-red-500/50 hover:border-red-400 active:scale-98 cursor-pointer'
                   : 'bg-red-950/20 border-red-500/20 opacity-60 cursor-not-allowed'
               }`}
             >
-              <span className="text-lg sm:text-xl font-black tracking-widest text-red-400">DRAGON</span>
-              <span className="text-xs font-bold text-red-300/60">Pays 1:1</span>
+              <span className="text-sm sm:text-lg md:text-xl font-black tracking-wider sm:tracking-widest text-red-400">DRAGON</span>
+              <span className="text-[10px] sm:text-xs font-bold text-red-300/60">Pays 1:1</span>
               
               {/* Stacked Chip Visualizer */}
               {myBets['DRAGON'] && (
-                <div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-black px-2.5 py-0.5 rounded-full border border-red-300 shadow-lg animate-bounce">
+                <div className="absolute -top-1.5 sm:top-2 -right-1 sm:right-2 bg-red-600 text-white text-[10px] sm:text-xs font-black px-1.5 sm:px-2.5 py-0.5 rounded-full border border-red-300 shadow-lg animate-bounce">
                   ₹{myBets['DRAGON']}
                 </div>
               )}
@@ -756,19 +723,20 @@ export default function SimulatedLiveTable({
 
             {/* Tie Betting Spot */}
             <button
+              data-testid="bet-spot-tie"
               onClick={() => handleBetClick('TIE')}
               disabled={state.phase !== 'BETTING_OPEN'}
-              className={`relative rounded-2xl p-4 flex flex-col items-center justify-center border-2 transition-all ${
+              className={`relative rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-center border-2 transition-all ${
                 state.phase === 'BETTING_OPEN'
                   ? 'bg-gradient-to-b from-emerald-950/60 to-emerald-900/30 border-emerald-500/50 hover:border-emerald-400 active:scale-98 cursor-pointer'
                   : 'bg-emerald-950/20 border-emerald-500/20 opacity-60 cursor-not-allowed'
               }`}
             >
-              <span className="text-lg sm:text-xl font-black tracking-widest text-emerald-400">TIE</span>
-              <span className="text-xs font-bold text-emerald-300/60">Pays 8:1</span>
+              <span className="text-sm sm:text-lg md:text-xl font-black tracking-wider sm:tracking-widest text-emerald-400">TIE</span>
+              <span className="text-[10px] sm:text-xs font-bold text-emerald-300/60">Pays 8:1</span>
               
               {myBets['TIE'] && (
-                <div className="absolute top-2 right-2 bg-emerald-600 text-white text-xs font-black px-2.5 py-0.5 rounded-full border border-emerald-300 shadow-lg animate-bounce">
+                <div className="absolute -top-1.5 sm:top-2 -right-1 sm:right-2 bg-emerald-600 text-white text-[10px] sm:text-xs font-black px-1.5 sm:px-2.5 py-0.5 rounded-full border border-emerald-300 shadow-lg animate-bounce">
                   ₹{myBets['TIE']}
                 </div>
               )}
@@ -776,19 +744,20 @@ export default function SimulatedLiveTable({
 
             {/* Tiger Betting Spot */}
             <button
+              data-testid="bet-spot-tiger"
               onClick={() => handleBetClick('TIGER')}
               disabled={state.phase !== 'BETTING_OPEN'}
-              className={`relative rounded-2xl p-4 flex flex-col items-center justify-center border-2 transition-all ${
+              className={`relative rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-center border-2 transition-all ${
                 state.phase === 'BETTING_OPEN'
                   ? 'bg-gradient-to-b from-yellow-950/60 to-yellow-900/30 border-yellow-500/50 hover:border-yellow-400 active:scale-98 cursor-pointer'
                   : 'bg-yellow-950/20 border-yellow-500/20 opacity-60 cursor-not-allowed'
               }`}
             >
-              <span className="text-lg sm:text-xl font-black tracking-widest text-yellow-400">TIGER</span>
-              <span className="text-xs font-bold text-yellow-300/60">Pays 1:1</span>
+              <span className="text-sm sm:text-lg md:text-xl font-black tracking-wider sm:tracking-widest text-yellow-400">TIGER</span>
+              <span className="text-[10px] sm:text-xs font-bold text-yellow-300/60">Pays 1:1</span>
               
               {myBets['TIGER'] && (
-                <div className="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-black px-2.5 py-0.5 rounded-full border border-yellow-300 shadow-lg animate-bounce">
+                <div className="absolute -top-1.5 sm:top-2 -right-1 sm:right-2 bg-yellow-500 text-black text-[10px] sm:text-xs font-black px-1.5 sm:px-2.5 py-0.5 rounded-full border border-yellow-300 shadow-lg animate-bounce">
                   ₹{myBets['TIGER']}
                 </div>
               )}
@@ -800,15 +769,15 @@ export default function SimulatedLiveTable({
       </div>
 
       {/* Bottom Controls Bar: Chips & Action Buttons */}
-      <div className="bg-black/90 border-t border-white/10 px-4 py-3 z-30 backdrop-blur-md">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="bg-black/90 border-t border-white/10 px-3 sm:px-4 pt-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] z-30 backdrop-blur-md">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3">
           
           {/* Quick Bet Modifiers: Repeat, 2x, Clear */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={handleRepeatBet}
               disabled={state.phase !== 'BETTING_OPEN'}
-              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-40 text-xs font-bold transition-colors flex items-center gap-1 text-white/90"
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-40 text-[11px] sm:text-xs font-bold transition-colors flex items-center gap-1 text-white/90 cursor-pointer min-h-[36px]"
               title="Repeat Previous Bets"
             >
               <RotateCcw size={13} />
@@ -817,7 +786,7 @@ export default function SimulatedLiveTable({
             <button
               onClick={handleDoubleBets}
               disabled={state.phase !== 'BETTING_OPEN'}
-              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-40 text-xs font-bold transition-colors text-white/90"
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-40 text-[11px] sm:text-xs font-bold transition-colors text-white/90 cursor-pointer min-h-[36px]"
               title="Double Current Bets (2x)"
             >
               2x Double
@@ -825,7 +794,7 @@ export default function SimulatedLiveTable({
             <button
               onClick={handleClearBets}
               disabled={state.phase !== 'BETTING_OPEN'}
-              className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 disabled:opacity-40 text-xs font-bold transition-colors text-red-300"
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 disabled:opacity-40 text-[11px] sm:text-xs font-bold transition-colors text-red-300 cursor-pointer min-h-[36px]"
               title="Clear Active Bets"
             >
               Clear
@@ -833,25 +802,26 @@ export default function SimulatedLiveTable({
           </div>
 
           {/* 3D Casino Chips Selector */}
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide py-1">
             {CHIP_DENOMINATIONS.map(chip => {
               const isSelected = selectedChip === chip.value;
               return (
                 <button
                   key={chip.value}
+                  data-testid={`chip-${chip.value}`}
                   onClick={() => {
                     setSelectedChip(chip.value);
-                    playSound('chip');
+                    audioEngine.play('click');
                   }}
-                  className={`relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex-shrink-0 flex items-center justify-center font-black text-xs transition-all duration-200 border-2 shadow-lg ${
+                  className={`relative w-9 h-9 sm:w-12 sm:h-12 rounded-full flex-shrink-0 flex items-center justify-center font-black text-[10px] sm:text-xs transition-all duration-200 border-2 shadow-lg cursor-pointer ${
                     chip.border
                   } bg-gradient-to-br ${chip.color} ${
                     isSelected 
-                      ? 'scale-110 -translate-y-1.5 ring-4 ring-white/50 shadow-[0_0_15px_rgba(255,255,255,0.4)]' 
+                      ? 'scale-110 -translate-y-1 ring-2 sm:ring-4 ring-white/50 shadow-[0_0_15px_rgba(255,255,255,0.4)]' 
                       : 'opacity-70 hover:opacity-100 hover:scale-105'
                   }`}
                 >
-                  <div className="absolute inset-1 rounded-full border border-white/30 border-dashed pointer-events-none" />
+                  <div className="absolute inset-0.5 sm:inset-1 rounded-full border border-white/30 border-dashed pointer-events-none" />
                   <span className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                     {chip.label}
                   </span>
@@ -882,16 +852,17 @@ export default function SimulatedLiveTable({
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-[#0f172a] border border-emerald-500/40 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative text-left"
+              className="bg-[#0f172a] border border-emerald-500/40 rounded-2xl max-w-lg w-full max-h-[88dvh] overflow-y-auto overscroll-contain pb-safe p-5 sm:p-6 shadow-2xl relative text-left"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center justify-between pb-3 border-b border-white/10 sticky -top-5 bg-[#0f172a]/95 backdrop-blur-md pt-1 pb-2 z-10">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="text-emerald-400" size={22} />
-                  <h3 className="font-black text-lg text-white">Provably Fair Verification</h3>
+                  <h3 className="font-black text-base sm:text-lg text-white">Provably Fair Verification</h3>
                 </div>
                 <button 
                   onClick={() => setShowProvablyFair(false)}
-                  className="text-white/50 hover:text-white p-1"
+                  className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white cursor-pointer"
+                  aria-label="Close Verification"
                 >
                   ✕
                 </button>
@@ -945,6 +916,15 @@ export default function SimulatedLiveTable({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Universal Win & Loss Animation Overlay */}
+      <WinLossCelebration
+        status={celebration.status}
+        amount={celebration.amount}
+        multiplier={celebration.multiplier}
+        message={celebration.message}
+        onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
+      />
 
     </div>
   );

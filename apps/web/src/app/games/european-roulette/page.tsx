@@ -7,6 +7,9 @@ import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
+import RouletteWheel from '@/components/games/RouletteWheel';
+import { audioEngine } from '@/lib/audioEngine';
+import WinLossCelebration from '@/components/games/WinLossCelebration';
 
 const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 const isRed = (n: number) => RED_NUMBERS.includes(n);
@@ -35,6 +38,14 @@ export default function RouletteGame() {
   // Realtime Live Bets
   const [liveBets, setLiveBets] = useState<any[]>([]);
 
+  // Win / Loss Celebration
+  const [celebration, setCelebration] = useState<{
+    status: 'IDLE' | 'WON' | 'LOST';
+    amount: number;
+    multiplier?: number;
+    message?: string;
+  }>({ status: 'IDLE', amount: 0 });
+
   useEffect(() => {
     const s = io('http://localhost:4000', { auth: { token: null } });
     setSocket(s);
@@ -59,17 +70,61 @@ export default function RouletteGame() {
     });
 
     s.on('roulette:locked', () => {
+      audioEngine.play('roundStart');
       setGameState((p: any) => ({ ...p, status: 'LOCKED' }));
       setTimeLeft(0);
       toast('Bets Locked! Spinning...', { icon: '🎡' });
     });
 
     s.on('roulette:result', (data: any) => {
+      audioEngine.play('win');
       setGameState((p: any) => ({ ...p, status: 'RESULT' }));
       setResultNumber(data.resultNumber);
       
       setHistory(prev => [{ resultNumber: data.resultNumber, resultTime: new Date() }, ...prev].slice(0, 15));
       
+      // Calculate win/loss across player bets
+      const totalBet = Object.values(myBets).reduce((a, b) => a + b, 0);
+      let wonAmount = 0;
+      let winningMultiplier = 1;
+
+      if (myBets[data.resultNumber.toString()]) {
+        wonAmount += myBets[data.resultNumber.toString()] * 36;
+        winningMultiplier = 36;
+      }
+      const isResultRed = RED_NUMBERS.includes(data.resultNumber);
+      if (isResultRed && myBets['RED']) {
+        wonAmount += myBets['RED'] * 2;
+        winningMultiplier = 2;
+      } else if (!isResultRed && data.resultNumber !== 0 && myBets['BLACK']) {
+        wonAmount += myBets['BLACK'] * 2;
+        winningMultiplier = 2;
+      }
+      if (data.resultNumber !== 0) {
+        if (data.resultNumber % 2 === 0 && myBets['EVEN']) {
+          wonAmount += myBets['EVEN'] * 2;
+          winningMultiplier = 2;
+        } else if (data.resultNumber % 2 !== 0 && myBets['ODD']) {
+          wonAmount += myBets['ODD'] * 2;
+          winningMultiplier = 2;
+        }
+      }
+
+      if (wonAmount > 0) {
+        setCelebration({
+          status: 'WON',
+          amount: wonAmount,
+          multiplier: winningMultiplier,
+          message: `Number ${data.resultNumber} Hit!`
+        });
+      } else if (totalBet > 0) {
+        setCelebration({
+          status: 'LOST',
+          amount: totalBet,
+          message: `Ball Landed on ${data.resultNumber}`
+        });
+      }
+
       setTimeout(() => fetchBalance(), 2000); // Check for winnings
     });
     
@@ -100,9 +155,11 @@ export default function RouletteGame() {
     
     if (!socket) return;
     
+    audioEngine.play('bet');
     const userId = "guest"; // Replace with real auth id
     socket.emit('roulette:bet', { userId, room: 'Auto', market, targets, amount: selectedChips }, (res: any) => {
       if (res.success) {
+        audioEngine.play('accepted');
         // use a unique key for the grid to stack chips visually
         const betKey = targets.length === 1 ? `STRAIGHT_${targets[0]}` : market;
         setMyBets(prev => ({
@@ -112,6 +169,7 @@ export default function RouletteGame() {
         toast.success(`Placed ₹${selectedChips} on ${market}`);
         fetchBalance(); 
       } else {
+        audioEngine.play('loss');
         toast.error(res.message);
       }
     });
@@ -125,19 +183,27 @@ export default function RouletteGame() {
 
   const renderNumberCell = (n: number) => {
     const betKey = `STRAIGHT_${n}`;
+    const isWinner = resultNumber === n;
     return (
       <button 
         key={n}
         onClick={() => placeBet('STRAIGHT', [n])}
-        className={`relative flex items-center justify-center border-t border-l border-white/20 transition-all font-bold text-lg sm:text-xl py-3 ${getNumberColorClass(n)}`}
+        className={`relative flex items-center justify-center border-t border-l border-white/20 transition-all font-bold text-lg sm:text-xl py-3 ${getNumberColorClass(n)} ${
+          isWinner ? 'ring-4 ring-yellow-400 scale-105 z-20 shadow-[0_0_25px_rgba(250,204,21,0.9)] animate-pulse' : ''
+        }`}
       >
         {n}
         {myBets[betKey] && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
-            <div className="bg-yellow-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded-full shadow border border-black">
-              {myBets[betKey]}
+          <motion.div 
+            initial={{ scale: 0, y: -15 }}
+            animate={{ scale: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+            className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]"
+          >
+            <div className="bg-gradient-to-br from-yellow-400 to-amber-600 text-black text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-lg border border-yellow-200">
+              ₹{myBets[betKey]}
             </div>
-          </div>
+          </motion.div>
         )}
       </button>
     );
@@ -160,52 +226,44 @@ export default function RouletteGame() {
       </header>
 
       {/* Game Stage Area */}
-      <div className="w-full h-48 sm:h-56 bg-gradient-to-b from-[#1a2b1f] to-[#0a0f1a] relative flex flex-col items-center justify-center overflow-hidden border-b border-white/10">
+      <div className="w-full min-h-[220px] py-4 bg-gradient-to-b from-[#1a2b1f] to-[#0a0f1a] relative flex flex-col items-center justify-center overflow-hidden border-b border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-900/30 via-transparent to-transparent opacity-60" />
         
         {/* Timer / Status */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 border border-white/10 px-6 py-2 rounded-full flex items-center gap-3 backdrop-blur-md z-10 shadow-lg">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 border border-white/10 px-5 py-1.5 rounded-full flex items-center gap-3 backdrop-blur-md z-20 shadow-lg">
            {gameState.status === 'OPEN' ? (
              <>
                <div className="w-2 h-2 rounded-full bg-neon-mint animate-pulse" />
-               <span className="font-bold tracking-widest uppercase text-sm">Betting Open</span>
-               <span className={`font-mono font-black text-xl ${timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-neon-mint'}`}>
+               <span className="font-bold tracking-widest uppercase text-xs">Betting Open</span>
+               <span className={`font-mono font-black text-lg ${timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-neon-mint'}`}>
                  00:{timeLeft.toString().padStart(2, '0')}
                </span>
              </>
            ) : (
              <>
-               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-               <span className="font-bold tracking-widest uppercase text-sm text-red-500">{gameState.status === 'LOCKED' ? 'Spinning...' : gameState.status}</span>
+               <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+               <span className="font-bold tracking-widest uppercase text-xs text-yellow-400">{gameState.status === 'LOCKED' ? 'Wheel Spinning...' : gameState.status}</span>
              </>
            )}
         </div>
 
-        {/* Central Display */}
-        <div className="z-20 relative flex flex-col items-center mt-6">
-          <AnimatePresence mode="wait">
-            {resultNumber !== null ? (
-              <motion.div
-                key="result"
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                exit={{ scale: 0 }}
-                transition={{ type: "spring", bounce: 0.5 }}
-                className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center border-4 shadow-[0_0_40px_rgba(255,255,255,0.2)] ${getNumberColorClass(resultNumber)}`}
-              >
-                <span className="text-4xl sm:text-5xl font-black drop-shadow-md">{resultNumber}</span>
-              </motion.div>
-            ) : (
-              <motion.div 
-                key="wheel"
-                animate={gameState.status === 'LOCKED' ? { rotate: 360 } : {}}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-dashed border-gray-600/50 flex items-center justify-center bg-black/20"
-              >
-                <span className="text-gray-500 font-bold uppercase tracking-widest text-xs">Wheel</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        {/* Central Display: Realistic European Roulette Wheel */}
+        <div className="z-10 relative flex flex-col items-center mt-6">
+          <RouletteWheel 
+            isSpinning={gameState.status === 'LOCKED'} 
+            winningNumber={resultNumber} 
+            size={190} 
+          />
+          {resultNumber !== null && (
+            <motion.div
+              initial={{ scale: 0, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              className="mt-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black px-4 py-1 rounded-full font-black text-sm tracking-widest shadow-[0_0_20px_rgba(234,179,8,0.7)] flex items-center gap-2"
+            >
+              <span>WINNER:</span>
+              <span className="text-base font-black bg-black text-white px-2 py-0.5 rounded-md">{resultNumber}</span>
+            </motion.div>
+          )}
         </div>
       </div>
 
@@ -315,6 +373,15 @@ export default function RouletteGame() {
             ))}
          </div>
       </div>
+
+      {/* Win & Loss Animation Overlay */}
+      <WinLossCelebration
+        status={celebration.status}
+        amount={celebration.amount}
+        multiplier={celebration.multiplier}
+        message={celebration.message}
+        onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
+      />
     </main>
   );
 }

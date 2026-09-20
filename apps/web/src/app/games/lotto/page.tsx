@@ -168,36 +168,79 @@ export default function LottoGame() {
       <div className="flex-1 overflow-y-auto flex flex-col relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#0a0f1a] to-[#0a0f1a] pointer-events-none" />
 
-        {/* Top Info Panel */}
-        <div className="bg-black/60 border-b border-white/10 px-4 py-6 z-10 flex flex-col items-center">
-           <div className="text-cyan-400 font-bold tracking-widest text-xs uppercase mb-2">Next Draw In</div>
+        {/* Top Info Panel with 3D Blower Sphere */}
+        <div className="bg-black/70 border-b border-white/10 px-4 py-6 z-10 flex flex-col items-center backdrop-blur-md">
+           <div className="text-cyan-400 font-bold tracking-widest text-xs uppercase mb-1">Next Draw In</div>
            
            {status === 'OPEN' ? (
-             <div className="text-5xl md:text-6xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(34,211,238,0.5)] font-mono">
+             <div className="text-5xl md:text-6xl font-black text-white tracking-tighter drop-shadow-[0_0_20px_rgba(34,211,238,0.5)] font-mono">
                {formatTime(timeRemaining)}
              </div>
            ) : (
-             <div className="text-3xl md:text-4xl font-black text-yellow-400 tracking-widest animate-pulse">
-               {status === 'LOCKED' ? 'DRAWING SOON...' : 'DRAWING NOW!'}
+             <div className="text-2xl md:text-3xl font-black text-yellow-400 tracking-widest animate-pulse">
+               {status === 'LOCKED' ? '🎰 MIXING BALLS...' : '✨ LIVE DRAW IN PROGRESS!'}
              </div>
            )}
 
-           {/* Drawn Numbers Display */}
-           <div className="mt-6 flex gap-2 h-16 items-center justify-center">
+           {/* Lottery Blower Sphere (Tumbling Balls Animation) */}
+           <div className="relative w-36 h-36 mt-4 rounded-full border-4 border-cyan-500/40 bg-gradient-to-b from-cyan-950/40 via-black/80 to-blue-950/60 shadow-[0_0_40px_rgba(34,211,238,0.3)_inset,0_0_30px_rgba(0,0,0,0.8)] flex items-center justify-center overflow-hidden">
+             <div className="absolute inset-2 rounded-full border border-white/10 pointer-events-none" />
+             {/* Swirling Balls inside blower */}
+             {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+               <motion.div
+                 key={n}
+                 animate={status !== 'OPEN' ? {
+                   x: [Math.sin(n) * 35, Math.cos(n) * -35, Math.sin(n * 2) * 30],
+                   y: [Math.cos(n) * 35, Math.sin(n) * -35, Math.cos(n * 2) * 30],
+                   rotate: [0, 360],
+                   scale: [0.85, 1.1, 0.85]
+                 } : {
+                   y: [0, -5, 0]
+                 }}
+                 transition={{
+                   duration: status !== 'OPEN' ? 0.6 + (n % 3) * 0.2 : 2,
+                   repeat: Infinity,
+                   ease: "easeInOut"
+                 }}
+                 className={`absolute w-6 h-6 rounded-full shadow-md flex items-center justify-center text-[9px] font-black text-white ${
+                   n % 4 === 0 ? 'bg-red-500' : n % 4 === 1 ? 'bg-amber-400 text-black' : n % 4 === 2 ? 'bg-blue-500' : 'bg-emerald-500'
+                 }`}
+               >
+                 {n * 5}
+               </motion.div>
+             ))}
+             {/* Chute mouth */}
+             <div className="absolute bottom-0 w-10 h-3 bg-gradient-to-t from-cyan-500 to-transparent rounded-t-full opacity-60" />
+           </div>
+
+           {/* Drawn Numbers Display Chute */}
+           <div className="mt-5 flex gap-2 h-16 items-center justify-center">
              <AnimatePresence>
-               {winningNumbers.map((num, idx) => (
-                 <motion.div 
-                   key={idx}
-                   initial={{ scale: 0, opacity: 0, y: -20 }}
-                   animate={{ scale: 1, opacity: 1, y: 0 }}
-                   transition={{ delay: idx * 0.5, type: 'spring' }}
-                   className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 flex items-center justify-center shadow-[0_0_20px_rgba(250,204,21,0.5)] border-2 border-white"
-                 >
-                   <span className="text-black font-black text-xl md:text-2xl">{num}</span>
-                 </motion.div>
-               ))}
+               {winningNumbers.map((num, idx) => {
+                 // Color bands
+                 const colorClass = 
+                   num <= 10 ? 'from-amber-300 to-yellow-500 text-black border-yellow-200' :
+                   num <= 20 ? 'from-blue-400 to-blue-600 text-white border-blue-200' :
+                   num <= 30 ? 'from-red-400 to-red-600 text-white border-red-200' :
+                   num <= 40 ? 'from-emerald-400 to-emerald-600 text-white border-emerald-200' :
+                   'from-purple-400 to-purple-600 text-white border-purple-200';
+
+                 return (
+                   <motion.div 
+                     key={`${num}-${idx}`}
+                     initial={{ scale: 0, opacity: 0, y: -40 }}
+                     animate={{ scale: 1, opacity: 1, y: 0 }}
+                     transition={{ delay: idx * 0.3, type: 'spring', stiffness: 260, damping: 16 }}
+                     className={`w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br ${colorClass} flex items-center justify-center shadow-[0_0_25px_rgba(250,204,21,0.6)] border-2`}
+                   >
+                     <span className="font-black text-xl md:text-2xl drop-shadow">{num}</span>
+                   </motion.div>
+                 );
+               })}
                {winningNumbers.length === 0 && status === 'RESULT' && (
-                 <span className="text-gray-400 animate-pulse">Selecting numbers...</span>
+                 <span className="text-cyan-400 font-bold uppercase tracking-widest text-xs animate-pulse">
+                   Extracting winning balls from blower...
+                 </span>
                )}
              </AnimatePresence>
            </div>

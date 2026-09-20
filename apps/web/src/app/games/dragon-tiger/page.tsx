@@ -7,6 +7,7 @@ import { useWalletStore } from '@/store/walletStore';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
 import SimulatedLiveTable, { SimulatedLiveState } from '@/components/games/SimulatedLiveTable';
+import { stateRecovery } from '@/lib/stateRecovery';
 
 export default function DragonTigerGamePage() {
   const { balance, fetchBalance, userId } = useWalletStore();
@@ -64,12 +65,42 @@ export default function DragonTigerGamePage() {
         serverSeed: data.serverSeed || prev.serverSeed,
         clientSeed: data.clientSeed || prev.clientSeed,
         history: data.history || prev.history,
-        myBets: data.myBets || prev.myBets
+        myBets: data.myBets || prev.myBets,
+        isMaintenance: data.isMaintenance !== undefined ? data.isMaintenance : prev.isMaintenance,
+        maintenanceMessage: data.maintenanceMessage !== undefined ? data.maintenanceMessage : prev.maintenanceMessage,
+        minBet: data.minBet || prev.minBet,
+        maxBet: data.maxBet || prev.maxBet,
+        payoutVersion: data.payoutVersion || prev.payoutVersion,
+        isEnabled: data.isEnabled !== undefined ? data.isEnabled : prev.isEnabled
       }));
     };
 
     s.on('tg:snapshot', handleSnapshot);
     s.on('round:snapshot', handleSnapshot);
+
+    s.on('game:status', (data: any) => {
+      if (data && data.operational === false) {
+        setTableState(prev => ({
+          ...prev,
+          isMaintenance: data.reason === 'MAINTENANCE_MODE',
+          maintenanceMessage: data.message,
+          isEnabled: data.reason !== 'GAME_DISABLED'
+        }));
+      }
+    });
+
+    s.on('round:status_update', (data: any) => {
+      if (data) {
+        setTableState(prev => ({
+          ...prev,
+          isMaintenance: data.isMaintenance !== undefined ? data.isMaintenance : prev.isMaintenance,
+          maintenanceMessage: data.maintenanceMessage !== undefined ? data.maintenanceMessage : prev.maintenanceMessage,
+          minBet: data.minBet || prev.minBet,
+          maxBet: data.maxBet || prev.maxBet,
+          isEnabled: data.isEnabled !== undefined ? data.isEnabled : prev.isEnabled
+        }));
+      }
+    });
 
     s.on('tg:tick', (data: any) => {
       setTableState(prev => ({
@@ -86,7 +117,13 @@ export default function DragonTigerGamePage() {
         serverSeed: data.serverSeed,
         clientSeed: data.clientSeed,
         history: data.history || prev.history,
-        myBets: data.myBets !== undefined ? data.myBets : prev.myBets
+        myBets: data.myBets !== undefined ? data.myBets : prev.myBets,
+        isMaintenance: data.isMaintenance !== undefined ? data.isMaintenance : prev.isMaintenance,
+        maintenanceMessage: data.maintenanceMessage !== undefined ? data.maintenanceMessage : prev.maintenanceMessage,
+        minBet: data.minBet || prev.minBet,
+        maxBet: data.maxBet || prev.maxBet,
+        payoutVersion: data.payoutVersion || prev.payoutVersion,
+        isEnabled: data.isEnabled !== undefined ? data.isEnabled : prev.isEnabled
       }));
     });
 
@@ -135,11 +172,28 @@ export default function DragonTigerGamePage() {
       }));
     });
 
+    // Mobile background/foreground and network restoration sync
+    const handleSync = () => {
+      console.log('[DragonTiger] Resuming state after background or reconnect');
+      if (s.disconnected) {
+        s.connect();
+      } else {
+        const activeUserId = userId || (typeof window !== 'undefined' ? (localStorage.getItem('windaq_user_id') || 'guest') : 'guest');
+        s.emit('tg:join', { gameId: 'dragon-tiger', room: 'Standard', userId: activeUserId });
+      }
+      fetchBalance();
+    };
+
+    window.addEventListener('windaq:foreground_resume', handleSync);
+    window.addEventListener('windaq:online_resume', handleSync);
+
     return () => {
+      window.removeEventListener('windaq:foreground_resume', handleSync);
+      window.removeEventListener('windaq:online_resume', handleSync);
       s.emit('tg:leave', { gameId: 'dragon-tiger', room: 'Standard' });
       s.disconnect();
     };
-  }, [fetchBalance]);
+  }, [fetchBalance, userId]);
 
   // Handle Bet placement
   const handlePlaceBet = useCallback(async (market: 'DRAGON' | 'TIGER' | 'TIE', amount: number): Promise<boolean> => {
@@ -155,16 +209,26 @@ export default function DragonTigerGamePage() {
 
     return new Promise((resolve) => {
       const activeUserId = userId || (typeof window !== 'undefined' ? (localStorage.getItem('windaq_user_id') || 'guest') : 'guest');
+      const idempotencyKey = stateRecovery.generateIdempotencyKey('dt');
+
       socket.emit('tg:bet', {
         userId: activeUserId,
         gameId: 'dragon-tiger',
         room: 'Standard',
         market,
-        amount
+        amount,
+        idempotencyKey
       }, (res: any) => {
         if (res && res.success) {
           toast.success(`Placed ₹${amount} on ${market}`);
           fetchBalance();
+          stateRecovery.broadcast({
+            type: 'BET_PLACED',
+            gameId: 'dragon-tiger',
+            market,
+            amount,
+            idempotencyKey
+          });
           resolve(true);
         } else {
           toast.error(res?.message || 'Failed to place bet');

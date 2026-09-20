@@ -854,3 +854,61 @@ model NotificationLog {
   
   user            User     @relation(fields: [userId], references: [id])
 }
+
+// --- ADMIN GAME CONTROL & VERSIONED GOVERNANCE ---
+
+model GameConfig {
+  id                 String   @id @default(uuid())
+  gameSlug           String   @unique
+  name               String
+  category           String   @default("CASINO")
+  isEnabled          Boolean  @default(true)
+  isMaintenance      Boolean  @default(false)
+  maintenanceMessage String?  @default("Scheduled game maintenance in progress. Please check back shortly.")
+  visibility         String   @default("VISIBLE") // FEATURED, VISIBLE, HIDDEN
+  dealerSpeed        Float    @default(1.0)       // 0.75x, 1.0x, 1.25x, 1.5x, 2.0x
+  minBet             Int      @default(10)        // in INR
+  maxBet             Int      @default(50000)     // in INR
+  roundDuration      Int      @default(30)        // in seconds
+  bettingDuration    Int      @default(15)        // in seconds
+  activePayoutVersion Int     @default(1)
+  variants           Json?    // Array of { id, name, isEnabled, minBet, maxBet }
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
+
+  payoutVersions     PayoutRuleVersion[]
+  audits             GameConfigAudit[]
+}
+
+model PayoutRuleVersion {
+  id             String      @id @default(uuid())
+  gameConfigId   String
+  gameConfig     GameConfig  @relation(fields: [gameConfigId], references: [id], onDelete: Cascade)
+  gameSlug       String
+  version        Int
+  rules          Json        // Payout multipliers and rules
+  reason         String      // Mandatory audit reason
+  createdBy      String      // Admin ID
+  effectiveFrom  DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+  isActive       Boolean     @default(true)
+
+  @@unique([gameSlug, version])
+}
+
+model GameConfigAudit {
+  id             String      @id @default(uuid())
+  gameConfigId   String?
+  gameConfig     GameConfig? @relation(fields: [gameConfigId], references: [id], onDelete: SetNull)
+  gameSlug       String
+  adminId        String
+  adminRole      String      @default("SUPER_ADMIN")
+  action         String      // GAME_STATUS_CHANGED, VARIANT_TOGGLED, LIMITS_UPDATED, DURATIONS_UPDATED, MAINTENANCE_TOGGLED, DEALER_SPEED_UPDATED, VISIBILITY_UPDATED, PAYOUT_RULE_VERSIONED
+  fieldChanged   String?
+  oldValue       Json?
+  newValue       Json?
+  reason         String?
+  ipAddress      String?
+  createdAt      DateTime    @default(now())
+}
+

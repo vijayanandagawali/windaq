@@ -11,7 +11,6 @@ import Link from 'next/link';
 import { useWalletStore } from '@/store/walletStore';
 import { getApiUrl } from '@/lib/config';
 import toast from 'react-hot-toast';
-import Header from '@/components/layout/Header';
 
 interface TransactionItem {
   id: string;
@@ -243,8 +242,6 @@ export default function WalletHub() {
 
   return (
     <div className="min-h-screen bg-[#070b12] text-white flex flex-col">
-      <Header />
-
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6">
         
         {/* Page Title & Breadcrumbs */}
@@ -275,21 +272,21 @@ export default function WalletHub() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           
           {/* Main Available Balance */}
-          <div className="sm:col-span-3 bg-gradient-to-r from-[#0d1627] via-[#101e38] to-[#0d1627] border border-neon-mint/30 rounded-3xl p-6 relative overflow-hidden shadow-[0_10px_35px_rgba(0,0,0,0.5)]">
+          <div className="sm:col-span-3 bg-gradient-to-r from-[#0d1627] via-[#101e38] to-[#0d1627] border border-neon-mint/30 rounded-3xl p-4 sm:p-6 relative overflow-hidden shadow-[0_10px_35px_rgba(0,0,0,0.5)]">
             <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
               <CreditCard size={140} />
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 sm:gap-6 relative z-10">
               <div>
                 <span className="text-xs uppercase font-bold tracking-widest text-gray-400">Total Available Balance</span>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-2xl sm:text-3xl font-black text-neon-mint">₹</span>
-                  <span className="text-3xl sm:text-5xl font-black tracking-tight text-white font-mono">
+                  <span data-testid="wallet-total-balance" className="text-3xl sm:text-5xl font-black tracking-tight text-white font-mono">
                     {balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex items-center gap-4 mt-3 text-xs text-white/60">
+                <div className="flex items-center gap-2.5 sm:gap-4 mt-3 text-xs text-white/60 flex-wrap">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
                     <span>Deposit: <strong className="text-white">₹{(balance * 0.6).toFixed(2)}</strong></span>
@@ -305,11 +302,11 @@ export default function WalletHub() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-3 shrink-0">
+              {/* Action Buttons: Stack on mobile, inline on desktop */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto shrink-0">
                 <button
                   onClick={() => setIsDepositOpen(true)}
-                  className="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-neon-mint to-emerald-400 hover:from-emerald-400 hover:to-neon-mint text-deep-ocean font-black text-sm rounded-2xl shadow-[0_0_20px_rgba(0,255,163,0.4)] active:scale-95 transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-neon-mint to-emerald-400 hover:from-emerald-400 hover:to-neon-mint text-deep-ocean font-black text-sm rounded-2xl shadow-[0_0_20px_rgba(0,255,163,0.4)] active:scale-95 transition-all cursor-pointer min-h-[44px]"
                 >
                   <ArrowDownLeft size={20} strokeWidth={3} />
                   <span>INSTANT DEPOSIT</span>
@@ -317,7 +314,7 @@ export default function WalletHub() {
 
                 <button
                   onClick={() => setIsWithdrawOpen(true)}
-                  className="flex items-center gap-2 px-5 py-3.5 bg-white/10 hover:bg-white/15 border border-white/15 text-white font-black text-sm rounded-2xl active:scale-95 transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-2 px-5 py-3.5 bg-white/10 hover:bg-white/15 border border-white/15 text-white font-black text-sm rounded-2xl active:scale-95 transition-all cursor-pointer min-h-[44px]"
                 >
                   <ArrowUpRight size={20} strokeWidth={2.5} />
                   <span>WITHDRAW</span>
@@ -335,6 +332,7 @@ export default function WalletHub() {
             {/* Tabs */}
             <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
               <button
+                data-testid="wallet-tab-transactions"
                 onClick={() => setActiveTab('transactions')}
                 className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
                   activeTab === 'transactions'
@@ -350,6 +348,7 @@ export default function WalletHub() {
               </button>
 
               <button
+                data-testid="wallet-tab-wagers"
                 onClick={() => setActiveTab('wagers')}
                 className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
                   activeTab === 'wagers'
@@ -476,6 +475,7 @@ export default function WalletHub() {
                   return (
                     <div
                       key={tx.id}
+                      data-testid="wallet-tx-item"
                       onClick={() => setSelectedTx(tx)}
                       className="p-4 sm:p-5 flex items-center justify-between hover:bg-white/[0.03] transition-colors cursor-pointer group"
                     >

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
+import WinLossCelebration from '@/components/games/WinLossCelebration';
 
 const TIERS = [
   { id: 'Silver', name: 'Silver Ticket', price: 50, color: 'from-gray-300 to-gray-500', maxWin: '5,000' },
@@ -25,6 +26,7 @@ export default function ScratchGame() {
   const [payout, setPayout] = useState<number>(0); // Store payout from buy, but don't add to balance yet
   const [isRevealed, setIsRevealed] = useState(false);
   const [buying, setBuying] = useState(false);
+  const [celebration, setCelebration] = useState<{ type: 'win' | 'loss'; amount: number; multiplier?: string } | null>(null);
 
   // Canvas refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -100,6 +102,13 @@ export default function ScratchGame() {
       const ctx = canvasRef.current.getContext('2d');
       if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     }
+
+    confetti({
+      particleCount: 50,
+      spread: 80,
+      origin: { y: 0.5 },
+      colors: ['#fde047', '#e5e7eb', '#38bdf8']
+    });
     
     finalizeReveal();
   };
@@ -110,8 +119,20 @@ export default function ScratchGame() {
     socket?.emit('scratch:reveal', { userId: 'guest', ticketId }, (res: any) => {
       if (res.success) {
         setBalance(Number(res.data.newBalance) / 100);
+        const currentTierObj = TIERS.find(t => t.id === activeTier);
+        const tierCost = currentTierObj ? currentTierObj.price : 50;
         if (res.data.payout > 0) {
           triggerWin(res.data.payout);
+          setCelebration({
+            type: 'win',
+            amount: res.data.payout,
+            multiplier: `${(res.data.payout / tierCost).toFixed(1)}x`
+          });
+        } else {
+          setCelebration({
+            type: 'loss',
+            amount: tierCost
+          });
         }
       }
     });
@@ -119,13 +140,15 @@ export default function ScratchGame() {
 
   const triggerWin = (amount: number) => {
     toast.success(`You won ₹${amount}!`, { icon: '🎉' });
-    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
   };
 
   // Canvas Drawing Handlers
   const handlePointerDown = () => { isDrawing.current = true; };
   const handlePointerUp = () => { isDrawing.current = false; checkScratchedArea(); };
   
+  const lastSparkleTime = useRef(0);
+
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing.current || isRevealed || !canvasRef.current) return;
     
@@ -138,9 +161,24 @@ export default function ScratchGame() {
     const y = e.clientY - rect.top;
 
     ctx.globalCompositeOperation = 'destination-out';
+    // Scratch with realistic coin-edge jitter
     ctx.beginPath();
-    ctx.arc(x, y, 20, 0, Math.PI * 2);
+    ctx.arc(x + (Math.random() * 4 - 2), y + (Math.random() * 4 - 2), 24, 0, Math.PI * 2);
     ctx.fill();
+
+    // Glitter sparkle throttle (every 120ms)
+    const now = Date.now();
+    if (now - lastSparkleTime.current > 120) {
+      lastSparkleTime.current = now;
+      confetti({
+        particleCount: 3,
+        spread: 30,
+        origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight },
+        colors: ['#fde047', '#e5e7eb', '#93c5fd'],
+        scalar: 0.5,
+        ticks: 40
+      });
+    }
   };
 
   const checkScratchedArea = () => {
@@ -288,6 +326,11 @@ export default function ScratchGame() {
           </motion.div>
         )}
       </div>
+
+      <WinLossCelebration
+        celebration={celebration}
+        onComplete={() => setCelebration(null)}
+      />
     </main>
   );
 }

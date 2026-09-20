@@ -60,7 +60,7 @@ export default function GameCard({
       }}
     >
       {/* 1. IMAGE CONTAINER (4:5 Aspect Ratio) */}
-      <Link href={`/games/${game.slug}`} data-slug={game.slug} className="block relative aspect-[4/5] overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950">
+      <Link href={`/games/${game.slug}`} data-slug={game.slug} data-testid={`game-card-${game.slug}`} className="block relative aspect-[4/5] overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950">
         {/* Loading Skeleton */}
         {!imageLoaded && (
           <div className="absolute inset-0 z-10 bg-slate-800/90 animate-pulse flex flex-col justify-between p-4">
@@ -154,12 +154,12 @@ export default function GameCard({
       </Link>
 
       {/* CARD DETAILS FOOTER: title → provider/type → min bet → status → Play */}
-      <div className="p-3.5 bg-slate-900/90 border-t border-white/5 flex flex-col justify-between flex-1">
+      <div className="p-2.5 sm:p-3.5 bg-slate-900/90 border-t border-white/5 flex flex-col justify-between flex-1">
         <div>
           {/* 4. PROVIDER / TYPE */}
-          <div className="flex items-center justify-between gap-1 mb-1">
+          <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-1">
             <span 
-              className="text-[10px] font-black uppercase tracking-wider truncate"
+              className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider truncate"
               style={{ color: artwork.themeColor }}
             >
               {game.provider || artwork.provider} • {game.variant || artwork.variant}
@@ -168,44 +168,44 @@ export default function GameCard({
 
           {/* 3. TITLE */}
           <Link href={`/games/${game.slug}`}>
-            <h3 className="text-white font-black text-sm md:text-base leading-tight truncate group-hover:text-neon-mint transition-colors">
+            <h3 className="text-white font-black text-xs sm:text-sm md:text-base leading-tight truncate group-hover:text-neon-mint transition-colors">
               {game.name || artwork.name}
             </h3>
           </Link>
         </div>
 
         {/* 5. MIN BET & 6. STATUS */}
-        <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] font-semibold">
+        <div className="mt-2 sm:mt-3 pt-1.5 sm:pt-2 border-t border-white/10 flex items-center justify-between gap-1 text-[10px] sm:text-[11px] font-semibold flex-wrap">
           {/* Min Bet */}
-          <div className="flex items-center gap-1 text-slate-300">
+          <div className="flex items-center gap-1 text-slate-300 shrink-0">
             <span className="text-slate-500 font-medium">Min:</span>
             <span className="text-white font-bold">{minBetDisplay}</span>
           </div>
 
           {/* Status Indicator */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 shrink-0">
             {game.isLive ? (
-              <span className="flex items-center gap-1 text-[10px] font-extrabold text-red-400 bg-red-950/60 px-2 py-0.5 rounded border border-red-800/40">
+              <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold text-red-400 bg-red-950/60 px-1.5 sm:px-2 py-0.5 rounded border border-red-800/40">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" />
-                Live 24/7
+                Live
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-[10px] font-extrabold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
+              <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold text-emerald-400 bg-emerald-950/60 px-1.5 sm:px-2 py-0.5 rounded border border-emerald-800/40">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 Online
               </span>
             )}
-            <span className="text-[10px] font-bold text-slate-400 bg-black/40 px-1.5 py-0.5 rounded">
+            <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 bg-black/40 px-1 sm:px-1.5 py-0.5 rounded">
               {artwork.rtp}
             </span>
           </div>
         </div>
 
         {/* 8. QUICK PLAY ACTION BUTTON */}
-        <Link href={`/games/${game.slug}`} className="mt-2.5 block">
+        <Link href={`/games/${game.slug}`} className="mt-2 sm:mt-2.5 block">
           <button 
             type="button"
-            className="w-full py-1.5 rounded-lg font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer text-deep-ocean shadow-md hover:brightness-110 active:scale-98"
+            className="w-full py-2 sm:py-1.5 min-h-[36px] rounded-lg font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer text-deep-ocean shadow-md hover:brightness-110 active:scale-98"
             style={{ backgroundColor: artwork.themeColor }}
           >
             <Play fill="currentColor" size={13} className="ml-0.5" />

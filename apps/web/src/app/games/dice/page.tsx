@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
 
 import UniversalBetPanel from '@/components/games/UniversalBetPanel';
+import WinLossCelebration from '@/components/games/WinLossCelebration';
 
 export default function DiceGame() {
   const { balance, fetchBalance, userId } = useWalletStore();
@@ -30,6 +31,14 @@ export default function DiceGame() {
   const [selectedMarket, setSelectedMarket] = useState<string>('BIG');
   const [selectedOdds, setSelectedOdds] = useState<number>(2.0);
   const [myBets, setMyBets] = useState<Record<string, number>>({});
+
+  // Win / Loss Celebration
+  const [celebration, setCelebration] = useState<{
+    status: 'IDLE' | 'WON' | 'LOST';
+    amount: number;
+    multiplier?: number;
+    message?: string;
+  }>({ status: 'IDLE', amount: 0 });
 
   useEffect(() => {
     const s = io('http://localhost:4000', { auth: { token: null } });
@@ -65,9 +74,46 @@ export default function DiceGame() {
       
       const sum = data.diceResult.reduce((a: number, b: number) => a + b, 0);
       const isTriple = data.diceResult[0] === data.diceResult[1] && data.diceResult[1] === data.diceResult[2];
+      const isSmall = sum >= 4 && sum <= 10;
+      const isBig = sum >= 11 && sum <= 17;
       
       // Update history
       setHistory(prev => [{ diceResult: data.diceResult, resultTime: new Date() }, ...prev].slice(0, 15));
+
+      // Calculate win/loss
+      const totalBet = Object.values(myBets).reduce((a, b) => a + b, 0);
+      let wonAmount = 0;
+      let multiplier = 2;
+
+      if (isSmall && myBets['SMALL']) {
+        wonAmount += myBets['SMALL'] * 2.0;
+      }
+      if (isBig && myBets['BIG']) {
+        wonAmount += myBets['BIG'] * 2.0;
+      }
+      if (isTriple && myBets['TRIPLE_ANY']) {
+        wonAmount += myBets['TRIPLE_ANY'] * 30.0;
+        multiplier = 30;
+      }
+      if (myBets[`SUM_${sum}`]) {
+        wonAmount += myBets[`SUM_${sum}`] * 12.0;
+        multiplier = 12;
+      }
+
+      if (wonAmount > 0) {
+        setCelebration({
+          status: 'WON',
+          amount: wonAmount,
+          multiplier,
+          message: `Dice Total: ${sum} • YOU WON!`
+        });
+      } else if (totalBet > 0) {
+        setCelebration({
+          status: 'LOST',
+          amount: totalBet,
+          message: `Dice Total: ${sum} • Bet Lost`
+        });
+      }
       
       // We refetch balance after 2s to allow settlement
       setTimeout(() => fetchBalance(), 2000);
@@ -89,7 +135,7 @@ export default function DiceGame() {
     return () => clearInterval(interval);
   }, [gameState]);
 
-  const placeBet = (market: string) => {
+  const placeBet = (market: string, chipAmount: number = 100) => {
     if (gameState.status !== 'OPEN') {
       toast.error("Bets are currently locked!");
       return;
@@ -98,13 +144,13 @@ export default function DiceGame() {
     if (!socket) return;
     
     const userId = "guest"; // Replace with real auth id
-    socket.emit('dice:bet', { userId, room: '1min', market, amount: selectedChips }, (res: any) => {
+    socket.emit('dice:bet', { userId, room: '1min', market, amount: chipAmount }, (res: any) => {
       if (res.success) {
         setMyBets(prev => ({
           ...prev,
-          [market]: (prev[market] || 0) + selectedChips
+          [market]: (prev[market] || 0) + chipAmount
         }));
-        toast.success(`Placed ₹${selectedChips} on ${market.replace('_', ' ')}`);
+        toast.success(`Placed ₹${chipAmount} on ${market.replace('_', ' ')}`);
         fetchBalance(); // Immediate deduct
       } else {
         toast.error(res.message);
@@ -342,8 +388,17 @@ export default function DiceGame() {
                 });
               }}
             />
-         </div>
-      </div>
+          </div>
+       </div>
+
+      {/* Win & Loss Animation Overlay */}
+      <WinLossCelebration
+        status={celebration.status}
+        amount={celebration.amount}
+        multiplier={celebration.multiplier}
+        message={celebration.message}
+        onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
+      />
 
     </main>
   );

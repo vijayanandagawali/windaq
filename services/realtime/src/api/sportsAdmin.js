@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const mockProvider = require('../services/sports/MockSportsProvider');
 const wagerService = require('../services/wagerService');
+const { requireRole } = require('../middleware/AdminRBAC');
 
-/**
- * ADMIN API: Requires RBAC checks (omitted for brevity)
- */
+// Enforce strict RBAC: Only SUPER_ADMIN, RISK, or FINANCE can access sports administration
+router.use(requireRole(['SUPER_ADMIN', 'RISK', 'FINANCE']));
 
 // 1. Get live events
 router.get('/events', async (req, res) => {

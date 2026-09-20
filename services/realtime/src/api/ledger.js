@@ -11,7 +11,7 @@ const { getWallet, ensureUserAndWallet } = require('../services/walletService');
  */
 router.get('/balance', async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || req.user?.userId || 'sbx-usr-normal-001';
+    const userId = req.user?.userId || req.headers['x-user-id'] || 'sbx-usr-normal-001';
     const wallet = await getWallet(prisma, userId);
 
     const totalPaise = BigInt(wallet.balance);
@@ -45,7 +45,7 @@ router.get('/balance', async (req, res) => {
  */
 router.get('/transactions', async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || req.user?.userId || 'sbx-usr-normal-001';
+    const userId = req.user?.userId || req.headers['x-user-id'] || 'sbx-usr-normal-001';
     const { type, status, dateRange, limit = 50, offset = 0 } = req.query;
 
     const wallet = await getWallet(prisma, userId);

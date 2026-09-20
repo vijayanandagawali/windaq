@@ -47,17 +47,18 @@ export default function VipClubModal() {
           initial={{ scale: 0.85, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.85, opacity: 0, y: 20 }}
-          className="relative z-10 w-full max-w-sm bg-gradient-to-b from-[#19152b] via-[#121626] to-[#0a0d18] border border-purple-500/40 rounded-3xl p-5 shadow-[0_0_50px_rgba(168,85,247,0.25)] text-left"
+          className="relative z-10 w-full max-w-sm max-h-[88dvh] overflow-y-auto overscroll-contain pb-safe bg-gradient-to-b from-[#19152b] via-[#121626] to-[#0a0d18] border border-purple-500/40 rounded-3xl p-5 shadow-[0_0_50px_rgba(168,85,247,0.25)] text-left"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 sticky -top-5 bg-[#19152b]/95 backdrop-blur-md pt-1 pb-2 z-10">
             <div className="flex items-center gap-2">
               <span className="text-xl">👑</span>
               <h3 className="text-white font-black text-base tracking-wide">WINDAQ VIP LOYALTY CLUB</h3>
             </div>
             <button 
               onClick={() => setVipOpen(false)}
-              className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white"
+              className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white cursor-pointer"
+              aria-label="Close VIP Modal"
             >
               <X size={18} />
             </button>

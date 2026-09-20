@@ -1,3 +1,4 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 require('dotenv').config();
 require('./src/utils/logger'); // Apply global log redaction
 const express = require('express');
@@ -29,6 +30,8 @@ const wagerRouter = require('./src/api/wager');
 const sportsAdminRouter = require('./src/api/sportsAdmin');
 const fairnessRouter = require('./src/api/fairness');
 const adminRouter = require('./src/api/admin');
+const adminGamesRouter = require('./src/api/adminGames');
+const adminGameConfigService = require('./src/services/adminGameConfigService');
 const complianceRouter = require('./src/api/compliance');
 const paymentsRouter = require('./src/api/payments');
 const bonusRouter = require('./src/api/bonus');
@@ -51,8 +54,8 @@ const io = new Server(server, {
 app.use(helmet()); // Sets HSTS, X-Frame-Options, X-Content-Type-Options, etc.
 app.use(cors({
   origin: process.env.FRONTEND_URL || '*', // Restrict in production
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id']
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'x-admin-user-id', 'x-mfa-token']
 }));
 app.use(express.json({ limit: '10kb' })); // Output encoding / Body limit to prevent payload DoS
 
@@ -99,6 +102,7 @@ app.use('/api/ledger', requireAuth, ledgerRouter);
 app.use('/api/wager', requireAuth, wagerRouter);
 app.use('/api/sports/admin', requireAuth, sportsAdminRouter);
 app.use('/api/fairness', fairnessRouter);
+app.use('/api/admin/games', requireAuth, adminGamesRouter);
 app.use('/api/admin', requireAuth, adminRouter);
 app.use('/api/compliance', complianceRouter);
 app.use('/api/payments', strictLimiter, paymentsRouter); // Intentionally allowing public mock webhook for demo, but rate-limited
@@ -109,6 +113,9 @@ const PORT = process.env.PORT || 4000;
 
 async function startServer() {
   try {
+    // 0. Initialize Admin Game Config Service
+    await adminGameConfigService.initialize();
+
     // 1. Connect to Redis (High-speed cache)
     await connectRedis();
     

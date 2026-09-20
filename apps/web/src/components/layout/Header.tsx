@@ -1,17 +1,19 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { ShieldCheck, Plus, Bell, Crown, User, LogOut, ChevronLeft, Flame, Rocket, Video, Dices, Trophy, Gift } from 'lucide-react';
+import { ShieldCheck, Plus, Bell, Crown, User, LogOut, ChevronLeft, Flame, Rocket, Video, Dices, Trophy, Gift, Volume2, VolumeX } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useWalletStore } from '@/store/walletStore';
 import { useAuthStore } from '@/store/authStore';
+import { useAudioStore } from '@/store/audioStore';
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { balance, vipTier, setDepositing, setVipOpen, setNotifOpen, fetchBalance } = useWalletStore();
   const { isAuthenticated, user, isGuest, logout, openAuthModal } = useAuthStore();
+  const { soundEnabled, volume, setControlsOpen } = useAudioStore();
 
   const isHome = pathname === '/';
 
@@ -53,8 +55,8 @@ export default function Header() {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-lg sm:text-xl font-black text-white leading-none tracking-tight brand-title">WINDAQ</span>
-              <span className="text-[10px] font-bold text-neon-mint">विन डैक</span>
+              <span className="text-base sm:text-xl font-black text-white leading-none tracking-tight brand-title">WINDAQ</span>
+              <span className="text-[9px] sm:text-[10px] font-bold text-neon-mint hidden min-[340px]:inline">विन डैक</span>
             </div>
             <div className="flex items-center gap-1 text-[8px] sm:text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">
               <ShieldCheck size={10} className="text-neon-mint" />
@@ -93,11 +95,11 @@ export default function Header() {
       </div>
 
       {/* Header Right Controls */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5">
-        {/* VIP Tier Badge (Mobile/Tablet) */}
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        {/* VIP Tier Badge (Mobile/Tablet - hidden below 400px to prevent overflow) */}
         <button
           onClick={() => setVipOpen(true)}
-          className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 hover:scale-105 transition-transform cursor-pointer ${
+          className={`hidden min-[400px]:flex px-2 py-0.5 rounded-full text-[10px] font-extrabold items-center gap-1 hover:scale-105 transition-transform cursor-pointer ${
             isGuest
               ? 'bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 shadow-[0_0_8px_rgba(234,179,8,0.2)]'
               : 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-yellow-500/40 text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.2)]'
@@ -119,10 +121,27 @@ export default function Header() {
           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-neon-mint rounded-full shadow-[0_0_6px_rgba(0,255,163,1)] animate-pulse"></span>
         </button>
 
+        {/* Sound & Haptics Control Button */}
+        <button
+          onClick={() => setControlsOpen(true)}
+          data-testid="header-sound-btn"
+          role="button"
+          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center relative hover:scale-105 transition-all cursor-pointer ${
+            soundEnabled
+              ? 'bg-neon-mint/10 border-neon-mint/30 text-neon-mint shadow-[0_0_8px_rgba(0,255,163,0.2)]'
+              : 'bg-red-500/10 border-red-500/30 text-red-400'
+          }`}
+          title={soundEnabled ? `Sound: ON (${Math.round(volume * 100)}%) - Click for settings` : 'Sound: MUTED - Click to configure'}
+          aria-label={soundEnabled ? 'Sound Settings (Active)' : 'Sound Settings (Muted)'}
+        >
+          {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+        </button>
+
         {!isAuthenticated ? (
           /* Visitor State: Login / Register */
           <div className="flex items-center gap-1 sm:gap-2">
             <button
+              data-testid="header-login-btn"
               onClick={() => openAuthModal('LOGIN')}
               className="px-2.5 sm:px-3 py-1 bg-white/5 border border-white/15 text-white text-[11px] sm:text-xs font-bold rounded-xl hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
             >
@@ -130,6 +149,7 @@ export default function Header() {
             </button>
 
             <button
+              data-testid="header-register-btn"
               onClick={() => openAuthModal('REGISTER')}
               className="px-3 sm:px-3.5 py-1 bg-neon-mint text-deep-ocean text-[11px] sm:text-xs font-black rounded-xl shadow-[0_0_10px_rgba(0,255,163,0.3)] hover:bg-[#1ed49c] active:scale-95 transition-all cursor-pointer"
             >
@@ -141,6 +161,7 @@ export default function Header() {
           <div className="flex items-center gap-1 sm:gap-1.5">
             <Link
               href="/profile"
+              data-testid="header-profile-link"
               className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white/5 border border-white/10 hover:border-white/25 transition-all"
               title="My Profile"
             >
@@ -153,9 +174,11 @@ export default function Header() {
             </Link>
 
             <button
+              data-testid="header-logout-btn"
               onClick={() => logout()}
               className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-red-400 hover:border-red-400/30 transition-colors cursor-pointer"
               title="Log Out"
+              aria-label="Log Out"
             >
               <LogOut size={13} />
             </button>

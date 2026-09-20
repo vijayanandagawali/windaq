@@ -5,12 +5,18 @@ import { WifiOff, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
+import { useWalletStore } from '@/store/walletStore';
+
 export default function NetworkWatcher() {
-  const [isOffline, setIsOffline] = useState(() => {
-    return typeof navigator !== 'undefined' ? !navigator.onLine : false;
-  });
+  const [mounted, setMounted] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    if (typeof navigator !== 'undefined') {
+      setIsOffline(!navigator.onLine);
+    }
+
     const handleOffline = () => {
       setIsOffline(true);
       toast.error('Network disconnected. Financial actions disabled.', { id: 'network-status', duration: Infinity });
@@ -18,6 +24,8 @@ export default function NetworkWatcher() {
 
     const handleOnline = () => {
       setIsOffline(false);
+      useWalletStore.getState().fetchBalance();
+      window.dispatchEvent(new CustomEvent('windaq:online_resume', { detail: { timestamp: Date.now() } }));
       toast.success('Network restored. Reconnected to WinDaq.', { id: 'network-status', duration: 4000 });
     };
 
@@ -29,6 +37,8 @@ export default function NetworkWatcher() {
       window.removeEventListener('online', handleOnline);
     };
   }, []);
+
+  if (!mounted) return null;
 
   return (
     <AnimatePresence>

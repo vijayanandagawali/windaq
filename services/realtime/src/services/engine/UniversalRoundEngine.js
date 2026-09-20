@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const adminGameConfigService = require('../adminGameConfigService');
 
 /**
  * Universal Game Round Engine Lifecycle Phases
@@ -37,6 +38,16 @@ class UniversalRoundEngine {
     // Configurable phase durations
     this.phaseDurations = { ...DEFAULT_PHASE_DURATIONS, ...customDurations };
 
+    // Admin Governance & Versioned Payout Snapshot
+    this.snapshottedPayoutVersion = 1;
+    this.snapshottedPayoutRules = null;
+    this.minBet = 10;
+    this.maxBet = 50000;
+    this.isMaintenance = false;
+    this.maintenanceMessage = null;
+    this.isEnabled = true;
+    this.dealerSpeed = 1.0;
+
     // Unique Round State
     this.roundId = this.generateUniqueRoundId();
     this.currentPhase = UNIVERSAL_PHASES.CREATED;
@@ -60,6 +71,40 @@ class UniversalRoundEngine {
     this.history = [];
     this.isRunning = false;
     this.animationState = null;
+
+    // Subscribe to live admin configuration updates
+    this.unsubscribeAdminConfig = adminGameConfigService.subscribe((event, data) => {
+      if (data && data.gameSlug === this.gameId) {
+        if (event === 'CONFIG_UPDATED') {
+          if (data.changes.isMaintenance !== undefined) {
+            this.isMaintenance = data.changes.isMaintenance;
+            this.maintenanceMessage = data.config.maintenanceMessage;
+          }
+          if (data.changes.isEnabled !== undefined) {
+            this.isEnabled = data.changes.isEnabled;
+          }
+          if (data.changes.minBet !== undefined) {
+            this.minBet = data.changes.minBet;
+          }
+          if (data.changes.maxBet !== undefined) {
+            this.maxBet = data.changes.maxBet;
+          }
+          if (data.changes.dealerSpeed !== undefined) {
+            this.dealerSpeed = data.changes.dealerSpeed;
+          }
+          this.emitEvent('round:status_update', {
+            gameId: this.gameId,
+            room: this.room,
+            isMaintenance: this.isMaintenance,
+            maintenanceMessage: this.maintenanceMessage,
+            isEnabled: this.isEnabled,
+            minBet: this.minBet,
+            maxBet: this.maxBet,
+            dealerSpeed: this.dealerSpeed
+          });
+        }
+      }
+    });
   }
 
   /**
@@ -104,6 +149,13 @@ class UniversalRoundEngine {
       phaseEndsAt: this.phaseEndsAt,
       phaseTimeLeft: Math.max(0, Math.ceil((this.phaseEndsAt - now) / 1000)),
       totalPhaseDuration: this.totalPhaseDuration,
+      payoutVersion: this.snapshottedPayoutVersion,
+      minBet: this.minBet,
+      maxBet: this.maxBet,
+      isMaintenance: this.isMaintenance,
+      maintenanceMessage: this.maintenanceMessage,
+      isEnabled: this.isEnabled,
+      dealerSpeed: this.dealerSpeed,
       animationState: this.animationState,
       serverSeedHash: this.serverSeedHash,
       serverSeed: (this.currentPhase === UNIVERSAL_PHASES.RESULT || 
@@ -149,11 +201,39 @@ class UniversalRoundEngine {
     this.clientSeed = '';
     this.currentResult = null;
 
+    // Snapshot authoritative Admin Game Control state for this round
+    const adminConfig = adminGameConfigService.getGameConfig(this.gameId);
+    if (adminConfig) {
+      this.snapshottedPayoutVersion = adminConfig.activePayoutVersion || 1;
+      this.snapshottedPayoutRules = adminGameConfigService.getPayoutRules(this.gameId, this.snapshottedPayoutVersion);
+      this.minBet = adminConfig.minBet || 10;
+      this.maxBet = adminConfig.maxBet || 50000;
+      this.isMaintenance = adminConfig.isMaintenance || false;
+      this.maintenanceMessage = adminConfig.maintenanceMessage;
+      this.isEnabled = adminConfig.isEnabled ?? true;
+      this.dealerSpeed = adminConfig.dealerSpeed || 1.0;
+
+      // Adjust durations according to betting countdown and dealer speed
+      const speedFactor = 1 / (this.dealerSpeed || 1.0);
+      if (adminConfig.bettingDuration) {
+        this.phaseDurations.BETTING_OPEN = Math.max(3, Math.round(adminConfig.bettingDuration * speedFactor));
+      }
+      this.phaseDurations.PLAYING = Math.max(1, Math.round(4 * speedFactor));
+      this.phaseDurations.RESULT = Math.max(1, Math.round(3 * speedFactor));
+      this.phaseDurations.SETTLEMENT = Math.max(1, Math.round(3 * speedFactor));
+      this.phaseDurations.NEXT_ROUND = Math.max(1, Math.round(2 * speedFactor));
+    }
+
     await this.onCreateRound(this.roundId);
     this.emitEvent('round:created', {
       roundId: this.roundId,
       gameId: this.gameId,
       room: this.room,
+      payoutVersion: this.snapshottedPayoutVersion,
+      minBet: this.minBet,
+      maxBet: this.maxBet,
+      isMaintenance: this.isMaintenance,
+      dealerSpeed: this.dealerSpeed,
       serverSeedHash: this.serverSeedHash,
       serverTime: Date.now()
     });
@@ -228,6 +308,7 @@ class UniversalRoundEngine {
    * Checks if betting is currently open (authoritative server check)
    */
   isBettingAcceptable() {
+    if (this.isMaintenance || !this.isEnabled) return false;
     return this.currentPhase === UNIVERSAL_PHASES.BETTING_OPEN && Date.now() < this.phaseEndsAt;
   }
 
