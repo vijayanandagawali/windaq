@@ -31,6 +31,7 @@ import { useWalletStore } from '@/store/walletStore';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/config';
 import GameCard from '@/components/games/GameCard';
+import { DEFAULT_CATALOG } from '@/lib/defaultCatalog';
 import HeroBanner from '@/components/games/HeroBanner';
 import { getGameArtwork, LOBBY_CATEGORIES } from '@/lib/gameArtwork';
 
@@ -60,13 +61,13 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 export default function GameHubPage() {
-  const [catalog, setCatalog] = useState<{ categories: any[]; hero: any; favorites: string[] } | null>(null);
+  const [catalog, setCatalog] = useState<{ categories: any[]; hero: any; favorites: string[] }>(DEFAULT_CATALOG);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [providerFilter, setProviderFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'featured' | 'rtp' | 'minBet' | 'az'>('featured');
   const [recentSlugs, setRecentSlugs] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const { userId } = useWalletStore();
   const activeUserId = userId || 'sbx-usr-normal-001';

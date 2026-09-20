@@ -5,10 +5,11 @@
 import { io, Socket } from 'socket.io-client';
 
 export const API_BASE_URL = 
-  process.env.NEXT_PUBLIC_API_URL || 
-  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? `${window.location.origin}`
-    : 'http://localhost:4000');
+  typeof window !== 'undefined'
+    ? (window.location.hostname === 'localhost' && process.env.NEXT_PUBLIC_API_URL?.includes('localhost')
+        ? (process.env.NEXT_PUBLIC_API_URL || '')
+        : '')
+    : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
 
 export const WS_BASE_URL = 
   process.env.NEXT_PUBLIC_WS_URL || 
@@ -18,7 +19,11 @@ export const WS_BASE_URL =
 
 export function getApiUrl(endpoint: string): string {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  return `${API_BASE_URL}${cleanEndpoint}`;
+  // In any browser environment on a live domain, always use relative path so requests hit the same host!
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    return cleanEndpoint;
+  }
+  return API_BASE_URL ? `${API_BASE_URL}${cleanEndpoint}` : cleanEndpoint;
 }
 
 export function createGameSocket(path = '', options = {}): Socket {
