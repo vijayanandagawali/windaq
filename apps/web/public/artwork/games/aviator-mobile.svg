@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="600" height="600" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14070e"/>
+      <stop offset="50%" stop-color="#2b0819"/>
+      <stop offset="100%" stop-color="#420d23"/>
+    </linearGradient>
+    <linearGradient id="curveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF3366" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#FF3366" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF176"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+    <radialGradient id="neonCenterGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF3366" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#FF3366" stop-opacity="0.1"/>
+    </radialGradient>
+    <radialGradient id="ballGold" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFF59D"/>
+      <stop offset="50%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F57F17"/>
+    </radialGradient>
+    <radialGradient id="ballRed" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF8A80"/>
+      <stop offset="50%" stop-color="#E53935"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
+    </radialGradient>
+    <radialGradient id="ballGreen" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#B9F6CA"/>
+      <stop offset="50%" stop-color="#00E676"/>
+      <stop offset="100%" stop-color="#00A854"/>
+    </radialGradient>
+    <radialGradient id="ballBlue" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#80D8FF"/>
+      <stop offset="50%" stop-color="#00B0FF"/>
+      <stop offset="100%" stop-color="#0091EA"/>
+    </radialGradient>
+    <radialGradient id="ballPurple" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#EA80FC"/>
+      <stop offset="50%" stop-color="#AA00FF"/>
+      <stop offset="100%" stop-color="#6A0080"/>
+    </radialGradient>
+
+    <!-- Filters -->
+    <filter id="dropGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1000" height="1000" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle Ambient Glow -->
+  <circle cx="500" cy="500" r="450" fill="#FF3366" opacity="0.08" filter="url(#dropGlow)"/>
+
+  <!-- Geometric Grid Texture -->
+  <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
+    <line x1="100" y1="0" x2="100" y2="1000"/>
+    <line x1="300" y1="0" x2="300" y2="1000"/>
+    <line x1="500" y1="0" x2="500" y2="1000"/>
+    <line x1="700" y1="0" x2="700" y2="1000"/>
+    <line x1="900" y1="0" x2="900" y2="1000"/>
+    <line x1="0" y1="200" x2="1000" y2="200"/>
+    <line x1="0" y1="400" x2="1000" y2="400"/>
+    <line x1="0" y1="600" x2="1000" y2="600"/>
+    <line x1="0" y1="800" x2="1000" y2="800"/>
+  </g>
+
+  <!-- Game Specific Artwork Core -->
+  
+      <!-- Radar grid -->
+      <g opacity="0.25" stroke="#FF3366" stroke-width="1.5" stroke-dasharray="6,6">
+        <circle cx="500" cy="500" r="150" fill="none"/>
+        <circle cx="500" cy="500" r="300" fill="none"/>
+        <circle cx="500" cy="500" r="450" fill="none"/>
+        <line x1="50" y1="500" x2="950" y2="500"/>
+        <line x1="500" y1="50" x2="500" y2="950"/>
+      </g>
+      <!-- Exponential curve -->
+      <path d="M 100 800 Q 400 780 600 500 T 880 220" fill="none" stroke="#FF3366" stroke-width="8" stroke-linecap="round"/>
+      <path d="M 100 800 Q 400 780 600 500 T 880 220 L 880 800 Z" fill="url(#curveGlow)" opacity="0.25"/>
+      <!-- Jet Plane -->
+      <g transform="translate(820, 200) rotate(-35) scale(1.6)">
+        <polygon points="0,-40 25,30 0,20 -25,30" fill="#FFFFFF"/>
+        <polygon points="0,-40 10,25 0,18 -10,25" fill="#FF3366"/>
+        <polygon points="0,20 15,40 0,35 -15,40" fill="#FF8C00"/>
+        <!-- Jet exhaust flame -->
+        <ellipse cx="0" cy="45" rx="8" ry="25" fill="#FFD700" opacity="0.8"/>
+        <ellipse cx="0" cy="48" rx="4" ry="15" fill="#FF3366" opacity="0.9"/>
+      </g>
+      <!-- Multiplier Pill -->
+      <g transform="translate(500, 380)">
+        <rect x="-140" y="-45" width="280" height="90" rx="45" fill="#FF3366" filter="url(#dropGlow)"/>
+        <text x="0" y="14" font-family="'Outfit', 'Inter', sans-serif" font-size="44" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">18.42x</text>
+      </g>
+    
+</svg>

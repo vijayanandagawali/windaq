@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, ArrowLeft, Construction } from 'lucide-react';
 import Link from 'next/link';
+import { getGameArtwork } from '@/lib/gameArtwork';
 
 export default function GameFallbackPage({ params }: { params: Promise<{ slug: string }> }) {
   const router = useRouter();
@@ -76,10 +77,18 @@ export default function GameFallbackPage({ params }: { params: Promise<{ slug: s
     );
   }
 
+  const artwork = getGameArtwork(slug);
+  const bgImage = (!game?.thumbnailUrl || game.thumbnailUrl.includes('unsplash.com')) ? artwork.heroImage : game.thumbnailUrl;
+
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center relative overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <img src={game.thumbnailUrl} alt={game.name} className="w-full h-full object-cover opacity-10 blur-xl scale-110" />
+        <img 
+          src={bgImage} 
+          alt={game.name} 
+          onError={(e) => { e.currentTarget.src = artwork.fallbackImage; }}
+          className="w-full h-full object-cover opacity-15 blur-xl scale-110" 
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-deep-ocean via-deep-ocean/90 to-transparent" />
       </div>
 

@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="600" height="600" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c0a29"/>
+      <stop offset="50%" stop-color="#2e0f45"/>
+      <stop offset="100%" stop-color="#451666"/>
+    </linearGradient>
+    <linearGradient id="curveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#9333EA" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#9333EA" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF176"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+    <radialGradient id="neonCenterGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#9333EA" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#9333EA" stop-opacity="0.1"/>
+    </radialGradient>
+    <radialGradient id="ballGold" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFF59D"/>
+      <stop offset="50%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F57F17"/>
+    </radialGradient>
+    <radialGradient id="ballRed" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF8A80"/>
+      <stop offset="50%" stop-color="#E53935"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
+    </radialGradient>
+    <radialGradient id="ballGreen" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#B9F6CA"/>
+      <stop offset="50%" stop-color="#00E676"/>
+      <stop offset="100%" stop-color="#00A854"/>
+    </radialGradient>
+    <radialGradient id="ballBlue" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#80D8FF"/>
+      <stop offset="50%" stop-color="#00B0FF"/>
+      <stop offset="100%" stop-color="#0091EA"/>
+    </radialGradient>
+    <radialGradient id="ballPurple" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#EA80FC"/>
+      <stop offset="50%" stop-color="#AA00FF"/>
+      <stop offset="100%" stop-color="#6A0080"/>
+    </radialGradient>
+
+    <!-- Filters -->
+    <filter id="dropGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1000" height="1000" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle Ambient Glow -->
+  <circle cx="500" cy="500" r="450" fill="#9333EA" opacity="0.08" filter="url(#dropGlow)"/>
+
+  <!-- Geometric Grid Texture -->
+  <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
+    <line x1="100" y1="0" x2="100" y2="1000"/>
+    <line x1="300" y1="0" x2="300" y2="1000"/>
+    <line x1="500" y1="0" x2="500" y2="1000"/>
+    <line x1="700" y1="0" x2="700" y2="1000"/>
+    <line x1="900" y1="0" x2="900" y2="1000"/>
+    <line x1="0" y1="200" x2="1000" y2="200"/>
+    <line x1="0" y1="400" x2="1000" y2="400"/>
+    <line x1="0" y1="600" x2="1000" y2="600"/>
+    <line x1="0" y1="800" x2="1000" y2="800"/>
+  </g>
+
+  <!-- Game Specific Artwork Core -->
+  
+      <!-- Andar Bahar Split Table -->
+      <g transform="translate(500, 480)">
+        <!-- Center Joker Card -->
+        <g transform="translate(0, -90)">
+          <rect x="-90" y="-135" width="180" height="270" rx="14" fill="#FFFFFF" stroke="#F59E0B" stroke-width="6" filter="url(#dropGlow)"/>
+          <text x="-65" y="-90" font-family="'Outfit', sans-serif" font-size="34" font-weight="900" fill="#E11D48">K</text>
+          <text x="-65" y="-55" font-family="'Outfit', sans-serif" font-size="30" fill="#E11D48">♥</text>
+          <text x="0" y="25" font-family="'Outfit', sans-serif" font-size="70" fill="#E11D48" text-anchor="middle">♥</text>
+          <rect x="-70" y="80" width="140" height="26" rx="13" fill="#F59E0B"/>
+          <text x="0" y="98" font-family="'Outfit', sans-serif" font-size="16" font-weight="900" fill="#1a0a24" text-anchor="middle">JOKER</text>
+        </g>
+
+        <!-- Andar Box (Left - Blue) -->
+        <g transform="translate(-230, 140)">
+          <rect x="-140" y="-70" width="280" height="140" rx="20" fill="#1E3A8A" stroke="#3B82F6" stroke-width="5" filter="url(#dropGlow)"/>
+          <text x="0" y="-15" font-family="'Outfit', sans-serif" font-size="32" font-weight="900" fill="#FFFFFF" text-anchor="middle">ANDAR</text>
+          <text x="0" y="30" font-family="'Outfit', sans-serif" font-size="20" font-weight="700" fill="#93C5FD" text-anchor="middle">1 : 0.90</text>
+        </g>
+
+        <!-- Bahar Box (Right - Purple/Pink) -->
+        <g transform="translate(230, 140)">
+          <rect x="-140" y="-70" width="280" height="140" rx="20" fill="#701A75" stroke="#EC4899" stroke-width="5" filter="url(#dropGlow)"/>
+          <text x="0" y="-15" font-family="'Outfit', sans-serif" font-size="32" font-weight="900" fill="#FFFFFF" text-anchor="middle">BAHAR</text>
+          <text x="0" y="30" font-family="'Outfit', sans-serif" font-size="20" font-weight="700" fill="#FBCFE8" text-anchor="middle">1 : 1.00</text>
+        </g>
+      </g>
+    
+</svg>

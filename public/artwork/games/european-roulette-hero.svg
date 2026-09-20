@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1920" height="1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#17070a"/>
+      <stop offset="50%" stop-color="#2b0c13"/>
+      <stop offset="100%" stop-color="#45131f"/>
+    </linearGradient>
+    <linearGradient id="curveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E11D48" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#E11D48" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF176"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+    <radialGradient id="neonCenterGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E11D48" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#E11D48" stop-opacity="0.1"/>
+    </radialGradient>
+    <radialGradient id="ballGold" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFF59D"/>
+      <stop offset="50%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F57F17"/>
+    </radialGradient>
+    <radialGradient id="ballRed" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF8A80"/>
+      <stop offset="50%" stop-color="#E53935"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
+    </radialGradient>
+    <radialGradient id="ballGreen" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#B9F6CA"/>
+      <stop offset="50%" stop-color="#00E676"/>
+      <stop offset="100%" stop-color="#00A854"/>
+    </radialGradient>
+    <radialGradient id="ballBlue" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#80D8FF"/>
+      <stop offset="50%" stop-color="#00B0FF"/>
+      <stop offset="100%" stop-color="#0091EA"/>
+    </radialGradient>
+    <radialGradient id="ballPurple" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#EA80FC"/>
+      <stop offset="50%" stop-color="#AA00FF"/>
+      <stop offset="100%" stop-color="#6A0080"/>
+    </radialGradient>
+
+    <!-- Filters -->
+    <filter id="dropGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1000" height="1000" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle Ambient Glow -->
+  <circle cx="500" cy="500" r="450" fill="#E11D48" opacity="0.08" filter="url(#dropGlow)"/>
+
+  <!-- Geometric Grid Texture -->
+  <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
+    <line x1="100" y1="0" x2="100" y2="1000"/>
+    <line x1="300" y1="0" x2="300" y2="1000"/>
+    <line x1="500" y1="0" x2="500" y2="1000"/>
+    <line x1="700" y1="0" x2="700" y2="1000"/>
+    <line x1="900" y1="0" x2="900" y2="1000"/>
+    <line x1="0" y1="200" x2="1000" y2="200"/>
+    <line x1="0" y1="400" x2="1000" y2="400"/>
+    <line x1="0" y1="600" x2="1000" y2="600"/>
+    <line x1="0" y1="800" x2="1000" y2="800"/>
+  </g>
+
+  <!-- Game Specific Artwork Core -->
+  
+      <!-- Realistic Roulette Wheel -->
+      <g transform="translate(500, 480)">
+        <!-- Outer Mahogany ring -->
+        <circle cx="0" cy="0" r="330" fill="#2b0e08" stroke="#F59E0B" stroke-width="8" filter="url(#dropGlow)"/>
+        <!-- Gold track -->
+        <circle cx="0" cy="0" r="300" fill="#0f0507" stroke="#F59E0B" stroke-width="4"/>
+        
+        <!-- Pockets ring -->
+        <circle cx="0" cy="0" r="260" fill="none" stroke="#E11D48" stroke-width="36" stroke-dasharray="14,14"/>
+        
+        <!-- Center brass turret & cone -->
+        <circle cx="0" cy="0" r="140" fill="url(#goldGradient)" stroke="#5e3a09" stroke-width="6"/>
+        <circle cx="0" cy="0" r="70" fill="#241005"/>
+        
+        <!-- Turret cross handles -->
+        <line x1="-120" y1="0" x2="120" y2="0" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+        <line x1="0" y1="-120" x2="0" y2="120" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+        <circle cx="0" cy="0" r="24" fill="#FFFFFF"/>
+
+        <!-- Single Green 0 Pocket -->
+        <rect x="-24" y="-280" width="48" height="36" rx="6" fill="#10B981"/>
+        <text x="0" y="-254" font-family="'Outfit', sans-serif" font-size="22" font-weight="900" fill="#FFFFFF" text-anchor="middle">0</text>
+
+        <!-- Ivory Ball on rim -->
+        <circle cx="180" cy="-160" r="18" fill="#FFFFFF" filter="url(#dropGlow)"/>
+        <circle cx="176" cy="-164" r="5" fill="#E2E8F0"/>
+      </g>
+    
+</svg>

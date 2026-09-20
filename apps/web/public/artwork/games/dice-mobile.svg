@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="600" height="600" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c1404"/>
+      <stop offset="50%" stop-color="#2e2107"/>
+      <stop offset="100%" stop-color="#45320a"/>
+    </linearGradient>
+    <linearGradient id="curveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#CA8A04" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#CA8A04" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF176"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+    <radialGradient id="neonCenterGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#CA8A04" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#CA8A04" stop-opacity="0.1"/>
+    </radialGradient>
+    <radialGradient id="ballGold" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFF59D"/>
+      <stop offset="50%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F57F17"/>
+    </radialGradient>
+    <radialGradient id="ballRed" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF8A80"/>
+      <stop offset="50%" stop-color="#E53935"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
+    </radialGradient>
+    <radialGradient id="ballGreen" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#B9F6CA"/>
+      <stop offset="50%" stop-color="#00E676"/>
+      <stop offset="100%" stop-color="#00A854"/>
+    </radialGradient>
+    <radialGradient id="ballBlue" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#80D8FF"/>
+      <stop offset="50%" stop-color="#00B0FF"/>
+      <stop offset="100%" stop-color="#0091EA"/>
+    </radialGradient>
+    <radialGradient id="ballPurple" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#EA80FC"/>
+      <stop offset="50%" stop-color="#AA00FF"/>
+      <stop offset="100%" stop-color="#6A0080"/>
+    </radialGradient>
+
+    <!-- Filters -->
+    <filter id="dropGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1000" height="1000" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle Ambient Glow -->
+  <circle cx="500" cy="500" r="450" fill="#CA8A04" opacity="0.08" filter="url(#dropGlow)"/>
+
+  <!-- Geometric Grid Texture -->
+  <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
+    <line x1="100" y1="0" x2="100" y2="1000"/>
+    <line x1="300" y1="0" x2="300" y2="1000"/>
+    <line x1="500" y1="0" x2="500" y2="1000"/>
+    <line x1="700" y1="0" x2="700" y2="1000"/>
+    <line x1="900" y1="0" x2="900" y2="1000"/>
+    <line x1="0" y1="200" x2="1000" y2="200"/>
+    <line x1="0" y1="400" x2="1000" y2="400"/>
+    <line x1="0" y1="600" x2="1000" y2="600"/>
+    <line x1="0" y1="800" x2="1000" y2="800"/>
+  </g>
+
+  <!-- Game Specific Artwork Core -->
+  
+      <!-- 3 Macau Red/Gold Dice Tumbling -->
+      <g transform="translate(500, 480)">
+        <!-- Crystal Dome Glow -->
+        <circle cx="0" cy="0" r="320" fill="#140d02" stroke="#CA8A04" stroke-width="6" opacity="0.5"/>
+        
+        <!-- Die 1 (Left - Value 4) -->
+        <g transform="translate(-150, -40) rotate(-22)">
+          <rect x="-70" y="-70" width="140" height="140" rx="24" fill="#DC2626" stroke="#FEF08A" stroke-width="5" filter="url(#dropGlow)"/>
+          <circle cx="-35" cy="-35" r="12" fill="#FFFFFF"/>
+          <circle cx="35" cy="-35" r="12" fill="#FFFFFF"/>
+          <circle cx="-35" cy="35" r="12" fill="#FFFFFF"/>
+          <circle cx="35" cy="35" r="12" fill="#FFFFFF"/>
+        </g>
+
+        <!-- Die 2 (Center - Value 6) -->
+        <g transform="translate(0, 30)">
+          <rect x="-75" y="-75" width="150" height="150" rx="26" fill="#DC2626" stroke="#FEF08A" stroke-width="6" filter="url(#dropGlow)"/>
+          <circle cx="-38" cy="-45" r="13" fill="#FFFFFF"/>
+          <circle cx="-38" cy="0" r="13" fill="#FFFFFF"/>
+          <circle cx="-38" cy="45" r="13" fill="#FFFFFF"/>
+          <circle cx="38" cy="-45" r="13" fill="#FFFFFF"/>
+          <circle cx="38" cy="0" r="13" fill="#FFFFFF"/>
+          <circle cx="38" cy="45" r="13" fill="#FFFFFF"/>
+        </g>
+
+        <!-- Die 3 (Right - Value 5) -->
+        <g transform="translate(150, -50) rotate(18)">
+          <rect x="-70" y="-70" width="140" height="140" rx="24" fill="#DC2626" stroke="#FEF08A" stroke-width="5" filter="url(#dropGlow)"/>
+          <circle cx="-35" cy="-35" r="12" fill="#FFFFFF"/>
+          <circle cx="35" cy="-35" r="12" fill="#FFFFFF"/>
+          <circle cx="0" cy="0" r="14" fill="#FFFFFF"/>
+          <circle cx="-35" cy="35" r="12" fill="#FFFFFF"/>
+          <circle cx="35" cy="35" r="12" fill="#FFFFFF"/>
+        </g>
+
+        <!-- Big / Small Banner -->
+        <rect x="-220" y="190" width="440" height="70" rx="35" fill="url(#goldGradient)" stroke="#FFFFFF" stroke-width="3"/>
+        <text x="0" y="236" font-family="'Outfit', sans-serif" font-size="30" font-weight="900" fill="#1c1404" text-anchor="middle">TOTAL: 15 (BIG) 1:1</text>
+      </g>
+    
+</svg>

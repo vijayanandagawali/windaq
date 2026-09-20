@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="600" height="600" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#160e29"/>
+      <stop offset="50%" stop-color="#271747"/>
+      <stop offset="100%" stop-color="#3b2169"/>
+    </linearGradient>
+    <linearGradient id="curveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF176"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+    <radialGradient id="neonCenterGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0.1"/>
+    </radialGradient>
+    <radialGradient id="ballGold" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFF59D"/>
+      <stop offset="50%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F57F17"/>
+    </radialGradient>
+    <radialGradient id="ballRed" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF8A80"/>
+      <stop offset="50%" stop-color="#E53935"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
+    </radialGradient>
+    <radialGradient id="ballGreen" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#B9F6CA"/>
+      <stop offset="50%" stop-color="#00E676"/>
+      <stop offset="100%" stop-color="#00A854"/>
+    </radialGradient>
+    <radialGradient id="ballBlue" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#80D8FF"/>
+      <stop offset="50%" stop-color="#00B0FF"/>
+      <stop offset="100%" stop-color="#0091EA"/>
+    </radialGradient>
+    <radialGradient id="ballPurple" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#EA80FC"/>
+      <stop offset="50%" stop-color="#AA00FF"/>
+      <stop offset="100%" stop-color="#6A0080"/>
+    </radialGradient>
+
+    <!-- Filters -->
+    <filter id="dropGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1000" height="1000" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle Ambient Glow -->
+  <circle cx="500" cy="500" r="450" fill="#8B5CF6" opacity="0.08" filter="url(#dropGlow)"/>
+
+  <!-- Geometric Grid Texture -->
+  <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
+    <line x1="100" y1="0" x2="100" y2="1000"/>
+    <line x1="300" y1="0" x2="300" y2="1000"/>
+    <line x1="500" y1="0" x2="500" y2="1000"/>
+    <line x1="700" y1="0" x2="700" y2="1000"/>
+    <line x1="900" y1="0" x2="900" y2="1000"/>
+    <line x1="0" y1="200" x2="1000" y2="200"/>
+    <line x1="0" y1="400" x2="1000" y2="400"/>
+    <line x1="0" y1="600" x2="1000" y2="600"/>
+    <line x1="0" y1="800" x2="1000" y2="800"/>
+  </g>
+
+  <!-- Game Specific Artwork Core -->
+  
+      <!-- 13-Card Sequence Fan & Joker -->
+      <g transform="translate(500, 490)">
+        <!-- Table felt circle -->
+        <circle cx="0" cy="0" r="320" fill="#1c1133" stroke="#8B5CF6" stroke-width="6" opacity="0.6"/>
+
+        <!-- Pure Sequence Cards -->
+        <g transform="translate(-140, -40) rotate(-16)">
+          <rect x="-50" y="-85" width="100" height="170" rx="10" fill="#FFFFFF" stroke="#8B5CF6" stroke-width="3"/>
+          <text x="-32" y="-50" font-family="'Outfit', sans-serif" font-size="26" font-weight="900" fill="#E11D48">7</text>
+          <text x="0" y="15" font-family="'Outfit', sans-serif" font-size="44" fill="#E11D48" text-anchor="middle">♥</text>
+        </g>
+        <g transform="translate(-50, -60) rotate(-6)">
+          <rect x="-50" y="-85" width="100" height="170" rx="10" fill="#FFFFFF" stroke="#8B5CF6" stroke-width="3"/>
+          <text x="-32" y="-50" font-family="'Outfit', sans-serif" font-size="26" font-weight="900" fill="#E11D48">8</text>
+          <text x="0" y="15" font-family="'Outfit', sans-serif" font-size="44" fill="#E11D48" text-anchor="middle">♥</text>
+        </g>
+        <g transform="translate(40, -60) rotate(4)">
+          <rect x="-50" y="-85" width="100" height="170" rx="10" fill="#FFFFFF" stroke="#8B5CF6" stroke-width="3"/>
+          <text x="-32" y="-50" font-family="'Outfit', sans-serif" font-size="26" font-weight="900" fill="#E11D48">9</text>
+          <text x="0" y="15" font-family="'Outfit', sans-serif" font-size="44" fill="#E11D48" text-anchor="middle">♥</text>
+        </g>
+
+        <!-- Wild Joker Card (Foreground) -->
+        <g transform="translate(140, -20) rotate(16)">
+          <rect x="-60" y="-95" width="120" height="190" rx="12" fill="#FDF4FF" stroke="#F43F5E" stroke-width="5" filter="url(#dropGlow)"/>
+          <text x="-40" y="-60" font-family="'Outfit', sans-serif" font-size="26" font-weight="900" fill="#8B5CF6">JK</text>
+          <text x="0" y="20" font-family="'Outfit', sans-serif" font-size="52" fill="#F43F5E" text-anchor="middle">🃏</text>
+          <rect x="-45" y="55" width="90" height="24" rx="12" fill="#8B5CF6"/>
+          <text x="0" y="72" font-family="'Outfit', sans-serif" font-size="14" font-weight="900" fill="#FFFFFF" text-anchor="middle">JOKER</text>
+        </g>
+
+        <!-- Pure Sequence Verified Badge -->
+        <rect x="-200" y="180" width="400" height="66" rx="33" fill="#10B981" stroke="#FFFFFF" stroke-width="3"/>
+        <text x="0" y="224" font-family="'Outfit', sans-serif" font-size="26" font-weight="900" fill="#FFFFFF" text-anchor="middle">✓ PURE SEQUENCE (0 PTS)</text>
+      </g>
+    
+</svg>

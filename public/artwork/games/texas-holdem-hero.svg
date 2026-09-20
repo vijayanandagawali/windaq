@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1920" height="1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#051c14"/>
+      <stop offset="50%" stop-color="#0a2f22"/>
+      <stop offset="100%" stop-color="#104734"/>
+    </linearGradient>
+    <linearGradient id="curveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF176"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+    <radialGradient id="neonCenterGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#10B981" stop-opacity="0.1"/>
+    </radialGradient>
+    <radialGradient id="ballGold" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFF59D"/>
+      <stop offset="50%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F57F17"/>
+    </radialGradient>
+    <radialGradient id="ballRed" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF8A80"/>
+      <stop offset="50%" stop-color="#E53935"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
+    </radialGradient>
+    <radialGradient id="ballGreen" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#B9F6CA"/>
+      <stop offset="50%" stop-color="#00E676"/>
+      <stop offset="100%" stop-color="#00A854"/>
+    </radialGradient>
+    <radialGradient id="ballBlue" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#80D8FF"/>
+      <stop offset="50%" stop-color="#00B0FF"/>
+      <stop offset="100%" stop-color="#0091EA"/>
+    </radialGradient>
+    <radialGradient id="ballPurple" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#EA80FC"/>
+      <stop offset="50%" stop-color="#AA00FF"/>
+      <stop offset="100%" stop-color="#6A0080"/>
+    </radialGradient>
+
+    <!-- Filters -->
+    <filter id="dropGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1000" height="1000" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle Ambient Glow -->
+  <circle cx="500" cy="500" r="450" fill="#10B981" opacity="0.08" filter="url(#dropGlow)"/>
+
+  <!-- Geometric Grid Texture -->
+  <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
+    <line x1="100" y1="0" x2="100" y2="1000"/>
+    <line x1="300" y1="0" x2="300" y2="1000"/>
+    <line x1="500" y1="0" x2="500" y2="1000"/>
+    <line x1="700" y1="0" x2="700" y2="1000"/>
+    <line x1="900" y1="0" x2="900" y2="1000"/>
+    <line x1="0" y1="200" x2="1000" y2="200"/>
+    <line x1="0" y1="400" x2="1000" y2="400"/>
+    <line x1="0" y1="600" x2="1000" y2="600"/>
+    <line x1="0" y1="800" x2="1000" y2="800"/>
+  </g>
+
+  <!-- Game Specific Artwork Core -->
+  
+      <!-- Monte Carlo Poker Table Layout -->
+      <g transform="translate(500, 480)">
+        <!-- Oval Felt Ring -->
+        <ellipse cx="0" cy="0" rx="420" ry="260" fill="#0c3829" stroke="#10B981" stroke-width="8" filter="url(#dropGlow)"/>
+        <ellipse cx="0" cy="0" rx="380" ry="220" fill="#08291d" stroke="#165b43" stroke-width="4"/>
+        
+        <!-- Royal Flush Cards (10, J, Q, K, A Spades) -->
+        <g transform="translate(-160, -30) rotate(-12)">
+          <rect x="-45" y="-70" width="90" height="140" rx="8" fill="#FFFFFF" stroke="#10B981" stroke-width="3"/>
+          <text x="-30" y="-40" font-family="'Outfit', sans-serif" font-size="20" font-weight="900" fill="#1e1e1e">10</text>
+          <text x="0" y="15" font-family="'Outfit', sans-serif" font-size="34" fill="#1e1e1e" text-anchor="middle">♠</text>
+        </g>
+        <g transform="translate(-80, -45) rotate(-6)">
+          <rect x="-45" y="-70" width="90" height="140" rx="8" fill="#FFFFFF" stroke="#10B981" stroke-width="3"/>
+          <text x="-30" y="-40" font-family="'Outfit', sans-serif" font-size="20" font-weight="900" fill="#1e1e1e">J</text>
+          <text x="0" y="15" font-family="'Outfit', sans-serif" font-size="34" fill="#1e1e1e" text-anchor="middle">♠</text>
+        </g>
+        <g transform="translate(0, -50)">
+          <rect x="-45" y="-70" width="90" height="140" rx="8" fill="#FFFFFF" stroke="#10B981" stroke-width="3"/>
+          <text x="-30" y="-40" font-family="'Outfit', sans-serif" font-size="20" font-weight="900" fill="#1e1e1e">Q</text>
+          <text x="0" y="15" font-family="'Outfit', sans-serif" font-size="34" fill="#1e1e1e" text-anchor="middle">♠</text>
+        </g>
+        <g transform="translate(80, -45) rotate(6)">
+          <rect x="-45" y="-70" width="90" height="140" rx="8" fill="#FFFFFF" stroke="#10B981" stroke-width="3"/>
+          <text x="-30" y="-40" font-family="'Outfit', sans-serif" font-size="20" font-weight="900" fill="#1e1e1e">K</text>
+          <text x="0" y="15" font-family="'Outfit', sans-serif" font-size="34" fill="#1e1e1e" text-anchor="middle">♠</text>
+        </g>
+        <g transform="translate(160, -30) rotate(12)">
+          <rect x="-45" y="-70" width="90" height="140" rx="8" fill="#FFFFFF" stroke="#10B981" stroke-width="3"/>
+          <text x="-30" y="-40" font-family="'Outfit', sans-serif" font-size="22" font-weight="900" fill="#1e1e1e">A</text>
+          <text x="0" y="15" font-family="'Outfit', sans-serif" font-size="36" fill="#1e1e1e" text-anchor="middle">♠</text>
+        </g>
+
+        <!-- Chips Stack and Dealer Button -->
+        <g transform="translate(-180, 110)">
+          <circle cx="0" cy="0" r="36" fill="#FFFFFF" stroke="#333333" stroke-width="4"/>
+          <text x="0" y="10" font-family="'Outfit', sans-serif" font-size="28" font-weight="900" fill="#111111" text-anchor="middle">DEALER</text>
+        </g>
+        <g transform="translate(140, 110)">
+          <ellipse cx="0" cy="15" rx="55" ry="20" fill="#3B82F6" stroke="#FFFFFF" stroke-width="2"/>
+          <ellipse cx="0" cy="0" rx="55" ry="20" fill="#EF4444" stroke="#FFFFFF" stroke-width="2"/>
+          <ellipse cx="0" cy="-15" rx="55" ry="20" fill="#10B981" stroke="#FFFFFF" stroke-width="2"/>
+          <text x="0" y="-8" font-family="'Outfit', sans-serif" font-size="22" font-weight="900" fill="#FFFFFF" text-anchor="middle">ALL-IN</text>
+        </g>
+      </g>
+    
+</svg>

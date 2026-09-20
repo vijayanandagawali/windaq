@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="800" height="1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c0f06"/>
+      <stop offset="50%" stop-color="#2e1809"/>
+      <stop offset="100%" stop-color="#47230b"/>
+    </linearGradient>
+    <linearGradient id="curveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#EA580C" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#EA580C" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF176"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+    <radialGradient id="neonCenterGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#EA580C" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#EA580C" stop-opacity="0.1"/>
+    </radialGradient>
+    <radialGradient id="ballGold" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFF59D"/>
+      <stop offset="50%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F57F17"/>
+    </radialGradient>
+    <radialGradient id="ballRed" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF8A80"/>
+      <stop offset="50%" stop-color="#E53935"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
+    </radialGradient>
+    <radialGradient id="ballGreen" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#B9F6CA"/>
+      <stop offset="50%" stop-color="#00E676"/>
+      <stop offset="100%" stop-color="#00A854"/>
+    </radialGradient>
+    <radialGradient id="ballBlue" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#80D8FF"/>
+      <stop offset="50%" stop-color="#00B0FF"/>
+      <stop offset="100%" stop-color="#0091EA"/>
+    </radialGradient>
+    <radialGradient id="ballPurple" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#EA80FC"/>
+      <stop offset="50%" stop-color="#AA00FF"/>
+      <stop offset="100%" stop-color="#6A0080"/>
+    </radialGradient>
+
+    <!-- Filters -->
+    <filter id="dropGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1000" height="1000" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle Ambient Glow -->
+  <circle cx="500" cy="500" r="450" fill="#EA580C" opacity="0.08" filter="url(#dropGlow)"/>
+
+  <!-- Geometric Grid Texture -->
+  <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
+    <line x1="100" y1="0" x2="100" y2="1000"/>
+    <line x1="300" y1="0" x2="300" y2="1000"/>
+    <line x1="500" y1="0" x2="500" y2="1000"/>
+    <line x1="700" y1="0" x2="700" y2="1000"/>
+    <line x1="900" y1="0" x2="900" y2="1000"/>
+    <line x1="0" y1="200" x2="1000" y2="200"/>
+    <line x1="0" y1="400" x2="1000" y2="400"/>
+    <line x1="0" y1="600" x2="1000" y2="600"/>
+    <line x1="0" y1="800" x2="1000" y2="800"/>
+  </g>
+
+  <!-- Game Specific Artwork Core -->
+  
+      <!-- Dragon vs Tiger Duel Table -->
+      <g transform="translate(500, 480)">
+        <!-- Dragon side (Left - Red) -->
+        <g transform="translate(-220, 0)">
+          <rect x="-150" y="-180" width="300" height="360" rx="24" fill="#7C2D12" stroke="#EA580C" stroke-width="6" filter="url(#dropGlow)"/>
+          <text x="0" y="-80" font-family="'Outfit', sans-serif" font-size="90" text-anchor="middle">🐉</text>
+          <text x="0" y="30" font-family="'Outfit', sans-serif" font-size="36" font-weight="900" fill="#FFFFFF" text-anchor="middle">DRAGON</text>
+          <rect x="-80" y="70" width="160" height="40" rx="20" fill="#EA580C"/>
+          <text x="0" y="96" font-family="'Outfit', sans-serif" font-size="20" font-weight="900" fill="#FFFFFF" text-anchor="middle">1 : 1</text>
+        </g>
+
+        <!-- Tiger side (Right - Cyan/Blue) -->
+        <g transform="translate(220, 0)">
+          <rect x="-150" y="-180" width="300" height="360" rx="24" fill="#0C4A6E" stroke="#0284C7" stroke-width="6" filter="url(#dropGlow)"/>
+          <text x="0" y="-80" font-family="'Outfit', sans-serif" font-size="90" text-anchor="middle">🐅</text>
+          <text x="0" y="30" font-family="'Outfit', sans-serif" font-size="36" font-weight="900" fill="#FFFFFF" text-anchor="middle">TIGER</text>
+          <rect x="-80" y="70" width="160" height="40" rx="20" fill="#0284C7"/>
+          <text x="0" y="96" font-family="'Outfit', sans-serif" font-size="20" font-weight="900" fill="#FFFFFF" text-anchor="middle">1 : 1</text>
+        </g>
+
+        <!-- Center Tie Emblem -->
+        <circle cx="0" cy="0" r="85" fill="#10B981" stroke="#FFFFFF" stroke-width="5" filter="url(#dropGlow)"/>
+        <text x="0" y="-10" font-family="'Outfit', sans-serif" font-size="30" font-weight="900" fill="#FFFFFF" text-anchor="middle">TIE</text>
+        <text x="0" y="25" font-family="'Outfit', sans-serif" font-size="24" font-weight="900" fill="#FFFFFF" text-anchor="middle">11:1</text>
+      </g>
+    
+</svg>

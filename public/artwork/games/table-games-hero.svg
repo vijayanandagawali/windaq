@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1920" height="1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#081726"/>
+      <stop offset="50%" stop-color="#0e2740"/>
+      <stop offset="100%" stop-color="#15395c"/>
+    </linearGradient>
+    <linearGradient id="curveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#0284C7" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF176"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+    <radialGradient id="neonCenterGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0284C7" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#0284C7" stop-opacity="0.1"/>
+    </radialGradient>
+    <radialGradient id="ballGold" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFF59D"/>
+      <stop offset="50%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F57F17"/>
+    </radialGradient>
+    <radialGradient id="ballRed" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF8A80"/>
+      <stop offset="50%" stop-color="#E53935"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
+    </radialGradient>
+    <radialGradient id="ballGreen" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#B9F6CA"/>
+      <stop offset="50%" stop-color="#00E676"/>
+      <stop offset="100%" stop-color="#00A854"/>
+    </radialGradient>
+    <radialGradient id="ballBlue" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#80D8FF"/>
+      <stop offset="50%" stop-color="#00B0FF"/>
+      <stop offset="100%" stop-color="#0091EA"/>
+    </radialGradient>
+    <radialGradient id="ballPurple" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#EA80FC"/>
+      <stop offset="50%" stop-color="#AA00FF"/>
+      <stop offset="100%" stop-color="#6A0080"/>
+    </radialGradient>
+
+    <!-- Filters -->
+    <filter id="dropGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1000" height="1000" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle Ambient Glow -->
+  <circle cx="500" cy="500" r="450" fill="#0284C7" opacity="0.08" filter="url(#dropGlow)"/>
+
+  <!-- Geometric Grid Texture -->
+  <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
+    <line x1="100" y1="0" x2="100" y2="1000"/>
+    <line x1="300" y1="0" x2="300" y2="1000"/>
+    <line x1="500" y1="0" x2="500" y2="1000"/>
+    <line x1="700" y1="0" x2="700" y2="1000"/>
+    <line x1="900" y1="0" x2="900" y2="1000"/>
+    <line x1="0" y1="200" x2="1000" y2="200"/>
+    <line x1="0" y1="400" x2="1000" y2="400"/>
+    <line x1="0" y1="600" x2="1000" y2="600"/>
+    <line x1="0" y1="800" x2="1000" y2="800"/>
+  </g>
+
+  <!-- Game Specific Artwork Core -->
+  
+      <!-- Table Games Composite: Cards, Dice & Chips -->
+      <g transform="translate(500, 480)">
+        <!-- Felt oval -->
+        <ellipse cx="0" cy="0" rx="420" ry="260" fill="#0b2036" stroke="#0284C7" stroke-width="6" filter="url(#dropGlow)"/>
+        
+        <!-- Fanned cards -->
+        <g transform="translate(-100, -50) rotate(-14)">
+          <rect x="-60" y="-90" width="120" height="180" rx="10" fill="#FFFFFF" stroke="#0284C7" stroke-width="4"/>
+          <text x="-40" y="-55" font-family="'Outfit', sans-serif" font-size="28" font-weight="900" fill="#E11D48">K</text>
+          <text x="0" y="20" font-family="'Outfit', sans-serif" font-size="50" fill="#E11D48" text-anchor="middle">♦</text>
+        </g>
+        <g transform="translate(40, -60) rotate(10)">
+          <rect x="-60" y="-90" width="120" height="180" rx="10" fill="#FFFFFF" stroke="#10B981" stroke-width="4"/>
+          <text x="-40" y="-55" font-family="'Outfit', sans-serif" font-size="28" font-weight="900" fill="#111111">A</text>
+          <text x="0" y="20" font-family="'Outfit', sans-serif" font-size="50" fill="#111111" text-anchor="middle">♠</text>
+        </g>
+
+        <!-- Golden Roulette ball & Dice -->
+        <g transform="translate(180, 60)">
+          <rect x="-40" y="-40" width="80" height="80" rx="14" fill="#E11D48" stroke="#FFFFFF" stroke-width="3"/>
+          <circle cx="-18" cy="-18" r="7" fill="#FFFFFF"/>
+          <circle cx="0" cy="0" r="7" fill="#FFFFFF"/>
+          <circle cx="18" cy="18" r="7" fill="#FFFFFF"/>
+        </g>
+
+        <!-- VIP Saloon badge -->
+        <rect x="-180" y="160" width="360" height="70" rx="35" fill="url(#goldGradient)" stroke="#0284C7" stroke-width="3"/>
+        <text x="0" y="206" font-family="'Outfit', sans-serif" font-size="28" font-weight="900" fill="#081726" text-anchor="middle">HIGH ROLLER VIP</text>
+      </g>
+    
+</svg>

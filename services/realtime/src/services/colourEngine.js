@@ -112,15 +112,19 @@ class ColourEngine {
     
     let winningSize = winningNumber >= 5 ? 'big' : 'small';
     
-    await prisma.colourRound.update({ 
-      where: { id: this.roundId }, 
-      data: { 
-        state: this.state,
-        resultNum: winningNumber,
-        resultColor: winningColor,
-        resultSize: winningSize
-      } 
-    });
+    try {
+      await prisma.colourRound.update({ 
+        where: { id: this.roundId }, 
+        data: { 
+          state: this.state,
+          resultNum: winningNumber,
+          resultColor: winningColor,
+          resultSize: winningSize
+        } 
+      });
+    } catch (e) {
+      console.warn(`[ColourEngine] Could not update round ${this.roundId}:`, e.message);
+    }
 
     this.io.to(`colour:${this.roomName}`).emit('colour:result', {
       period: this.period.toString(),

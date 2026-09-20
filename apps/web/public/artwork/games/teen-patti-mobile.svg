@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="600" height="600" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#240713"/>
+      <stop offset="50%" stop-color="#3d0c21"/>
+      <stop offset="100%" stop-color="#591231"/>
+    </linearGradient>
+    <linearGradient id="curveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#EC4899" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#EC4899" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF176"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+    <radialGradient id="neonCenterGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#EC4899" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#EC4899" stop-opacity="0.1"/>
+    </radialGradient>
+    <radialGradient id="ballGold" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFF59D"/>
+      <stop offset="50%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F57F17"/>
+    </radialGradient>
+    <radialGradient id="ballRed" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF8A80"/>
+      <stop offset="50%" stop-color="#E53935"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
+    </radialGradient>
+    <radialGradient id="ballGreen" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#B9F6CA"/>
+      <stop offset="50%" stop-color="#00E676"/>
+      <stop offset="100%" stop-color="#00A854"/>
+    </radialGradient>
+    <radialGradient id="ballBlue" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#80D8FF"/>
+      <stop offset="50%" stop-color="#00B0FF"/>
+      <stop offset="100%" stop-color="#0091EA"/>
+    </radialGradient>
+    <radialGradient id="ballPurple" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#EA80FC"/>
+      <stop offset="50%" stop-color="#AA00FF"/>
+      <stop offset="100%" stop-color="#6A0080"/>
+    </radialGradient>
+
+    <!-- Filters -->
+    <filter id="dropGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1000" height="1000" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle Ambient Glow -->
+  <circle cx="500" cy="500" r="450" fill="#EC4899" opacity="0.08" filter="url(#dropGlow)"/>
+
+  <!-- Geometric Grid Texture -->
+  <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
+    <line x1="100" y1="0" x2="100" y2="1000"/>
+    <line x1="300" y1="0" x2="300" y2="1000"/>
+    <line x1="500" y1="0" x2="500" y2="1000"/>
+    <line x1="700" y1="0" x2="700" y2="1000"/>
+    <line x1="900" y1="0" x2="900" y2="1000"/>
+    <line x1="0" y1="200" x2="1000" y2="200"/>
+    <line x1="0" y1="400" x2="1000" y2="400"/>
+    <line x1="0" y1="600" x2="1000" y2="600"/>
+    <line x1="0" y1="800" x2="1000" y2="800"/>
+  </g>
+
+  <!-- Game Specific Artwork Core -->
+  
+      <!-- 3 Royal Cards Fanned Out -->
+      <g transform="translate(500, 500)">
+        <!-- Left Card (A Diamonds) -->
+        <g transform="translate(-140, 20) rotate(-18)">
+          <rect x="-110" y="-170" width="220" height="340" rx="16" fill="#FFFFFF" stroke="#F59E0B" stroke-width="5" filter="url(#dropGlow)"/>
+          <text x="-75" y="-115" font-family="'Outfit', sans-serif" font-size="44" font-weight="900" fill="#E11D48">A</text>
+          <text x="-75" y="-70" font-family="'Outfit', sans-serif" font-size="36" fill="#E11D48">♦</text>
+          <text x="0" y="30" font-family="'Outfit', sans-serif" font-size="90" fill="#E11D48" text-anchor="middle">♦</text>
+        </g>
+        
+        <!-- Right Card (A Clubs) -->
+        <g transform="translate(140, 20) rotate(18)">
+          <rect x="-110" y="-170" width="220" height="340" rx="16" fill="#FFFFFF" stroke="#F59E0B" stroke-width="5" filter="url(#dropGlow)"/>
+          <text x="-75" y="-115" font-family="'Outfit', sans-serif" font-size="44" font-weight="900" fill="#1e1e1e">A</text>
+          <text x="-75" y="-70" font-family="'Outfit', sans-serif" font-size="36" fill="#1e1e1e">♣</text>
+          <text x="0" y="30" font-family="'Outfit', sans-serif" font-size="90" fill="#1e1e1e" text-anchor="middle">♣</text>
+        </g>
+
+        <!-- Center Card (A Hearts - Foreground) -->
+        <g transform="translate(0, -20)">
+          <rect x="-120" y="-180" width="240" height="360" rx="18" fill="#FFFFFF" stroke="#EC4899" stroke-width="6" filter="url(#dropGlow)"/>
+          <text x="-80" y="-120" font-family="'Outfit', sans-serif" font-size="48" font-weight="900" fill="#E11D48">A</text>
+          <text x="-80" y="-70" font-family="'Outfit', sans-serif" font-size="40" fill="#E11D48">♥</text>
+          <text x="0" y="35" font-family="'Outfit', sans-serif" font-size="100" fill="#E11D48" text-anchor="middle">♥</text>
+        </g>
+
+        <!-- Gold Chips in foreground -->
+        <g transform="translate(0, 260)">
+          <ellipse cx="-80" cy="0" rx="60" ry="24" fill="#F59E0B" stroke="#FFFFFF" stroke-width="3"/>
+          <ellipse cx="80" cy="0" rx="60" ry="24" fill="#EC4899" stroke="#FFFFFF" stroke-width="3"/>
+          <ellipse cx="0" cy="-15" rx="75" ry="30" fill="url(#goldGradient)" stroke="#FFFFFF" stroke-width="4"/>
+          <text x="0" y="-6" font-family="'Outfit', sans-serif" font-size="28" font-weight="900" fill="#240713" text-anchor="middle">₹10,000</text>
+        </g>
+      </g>
+    
+</svg>
