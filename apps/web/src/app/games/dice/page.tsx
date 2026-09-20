@@ -8,8 +8,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
 
+import UniversalBetPanel from '@/components/games/UniversalBetPanel';
+
 export default function DiceGame() {
-  const { balance, fetchBalance } = useWalletStore();
+  const { balance, fetchBalance, userId } = useWalletStore();
   const [socket, setSocket] = useState<Socket | null>(null);
 
   // Game State
@@ -24,9 +26,9 @@ export default function DiceGame() {
   const [diceResult, setDiceResult] = useState<number[] | null>(null);
   const [history, setHistory] = useState<any[]>([]);
 
-  // Betting State
-  const [selectedChips, setSelectedChips] = useState<number>(10);
-  const CHIP_VALUES = [10, 50, 100, 500, 1000];
+  // Selected Market & Betting State
+  const [selectedMarket, setSelectedMarket] = useState<string>('BIG');
+  const [selectedOdds, setSelectedOdds] = useState<number>(2.0);
   const [myBets, setMyBets] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -240,8 +242,10 @@ export default function DiceGame() {
             {/* Row 1: SMALL / ANY TRIPLE / BIG */}
             <div className="grid grid-cols-3 gap-2 sm:gap-4 h-24">
                <button 
-                 onClick={() => placeBet('SMALL')}
-                 className="relative bg-gradient-to-br from-blue-900/50 to-blue-800/20 hover:from-blue-800/80 hover:to-blue-700/50 border border-blue-500/30 rounded-xl flex flex-col items-center justify-center overflow-hidden transition-all group"
+                 onClick={() => { setSelectedMarket('SMALL'); setSelectedOdds(2.0); }}
+                 className={`relative bg-gradient-to-br from-blue-900/50 to-blue-800/20 hover:from-blue-800/80 hover:to-blue-700/50 border rounded-xl flex flex-col items-center justify-center overflow-hidden transition-all group cursor-pointer ${
+                   selectedMarket === 'SMALL' ? 'border-neon-mint ring-2 ring-neon-mint/50 scale-102' : 'border-blue-500/30'
+                 }`}
                >
                  <div className="text-lg font-black tracking-widest text-blue-400 group-hover:text-blue-300">SMALL</div>
                  <div className="text-xs text-blue-200/50 font-bold tracking-widest">4 TO 10</div>
@@ -252,8 +256,10 @@ export default function DiceGame() {
                </button>
 
                <button 
-                 onClick={() => placeBet('TRIPLE_ANY')}
-                 className="relative bg-gradient-to-br from-yellow-900/50 to-yellow-800/20 hover:from-yellow-800/80 hover:to-yellow-700/50 border border-yellow-500/50 rounded-xl flex flex-col items-center justify-center overflow-hidden transition-all group"
+                 onClick={() => { setSelectedMarket('TRIPLE_ANY'); setSelectedOdds(25.0); }}
+                 className={`relative bg-gradient-to-br from-yellow-900/50 to-yellow-800/20 hover:from-yellow-800/80 hover:to-yellow-700/50 border rounded-xl flex flex-col items-center justify-center overflow-hidden transition-all group cursor-pointer ${
+                   selectedMarket === 'TRIPLE_ANY' ? 'border-neon-mint ring-2 ring-neon-mint/50 scale-102' : 'border-yellow-500/50'
+                 }`}
                >
                  <div className="text-sm font-black tracking-widest text-yellow-500 group-hover:text-yellow-400 uppercase text-center leading-tight">ANY<br/>TRIPLE</div>
                  <div className="text-[10px] text-gray-400 mt-1">24:1</div>
@@ -263,8 +269,10 @@ export default function DiceGame() {
                </button>
 
                <button 
-                 onClick={() => placeBet('BIG')}
-                 className="relative bg-gradient-to-br from-red-900/50 to-red-800/20 hover:from-red-800/80 hover:to-red-700/50 border border-red-500/30 rounded-xl flex flex-col items-center justify-center overflow-hidden transition-all group"
+                 onClick={() => { setSelectedMarket('BIG'); setSelectedOdds(2.0); }}
+                 className={`relative bg-gradient-to-br from-red-900/50 to-red-800/20 hover:from-red-800/80 hover:to-red-700/50 border rounded-xl flex flex-col items-center justify-center overflow-hidden transition-all group cursor-pointer ${
+                   selectedMarket === 'BIG' ? 'border-neon-mint ring-2 ring-neon-mint/50 scale-102' : 'border-red-500/30'
+                 }`}
                >
                  <div className="text-lg font-black tracking-widest text-red-400 group-hover:text-red-300">BIG</div>
                  <div className="text-xs text-red-200/50 font-bold tracking-widest">11 TO 17</div>
@@ -282,11 +290,14 @@ export default function DiceGame() {
                  {[4,5,6,7,8,9,10,11,12,13,14,15,16,17].map(sum => {
                     const odds: any = { 4:50, 17:50, 5:18, 16:18, 6:14, 15:14, 7:12, 14:12, 8:8, 13:8, 9:6, 12:6, 10:6, 11:6 };
                     const market = `SUM_${sum}`;
+                    const isSelected = selectedMarket === market;
                     return (
                       <button 
                         key={sum}
-                        onClick={() => placeBet(market)}
-                        className="relative bg-black/40 hover:bg-white/10 border border-white/5 rounded-lg py-2 flex flex-col items-center justify-center group"
+                        onClick={() => { setSelectedMarket(market); setSelectedOdds(odds[sum] + 1); }}
+                        className={`relative bg-black/40 hover:bg-white/10 border rounded-lg py-2 flex flex-col items-center justify-center group cursor-pointer transition-all ${
+                          isSelected ? 'border-neon-mint ring-2 ring-neon-mint/50 bg-neon-mint/10' : 'border-white/5'
+                        }`}
                       >
                          <div className="font-black text-white text-lg">{sum}</div>
                          <div className="text-[9px] text-gray-500">{odds[sum]}:1</div>
@@ -302,19 +313,35 @@ export default function DiceGame() {
          </div>
       </div>
 
-      {/* Chip Selector Footer */}
-      <div className="bg-black/60 border-t border-white/10 p-4 sticky bottom-0 z-40 backdrop-blur-md">
-         <div className="max-w-3xl mx-auto flex gap-2 justify-center overflow-x-auto pb-2 scrollbar-hide">
-            {CHIP_VALUES.map(val => (
-              <button 
-                key={val}
-                onClick={() => setSelectedChips(val)}
-                className={`relative w-14 h-14 rounded-full flex-shrink-0 flex items-center justify-center border-4 shadow-lg transition-transform ${selectedChips === val ? 'scale-110 -translate-y-2 border-neon-mint bg-neon-mint/20' : 'border-gray-500 bg-gray-800 opacity-80 hover:opacity-100'}`}
-              >
-                 <div className="absolute inset-1 border border-white/20 rounded-full border-dashed" />
-                 <span className={`font-black text-sm ${selectedChips === val ? 'text-neon-mint drop-shadow-[0_0_5px_#10b981]' : 'text-gray-300'}`}>{val >= 1000 ? `${val/1000}k` : val}</span>
-              </button>
-            ))}
+      {/* Universal Bet Panel Footer */}
+      <div className="bg-black/90 border-t border-white/10 p-3 sm:p-4 sticky bottom-0 z-40 backdrop-blur-md">
+         <div className="max-w-3xl mx-auto">
+            <UniversalBetPanel
+              title="Dice Bet Engine"
+              marketName={selectedMarket.replace('_', ' ')}
+              odds={selectedOdds}
+              minBet={10}
+              maxBet={50000}
+              isOpen={gameState.status === 'OPEN'}
+              lockedMessage="Rolling Dice - Bets Locked"
+              onPlaceBet={async (amount) => {
+                return new Promise((resolve) => {
+                  const uid = userId || 'guest';
+                  socket?.emit('dice:bet', { userId: uid, room: '1min', market: selectedMarket, amount }, (res: any) => {
+                    if (res && res.success) {
+                      setMyBets(prev => ({
+                        ...prev,
+                        [selectedMarket]: (prev[selectedMarket] || 0) + amount
+                      }));
+                      fetchBalance();
+                      resolve({ success: true, betId: res.data?.betId });
+                    } else {
+                      resolve({ success: false, message: res?.message || 'Failed to place bet' });
+                    }
+                  });
+                });
+              }}
+            />
          </div>
       </div>
 
