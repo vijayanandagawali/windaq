@@ -239,7 +239,7 @@ export default function DragonTigerGamePage() {
   }, [socket, tableState.phase, fetchBalance, userId]);
 
   return (
-    <div className="h-[calc(100dvh-58px)] w-full bg-[#070b12] text-white flex flex-col overflow-hidden">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-[#070b12] text-white flex flex-col overflow-y-auto">
 
 
       {/* Simulated Live Table Component */}

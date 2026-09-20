@@ -16,8 +16,6 @@ const geistMono = Geist_Mono({
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
   themeColor: "#0A1128",
 };
@@ -41,9 +39,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="antialiased selection:bg-neon-mint selection:text-deep-ocean overscroll-none touch-pan-y safe-area-pt bg-deep-ocean">
+      <body className="antialiased selection:bg-neon-mint selection:text-deep-ocean bg-deep-ocean min-h-screen text-white">
         <AppShell>
           {children}
         </AppShell>

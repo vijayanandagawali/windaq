@@ -163,7 +163,7 @@ export default function RummyGame() {
   );
 
   return (
-    <div className="h-[calc(100dvh-58px)] w-full bg-[#1b263b] text-white font-sans selection:bg-yellow-500 flex flex-col relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/dark-leather.png')]">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-[#1b263b] text-white font-sans selection:bg-yellow-500 flex flex-col relative overflow-y-auto bg-[url('https://www.transparenttextures.com/patterns/dark-leather.png')]">
 
 
       {/* Table Area */}

@@ -82,7 +82,7 @@ export default function LiveRoulette() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] w-full bg-[#111] text-white font-sans flex flex-col relative overflow-hidden">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-[#111] text-white font-sans flex flex-col relative overflow-y-auto">
       
       {/* VIDEO HERO BACKGROUND */}
       <div className="absolute inset-0 z-0">

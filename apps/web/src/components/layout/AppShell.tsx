@@ -48,7 +48,7 @@ export default function AppShell({ children }: AppShellProps) {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen flex flex-col bg-deep-ocean text-white font-sans selection:bg-neon-mint selection:text-deep-ocean relative overflow-x-hidden">
+      <div className="min-h-screen flex flex-col bg-deep-ocean text-white font-sans selection:bg-neon-mint selection:text-deep-ocean relative">
         {/* Network & Offline Status */}
         <NetworkWatcher />
 
@@ -61,7 +61,7 @@ export default function AppShell({ children }: AppShellProps) {
         <Header />
 
         {/* Main Content Area */}
-        <main className={`flex-1 ${isImmersiveGame ? 'pb-0' : 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-0'}`}>
+        <main className={`flex-1 w-full ${isImmersiveGame ? 'pb-0' : 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-0'}`}>
           {children}
         </main>
 

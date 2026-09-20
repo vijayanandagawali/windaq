@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AlertCircle, ArrowLeft, Construction } from 'lucide-react';
 import Link from 'next/link';
 import { getGameArtwork } from '@/lib/gameArtwork';
+import { getApiUrl } from '@/lib/config';
 
 export default function GameFallbackPage({ params }: { params: Promise<{ slug: string }> }) {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function GameFallbackPage({ params }: { params: Promise<{ slug: s
       return;
     }
 
-    fetch('http://localhost:4000/api/catalog')
+    fetch(getApiUrl('/api/catalog'))
       .then(res => res.json())
       .then(data => {
         if (data.success) {

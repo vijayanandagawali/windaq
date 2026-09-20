@@ -162,7 +162,7 @@ export default function SlotsGame() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] max-h-[100dvh] bg-[#0a0f1a] font-sans selection:bg-neon-mint relative flex flex-col pb-safe overflow-hidden">
+    <div className="min-h-[calc(100dvh-58px)] bg-[#0a0f1a] font-sans selection:bg-neon-mint relative flex flex-col pb-safe overflow-y-auto">
 
 
       {/* Main Game Area */}

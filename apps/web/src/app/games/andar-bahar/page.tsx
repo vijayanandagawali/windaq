@@ -169,7 +169,7 @@ export default function AndarBaharGame() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] w-full bg-[#1e4620] bg-[url('https://www.transparenttextures.com/patterns/felt.png')] text-white font-sans selection:bg-yellow-500 flex flex-col relative overflow-hidden">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-[#1e4620] bg-[url('https://www.transparenttextures.com/patterns/felt.png')] text-white font-sans selection:bg-yellow-500 flex flex-col relative overflow-y-auto">
 
 
       {/* Game Stage Area */}

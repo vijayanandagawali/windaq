@@ -52,7 +52,7 @@ export default function PokerTable() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] bg-black font-sans selection:bg-neon-mint flex flex-col overflow-hidden">
+    <div className="min-h-[calc(100dvh-58px)] bg-black font-sans selection:bg-neon-mint flex flex-col overflow-y-auto">
 
 
       {/* Game Area */}

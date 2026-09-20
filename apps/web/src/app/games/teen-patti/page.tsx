@@ -94,7 +94,7 @@ export default function TeenPattiGame() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] w-full bg-[#0a0f1a] overflow-hidden flex flex-col font-sans selection:bg-neon-mint relative">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-[#0a0f1a] overflow-y-auto flex flex-col font-sans selection:bg-neon-mint relative">
 
 
       {/* Game Table Area */}

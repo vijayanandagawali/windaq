@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 import { stateRecovery } from '@/lib/stateRecovery';
 import { useWalletStore } from '@/store/walletStore';
 

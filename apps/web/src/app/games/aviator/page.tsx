@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Info, HelpCircle, ShieldCheck } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -275,7 +275,7 @@ export default function AviatorGame() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] max-h-[100dvh] bg-obsidian font-sans selection:bg-neon-mint selection:text-deep-ocean relative flex flex-col overflow-hidden">
+    <div className="min-h-[calc(100dvh-58px)] bg-obsidian font-sans selection:bg-neon-mint selection:text-deep-ocean relative flex flex-col overflow-y-auto">
 
 
       {/* Game Area (The Canvas & Multiplier) */}

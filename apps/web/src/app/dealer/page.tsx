@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 import toast from 'react-hot-toast';
 import { Lock, Unlock, PlayCircle, CheckCircle, StopCircle, RefreshCw, AlertTriangle } from 'lucide-react';
 
