@@ -8,9 +8,10 @@ import { io, Socket } from 'socket.io-client';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { createGameSocket } from '@/lib/config';
 
 export default function AviatorGame() {
-  const { balance, deductBalance, addWinnings } = useWalletStore();
+  const { balance, deductBalance, addWinnings, userId } = useWalletStore();
   const [socket, setSocket] = useState<Socket | null>(null);
   
   // Game State
@@ -27,8 +28,7 @@ export default function AviatorGame() {
 
   // Initialize WebSockets
   useEffect(() => {
-    // In production, point to the actual backend URL
-    const newSocket = io('http://localhost:4000');
+    const newSocket = createGameSocket();
     setSocket(newSocket);
 
     newSocket.emit('join_room', 'aviator');
@@ -148,6 +148,9 @@ export default function AviatorGame() {
     if (navigator.vibrate) navigator.vibrate(50);
     
     deductBalance(amount);
+    if (socket) {
+      socket.emit('place_bet', { amount, userId: userId || 'sbx-usr-normal-001' });
+    }
     toast.success(`Bet placed: ₹${amount}`);
     
     if (panel === 1) setBet1(prev => ({ ...prev, amount, placed: true }));
@@ -169,6 +172,15 @@ export default function AviatorGame() {
     const targetBet = panel === 1 ? bet1 : bet2;
     const winAmount = targetBet.amount * currentMulti;
     addWinnings(winAmount);
+
+    if (socket) {
+      socket.emit('aviator:cashout', { 
+        amount: targetBet.amount, 
+        multiplier: currentMulti, 
+        winAmount, 
+        userId: userId || 'sbx-usr-normal-001' 
+      });
+    }
 
     if (panel === 1) setBet1(prev => ({ ...prev, cashedOut: true, won: winAmount }));
     else setBet2(prev => ({ ...prev, cashedOut: true, won: winAmount }));

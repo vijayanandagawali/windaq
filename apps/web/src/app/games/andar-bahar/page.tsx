@@ -138,7 +138,8 @@ export default function AndarBaharGame() {
   const renderCardUI = (cardStr: any, key: string, isJoker = false) => {
     if (!cardStr) return null;
     
-    const rankStr = cardStr.rank <= 10 ? cardStr.rank.toString() : {11:'J', 12:'Q', 13:'K', 14:'A'}[cardStr.rank];
+    const faceCards: Record<number, string> = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' };
+    const rankStr = cardStr.rank <= 10 ? cardStr.rank.toString() : (faceCards[Number(cardStr.rank)] || cardStr.rank.toString());
     const suit = cardStr.suit;
     
     const suitColors: Record<string, string> = { 'H': 'text-red-600', 'D': 'text-red-600', 'C': 'text-black', 'S': 'text-black' };

@@ -6,7 +6,11 @@ import Link from 'next/link';
 import { useWalletStore } from '@/store/walletStore';
 
 export default function Header() {
-  const { balance, vipTier, setDepositing, setVipOpen, setNotifOpen } = useWalletStore();
+  const { balance, vipTier, setDepositing, setVipOpen, setNotifOpen, fetchBalance } = useWalletStore();
+
+  React.useEffect(() => {
+    fetchBalance();
+  }, [fetchBalance]);
 
   return (
     <header className="sticky top-0 z-40 bg-[#0c101c]/95 backdrop-blur-md border-b border-white/10 px-4 py-2.5 flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.5)]">

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Play, TrendingUp, Search, Star, Info } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import toast from 'react-hot-toast';
+import { getApiUrl } from '@/lib/config';
 
 export default function GameHubPage() {
   const [catalog, setCatalog] = useState<{ categories: any[]; hero: any; favorites: string[] } | null>(null);
@@ -12,10 +13,11 @@ export default function GameHubPage() {
   const [loading, setLoading] = useState(true);
 
   // Global wallet and modal states could be accessed if needed, keeping simple here
-  const { balance } = useWalletStore();
+  const { balance, userId } = useWalletStore();
+  const activeUserId = userId || 'sbx-usr-normal-001';
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/catalog', { headers: { 'x-user-id': 'mock-user-id' } })
+    fetch(getApiUrl('/api/catalog'), { headers: { 'x-user-id': activeUserId } })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -24,7 +26,7 @@ export default function GameHubPage() {
       })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [activeUserId]);
 
   const toggleFavorite = async (e: React.MouseEvent, gameId: string) => {
     e.preventDefault();
@@ -40,10 +42,10 @@ export default function GameHubPage() {
     setCatalog({ ...catalog, favorites: newFavs });
 
     try {
-      await fetch('http://localhost:4000/api/catalog/favorite', {
+      await fetch(getApiUrl('/api/catalog/favorite'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': 'mock-user-id' },
-        body: JSON.stringify({ userId: 'mock-user-id', gameId, isFavorite: !isCurrentlyFav })
+        headers: { 'Content-Type': 'application/json', 'x-user-id': activeUserId },
+        body: JSON.stringify({ userId: activeUserId, gameId, isFavorite: !isCurrentlyFav })
       });
       if (!isCurrentlyFav) toast.success("Added to Favorites!");
     } catch (err) {

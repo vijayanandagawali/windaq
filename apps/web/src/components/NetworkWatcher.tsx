@@ -6,14 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 export default function NetworkWatcher() {
-  const [isOffline, setIsOffline] = useState(false);
+  const [isOffline, setIsOffline] = useState(() => {
+    return typeof navigator !== 'undefined' ? !navigator.onLine : false;
+  });
 
   useEffect(() => {
-    // Initial check
-    if (typeof navigator !== 'undefined') {
-      setIsOffline(!navigator.onLine);
-    }
-
     const handleOffline = () => {
       setIsOffline(true);
       toast.error('Network disconnected. Financial actions disabled.', { id: 'network-status', duration: Infinity });

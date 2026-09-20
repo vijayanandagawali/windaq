@@ -5,32 +5,38 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowUpRight, ShieldCheck, Zap } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import toast from 'react-hot-toast';
+import { getApiUrl } from '@/lib/config';
 
 export default function WithdrawModal() {
-  const { isWithdrawing, setWithdrawing, balance, withdraw } = useWalletStore();
-  const [amount, setAmount] = useState(500);
-  const [upiId, setUpiId] = useState('player9876@okaxis');
+  const { balance, isWithdrawing, setWithdrawing, withdraw, userId } = useWalletStore();
+  const activeUserId = userId || 'sbx-usr-normal-001';
+  const [amount, setAmount] = useState(1000);
+  const [upiId, setUpiId] = useState('');
   const [loading, setLoading] = useState(false);
 
   if (!isWithdrawing) return null;
 
   const handleWithdraw = async () => {
-    if (amount > balance) {
-      toast.error('Insufficient balance!');
-      return;
-    }
     if (amount < 200) {
       toast.error('Minimum withdrawal is ₹200');
+      return;
+    }
+    if (amount > balance) {
+      toast.error('Insufficient available balance');
+      return;
+    }
+    if (!upiId || !upiId.includes('@')) {
+      toast.error('Please enter a valid UPI ID (e.g. name@okhdfcbank)');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:4000/api/payments/withdraw', {
+      const res = await fetch(getApiUrl('/api/payments/withdraw'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': 'mock-user-id'
+          'x-user-id': activeUserId
         },
         body: JSON.stringify({
           amount,

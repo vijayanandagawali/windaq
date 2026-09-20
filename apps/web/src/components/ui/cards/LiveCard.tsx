@@ -8,7 +8,7 @@ export interface LiveCardProps {
   id: string;
   title: string;
   dealer: string;
-  players?: parseInt;
+  players?: number;
   image: string;
   href: string;
   isFavorite?: boolean;

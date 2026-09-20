@@ -22,7 +22,7 @@ interface BetSlipState {
   open: () => void;
   close: () => void;
   
-  setStatus: (status: 'IDLE' | 'LOADING' | 'SUCCESS' | 'ERROR', msg?: string) => void;
+  setStatus: (status: 'IDLE' | 'LOADING' | 'SUCCESS' | 'ERROR', msg?: string | null) => void;
 }
 
 export const useBetSlipStore = create<BetSlipState>((set) => ({

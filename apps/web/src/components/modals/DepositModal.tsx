@@ -5,27 +5,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShieldCheck, Zap, ArrowDownLeft, Copy, Check, ExternalLink, QrCode } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import toast from 'react-hot-toast';
+import { getApiUrl } from '@/lib/config';
 
 const PRESETS = [500, 1000, 2000, 5000, 10000];
 
 export default function DepositModal() {
-  const { isDepositing, setDepositing, deposit } = useWalletStore();
+  const { isDepositing, setDepositing, deposit, userId } = useWalletStore();
+  const activeUserId = userId || 'sbx-usr-normal-001';
   const [amount, setAmount] = useState(1000);
   const [utr, setUtr] = useState('');
+  const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'pay' | 'utr'>('pay');
   const [copied, setCopied] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [merchantUpi, setMerchantUpi] = useState('s0090792546529042@slc');
   const [merchantName, setMerchantName] = useState('WinDaq Gaming');
   const [customUpiLink, setCustomUpiLink] = useState('');
 
   React.useEffect(() => {
     if (isDepositing) {
-      fetch('http://localhost:4000/api/payments/deposit', {
+      fetch(getApiUrl('/api/payments/deposit'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': 'mock-user-id' // Using mock user for now
+          'x-user-id': activeUserId
         },
         body: JSON.stringify({ amount, provider: 'MOCK_UPI' })
       })
@@ -235,7 +237,7 @@ export default function DepositModal() {
                   <span className="text-2xl">📝</span>
                   <h4 className="text-white font-black text-sm mt-1">ENTER 12-DIGIT UPI REFERENCE (UTR)</h4>
                   <p className="text-gray-400 text-[11px] mt-0.5">
-                    Found in your PhonePe / GPay / Paytm payment receipt under "UPI Ref No" or "UTR"
+                    Found in your PhonePe / GPay / Paytm payment receipt under &quot;UPI Ref No&quot; or &quot;UTR&quot;
                   </p>
                 </div>
 

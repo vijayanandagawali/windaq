@@ -2,13 +2,16 @@
 import React, { useEffect, useState } from 'react';
 import { Gift, Zap, ShieldAlert, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { getApiUrl } from '@/lib/config';
+import { useWalletStore } from '@/store/walletStore';
 
 export default function PromotionsPage() {
+  const userId = useWalletStore(s => s.userId) || 'sbx-usr-normal-001';
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/bonus/campaigns')
+    fetch(getApiUrl('/api/bonus/campaigns'))
       .then(res => res.json())
       .then(data => {
         if (data.success) setCampaigns(data.data);
@@ -18,9 +21,9 @@ export default function PromotionsPage() {
 
   const activateCampaign = async (id: string) => {
     try {
-      const res = await fetch('http://localhost:4000/api/bonus/activate', {
+      const res = await fetch(getApiUrl('/api/bonus/activate'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': 'mock-user-id' },
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
         body: JSON.stringify({ campaignId: id })
       });
       const data = await res.json();

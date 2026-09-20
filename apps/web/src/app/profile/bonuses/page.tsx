@@ -2,21 +2,24 @@
 import React, { useEffect, useState } from 'react';
 import { Target, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { getApiUrl } from '@/lib/config';
+import { useWalletStore } from '@/store/walletStore';
 
 export default function MyBonusesPage() {
+  const userId = useWalletStore(s => s.userId) || 'sbx-usr-normal-001';
   const [bonuses, setBonuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/bonus/active', {
-      headers: { 'x-user-id': 'mock-user-id' }
+    fetch(getApiUrl('/api/bonus/active'), {
+      headers: { 'x-user-id': userId }
     })
       .then(res => res.json())
       .then(data => {
         if (data.success) setBonuses(data.data);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [userId]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-8 px-4">

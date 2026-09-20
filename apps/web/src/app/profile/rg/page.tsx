@@ -1,19 +1,22 @@
 'use client';
 import React, { useState } from 'react';
 import { ShieldAlert, TrendingDown, Clock, ShieldBan } from 'lucide-react';
+import { getApiUrl } from '@/lib/config';
+import { useWalletStore } from '@/store/walletStore';
 
 export default function ResponsibleGamingPage() {
+  const userId = useWalletStore(s => s.userId) || 'sbx-usr-normal-001';
   const [dailyWagerLimit, setDailyWagerLimit] = useState('');
   const [selfExcludeDays, setSelfExcludeDays] = useState('');
   const [message, setMessage] = useState('');
 
   const handleUpdate = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/compliance/rg-limits', {
+      const res = await fetch(getApiUrl('/api/compliance/rg-limits'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': 'mock-user-id'
+          'x-user-id': userId
         },
         body: JSON.stringify({ 
           dailyWagerLimit: dailyWagerLimit ? parseInt(dailyWagerLimit) * 100 : undefined,

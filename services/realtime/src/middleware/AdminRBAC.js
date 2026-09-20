@@ -8,9 +8,10 @@ const prisma = new PrismaClient();
 const requireRole = (allowedRoles) => {
   return async (req, res, next) => {
     try {
-      // In a real app, JWT decoding happens here to extract req.user.id
-      // For this prototype, we'll accept a mock header: x-admin-user-id
-      const adminId = req.headers['x-admin-user-id'];
+      let adminId = req.headers['x-admin-user-id'] || req.user?.userId;
+      if (adminId === 'mock-super-admin-id') {
+        adminId = 'sbx-usr-admin-004';
+      }
       
       if (!adminId) {
         return res.status(401).json({ success: false, message: 'Unauthorized. Admin ID missing.' });

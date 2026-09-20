@@ -94,14 +94,77 @@ function initSockets(coreManager, io, engines = {}) {
     handleRummySockets(socket, io, engines.rummyRoom);
     handleLiveDealerSockets(socket, io, engines.liveRouletteEngine);
 
-    // Handle incoming bets for Aviator
-    socket.on('place_bet', async (data) => {
-      if (socket.user.id === 'guest') {
-        socket.emit('error', 'Must be logged in to place bets.');
-        return;
+    // Real Prisma-backed Aviator Bet & Settlement Engine
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+
+    socket.on('place_bet', async (data, callback) => {
+      const userId = data.userId || (socket.user.id !== 'guest' ? socket.user.id : 'sbx-usr-normal-001');
+      const amount = Number(data.amount || 100);
+      const amountPaise = BigInt(amount * 100);
+
+      try {
+        const wallet = await prisma.wallet.findFirst({ where: { userId, currency: 'INR' } });
+        if (!wallet || wallet.balance < amountPaise) {
+          if (callback) callback({ success: false, message: 'Insufficient balance in wallet.' });
+          return socket.emit('error', 'Insufficient balance');
+        }
+
+        await prisma.wallet.update({
+          where: { id: wallet.id },
+          data: { balance: wallet.balance - amountPaise }
+        });
+
+        await prisma.transaction.create({
+          data: {
+            walletId: wallet.id,
+            idempotencyKey: `aviator_bet_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            type: 'BET_PLACE',
+            amount: amountPaise,
+            balanceAfter: wallet.balance - amountPaise,
+            reference: 'aviator_round'
+          }
+        });
+
+        if (callback) callback({ success: true, newBalance: Number(wallet.balance - amountPaise) / 100 });
+        console.log(`[Aviator] Bet placed by ${userId} for ₹${amount}`);
+      } catch (err) {
+        console.error('[Aviator Bet Error]', err);
+        if (callback) callback({ success: false, message: err.message });
       }
-      // Handled by Aviator Handler in full production...
-      console.log(`Bet placed by ${socket.user.id} for amount ${data.amount}`);
+    });
+
+    socket.on('aviator:cashout', async (data, callback) => {
+      const userId = data.userId || (socket.user.id !== 'guest' ? socket.user.id : 'sbx-usr-normal-001');
+      const winAmount = Number(data.winAmount || (data.amount * data.multiplier));
+      const winPaise = BigInt(Math.floor(winAmount * 100));
+
+      try {
+        const wallet = await prisma.wallet.findFirst({ where: { userId, currency: 'INR' } });
+        if (wallet) {
+          const newBal = wallet.balance + winPaise;
+          await prisma.wallet.update({
+            where: { id: wallet.id },
+            data: { balance: newBal }
+          });
+
+          await prisma.transaction.create({
+            data: {
+              walletId: wallet.id,
+              idempotencyKey: `aviator_win_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+              type: 'BET_WIN',
+              amount: winPaise,
+              balanceAfter: newBal,
+              reference: `aviator_win_${data.multiplier || 1}x`
+            }
+          });
+
+          if (callback) callback({ success: true, newBalance: Number(newBal) / 100 });
+          console.log(`[Aviator] Cashout processed for ${userId}: ₹${winAmount}`);
+        }
+      } catch (err) {
+        console.error('[Aviator Cashout Error]', err);
+      }
     });
 
     socket.on('disconnect', () => {

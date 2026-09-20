@@ -4,6 +4,7 @@ import React from 'react';
 import { ArrowDownLeft, ArrowUpRight, History, ShieldCheck, CreditCard, ChevronRight, Gift, Trophy } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import AndroidStatusBar from '@/components/layout/AndroidStatusBar';
+import Header from '@/components/layout/Header';
 
 export default function WalletHub() {
   const { balance, bonusBalance, setDepositing, setWithdrawing, setPassbookOpen, setVipOpen, setReferralOpen } = useWalletStore();

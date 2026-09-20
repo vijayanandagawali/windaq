@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getApiUrl } from '@/lib/config';
 
 export interface Transaction {
   id: string;
@@ -216,5 +217,18 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   setReferralOpen: (status) => set({ isReferralOpen: status }),
   setPassbookOpen: (status) => set({ isPassbookOpen: status }),
   setNotifOpen: (status) => set({ isNotifOpen: status }),
-  fetchBalance: () => { /* No-op for now as balance is managed locally in mock */ },
+  fetchBalance: async () => {
+    try {
+      const uid = get().userId || 'sbx-usr-normal-001';
+      const res = await fetch(getApiUrl('/api/ledger/balance'), {
+        headers: { 'x-user-id': uid }
+      });
+      const data = await res.json();
+      if (data.success && typeof data.balance === 'number') {
+        set({ balance: data.balance });
+      }
+    } catch {
+      // Retain optimistic balance if server unreachable
+    }
+  },
 }));

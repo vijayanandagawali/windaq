@@ -61,7 +61,7 @@ export default function ReferralModal() {
           </div>
 
           <p className="text-gray-300 text-xs mb-4">
-            Invite friends to WinDaq. Earn <b className="text-neon-mint">₹200 instant cash</b> on every friend's signup plus <b className="text-neon-mint">30% lifetime commission</b> on every bet!
+            Invite friends to WinDaq. Earn <b className="text-neon-mint">₹200 instant cash</b> on every friend&apos;s signup plus <b className="text-neon-mint">30% lifetime commission</b> on every bet!
           </p>
 
           {/* Stats Box */}

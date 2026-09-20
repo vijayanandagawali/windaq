@@ -113,6 +113,20 @@ async function main() {
       isLive: true, isNew: false, isActive: true, minStake: 20,
       rules: { howToPlay: "Roulette with random multipliers up to 500x." }, limits: defaultLimits, rgInfo: { ...defaultRG, RTP: 97.3, volatility: "HIGH" },
       cats: [catLive, catTrending]
+    },
+    {
+      slug: 'sportsbook', name: 'Cricket Sportsbook', type: 'SPORTS', provider: 'WinDaq Sports', variant: 'Live & Pre-Match',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=800&auto=format&fit=crop', // Cricket stadium
+      isLive: true, isNew: true, isActive: true, minStake: 50,
+      rules: { howToPlay: "Bet on Live Cricket Matches and International Leagues." }, limits: { min: 5000, max: 50000000 }, rgInfo: { ...defaultRG, volatility: "MEDIUM" },
+      cats: [catSports, catTrending]
+    },
+    {
+      slug: 'live-casino', name: 'Live Dealer Studio', type: 'LIVE', provider: 'WinDaq Studios', variant: 'VIP Tables',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=800&auto=format&fit=crop', // Live Studio
+      isLive: true, isNew: true, isActive: true, minStake: 100,
+      rules: { howToPlay: "Play with live human dealers in real-time." }, limits: { min: 10000, max: 100000000 }, rgInfo: { ...defaultRG, volatility: "LOW" },
+      cats: [catLive]
     }
   ];
 
