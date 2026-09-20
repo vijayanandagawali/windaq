@@ -206,29 +206,15 @@ class BaseTableEngine extends UniversalRoundEngine {
           totalPayout += payout;
           winnersCount++;
 
-          await prisma.$transaction(async (tx) => {
-            await tx.tableGameBet.update({
-              where: { id: bet.id },
-              data: { payout }
-            });
-
-            const wallet = await tx.wallet.findFirst({ where: { userId: bet.userId, currency: 'INR' } });
-            if (wallet) {
-              const newBalance = wallet.balance + payout;
-              await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
-
-              await tx.transaction.create({
-                data: {
-                  walletId: wallet.id,
-                  idempotencyKey: `tg-win-${bet.id}`,
-                  type: 'BET_WIN',
-                  amount: payout,
-                  balanceAfter: newBalance,
-                  reference: bet.id
-                }
+            await prisma.$transaction(async (tx) => {
+              await tx.tableGameBet.update({
+                where: { id: bet.id },
+                data: { payout }
               });
-            }
-          });
+
+              const walletService = require('../walletService');
+              await walletService.settleWin(tx, bet.userId, bet.amount, payout, 'TABLE_WIN', bet.id);
+            });
         }
       }
 

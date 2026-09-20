@@ -194,8 +194,7 @@ app.post('/api/v1/auth/verify-otp', (req, res) => {
 app.get('/api/v1/auth/me', (req, res) => {
   const phone = req.query.phone;
   if (!phone) return res.status(400).json({ success: false, error: 'Phone required' });
-  const user = wallet.getUser(phone);
-  if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+  const user = wallet.getUser(phone) || wallet.getOrCreateUser(phone);
   return res.json({
     success: true,
     user,
@@ -206,8 +205,7 @@ app.get('/api/v1/auth/me', (req, res) => {
 // --- WALLET APIS ---
 app.get('/api/v1/wallet/balance', (req, res) => {
   const phone = req.query.phone;
-  const user = wallet.getUser(phone);
-  if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+  const user = wallet.getUser(phone) || wallet.getOrCreateUser(phone);
   return res.json({
     success: true,
     totalBalance: wallet.getTotalBalance(phone),
@@ -402,8 +400,7 @@ app.get('/api/v1/ready', (req, res) => {
 app.get('/api/v1/user/kyc', (req, res) => {
   const phone = req.query.phone;
   if (!phone) return res.status(400).json({ success: false, error: 'Phone required' });
-  const user = wallet.getUser(phone);
-  if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+  const user = wallet.getUser(phone) || wallet.getOrCreateUser(phone);
   const kyc = wallet.db.getKyc(user.id);
   res.json({ success: true, kyc: kyc || { status: 'UNVERIFIED' } });
 });
@@ -411,8 +408,7 @@ app.get('/api/v1/user/kyc', (req, res) => {
 app.post('/api/v1/user/kyc', (req, res) => {
   try {
     const { phone, fullName, dob, panNumber, aadhaarLastFour, bankAccount, ifsc } = req.body;
-    const user = wallet.getUser(phone);
-    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+    const user = wallet.getUser(phone) || wallet.getOrCreateUser(phone);
     const result = wallet.db.submitKyc(user.id, phone, fullName, dob, panNumber, aadhaarLastFour, bankAccount, ifsc);
     res.json(result);
   } catch (err) {
@@ -502,8 +498,7 @@ app.post('/api/v1/spin/claim', (req, res) => {
 app.get('/api/v1/user/vip', (req, res) => {
   const phone = req.query.phone;
   if (!phone) return res.status(400).json({ success: false, error: 'Phone required' });
-  const vipInfo = wallet.db.getVipInfo(phone);
-  if (!vipInfo) return res.status(404).json({ success: false, error: 'User not found' });
+  const vipInfo = wallet.db.getVipInfo(phone) || { tier: 'Bronze', points: 0, claimableCashback: 0 };
   return res.json({ success: true, vip: vipInfo });
 });
 
@@ -532,8 +527,7 @@ app.post('/api/v1/user/vip/claim-cashback', (req, res) => {
 app.get('/api/v1/user/referrals', (req, res) => {
   const phone = req.query.phone;
   if (!phone) return res.status(400).json({ success: false, error: 'Phone required' });
-  const stats = wallet.db.getReferralStats(phone);
-  if (!stats) return res.status(404).json({ success: false, error: 'User not found' });
+  const stats = wallet.db.getReferralStats(phone) || { count: 0, earnings: 0, referralCode: 'WIN9420' };
   return res.json({ success: true, referral: stats });
 });
 

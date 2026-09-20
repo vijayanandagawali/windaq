@@ -90,8 +90,7 @@ function handleScratchSockets(socket, io) {
           data: { isRevealed: true, revealedAt: new Date() }
         });
 
-        const wallet = await tx.wallet.findFirst({ where: { userId, currency: 'INR' } });
-        
+        let { wallet } = await ensureUserAndWallet(tx, userId);
         let newBalance = wallet.balance;
 
         // Credit winnings if any

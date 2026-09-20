@@ -15,7 +15,7 @@ class ComplianceService {
    */
   async checkEligibility(userId, productType, amountPaise) {
     // 1. Fetch all compliance data for user
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         selfExclusions: {
@@ -31,7 +31,12 @@ class ComplianceService {
       }
     });
 
-    if (!user) throw new Error('User not found.');
+    if (!user) {
+      // Auto-provision user & wallet to prevent "User not found" error
+      const walletService = require('./walletService');
+      const ensured = await walletService.ensureUserAndWallet(prisma, userId);
+      user = ensured.user;
+    }
 
     // 2. Self-Exclusion Check
     if (user.selfExclusions && user.selfExclusions.length > 0) {

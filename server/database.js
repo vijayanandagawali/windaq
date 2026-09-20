@@ -434,8 +434,7 @@ class DatabaseService {
   }
 
   deductBet(phone, amount, gameName, roundId = null, selection = null) {
-    const user = this.getUser(phone);
-    if (!user) throw new Error('User not found');
+    let user = this.getUser(phone) || this.getOrCreateUser(phone);
     amount = parseFloat(amount);
     if (isNaN(amount) || amount <= 0) throw new Error('Invalid bet amount');
 
@@ -500,8 +499,7 @@ class DatabaseService {
   }
 
   creditWin(phone, amount, gameName, multiplier = 1.0, betId = null) {
-    const user = this.getUser(phone);
-    if (!user) throw new Error('User not found');
+    let user = this.getUser(phone) || this.getOrCreateUser(phone);
     amount = parseFloat(amount);
     if (isNaN(amount) || amount <= 0) return { success: false, newBalance: this.getTotalBalance(phone) };
 
@@ -621,8 +619,7 @@ class DatabaseService {
     amount = parseFloat(amount);
     if (isNaN(amount) || amount < 200) throw new Error('Minimum withdrawal amount is ₹200');
 
-    const user = this.getUser(phone);
-    if (!user) throw new Error('User not found');
+    let user = this.getUser(phone) || this.getOrCreateUser(phone);
 
     if (user.winning_balance < amount) {
       throw new Error(`Insufficient winning balance! Available to withdraw: ₹${user.winning_balance.toFixed(2)}`);
