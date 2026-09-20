@@ -275,19 +275,8 @@ export default function AviatorGame() {
   };
 
   return (
-    <main className="min-h-screen bg-obsidian font-sans selection:bg-neon-mint selection:text-deep-ocean relative flex flex-col">
-      {/* Header */}
-      <header className="flex-none bg-deep-ocean border-b border-white/5 px-4 py-3 flex items-center justify-between z-10 shadow-lg">
-        <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-          <ChevronLeft size={24} className="text-white" />
-        </Link>
-        <div className="flex items-center gap-2">
-          <div className="bg-red-500 rounded-full px-3 py-0.5 text-white text-[10px] font-bold tracking-wider flex items-center gap-1 animate-pulse">
-            <div className="w-1.5 h-1.5 bg-white rounded-full" /> LIVE
-          </div>
-          <HelpCircle size={20} className="text-gray-400" />
-        </div>
-      </header>
+    <div className="h-[calc(100dvh-58px)] max-h-[100dvh] bg-obsidian font-sans selection:bg-neon-mint selection:text-deep-ocean relative flex flex-col overflow-hidden">
+
 
       {/* Game Area (The Canvas & Multiplier) */}
       <div className={`relative flex-1 flex flex-col justify-center items-center overflow-hidden transition-colors duration-300 ${gameState === 'crashed' ? 'bg-red-950/20' : 'bg-ocean-card/30'}`}>
@@ -385,7 +374,7 @@ export default function AviatorGame() {
           />
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 

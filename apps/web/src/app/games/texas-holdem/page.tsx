@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, Info, Settings, MessageSquare, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWalletStore } from '@/store/walletStore';
-import io from 'socket.io-client';
+import { io } from '@/lib/gameSocket';
 
 import confetti from 'canvas-confetti';
 
@@ -21,7 +21,7 @@ export default function PokerTable() {
   useEffect(() => {
     socket.emit('poker_join', { tableId: 'high-roller-1', seatIndex: 0 });
 
-    socket.on('poker_state', (state) => {
+    socket.on('poker_state', (state: any) => {
       setTableState(state);
       // find my seat
       const idx = state.seats.findIndex((s: any) => s && (s.name === 'Player' || s.id === 'guest' || s.id === 'sbx-usr-normal-001'));
@@ -52,27 +52,8 @@ export default function PokerTable() {
   };
 
   return (
-    <main className="min-h-screen bg-black font-sans selection:bg-neon-mint flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="flex-none bg-deep-ocean/90 backdrop-blur border-b border-white/5 px-4 py-3 flex items-center justify-between z-20">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-            <ChevronLeft size={24} className="text-white" />
-          </Link>
-          <div>
-            <h1 className="text-white font-black tracking-widest text-sm uppercase">Texas Hold'em</h1>
-            <p className="text-gray-400 text-[10px] uppercase tracking-wider">Blinds 10/20 • High Roller Table</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="bg-neon-mint/10 border border-neon-mint/30 px-3 py-1 rounded-full text-neon-mint text-xs font-mono font-bold">
-            ₹{balance.toFixed(2)}
-          </div>
-          <button className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors">
-            <Info size={16} />
-          </button>
-        </div>
-      </header>
+    <div className="h-[calc(100dvh-58px)] bg-black font-sans selection:bg-neon-mint flex flex-col overflow-hidden">
+
 
       {/* Game Area */}
       <div className="flex-1 relative flex items-center justify-center p-4">
@@ -271,6 +252,6 @@ export default function PokerTable() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

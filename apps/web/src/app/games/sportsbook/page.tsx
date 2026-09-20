@@ -34,14 +34,8 @@ export default function Sportsbook() {
   };
 
   return (
-    <main className="min-h-screen bg-deep-ocean font-sans selection:bg-neon-mint flex flex-col pb-safe">
-      <header className="flex-none bg-[#091b3d] border-b border-white/5 px-4 py-3 flex items-center justify-between z-20 shadow-lg">
-        <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-          <ChevronLeft size={24} className="text-white" />
-        </Link>
-        <h1 className="text-white font-bold tracking-widest text-sm uppercase">WinDaq Sports</h1>
-        <span className="text-neon-mint font-bold text-sm">₹{balance.toFixed(2)}</span>
-      </header>
+    <div className="h-[calc(100dvh-58px)] bg-deep-ocean font-sans selection:bg-neon-mint flex flex-col pb-safe overflow-y-auto">
+
 
       {/* Live Scorecard Engine */}
       <div className="bg-[#0b214a] p-4 border-b border-white/5">
@@ -168,6 +162,6 @@ export default function Sportsbook() {
 
       {/* Bet Slip (Dynamic Bottom Sheet) */}
       {/* Bet Slip removed, now using GlobalBetSlip */}
-    </main>
+    </div>
   );
 }

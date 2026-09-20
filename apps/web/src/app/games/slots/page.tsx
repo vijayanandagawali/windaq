@@ -7,7 +7,7 @@ import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 import { audioEngine } from '@/lib/audioEngine';
 import { useAudioStore } from '@/store/audioStore';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
@@ -162,16 +162,8 @@ export default function SlotsGame() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0f1a] font-sans selection:bg-neon-mint relative flex flex-col pb-safe">
-      <header className="flex-none bg-black/40 border-b border-white/5 px-4 py-3 flex items-center justify-between z-20">
-        <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-          <ChevronLeft size={24} className="text-white" />
-        </Link>
-        <h1 className="text-white font-bold tracking-widest text-sm uppercase">Ocean Treasures Slots</h1>
-        <button onClick={toggleSound} className="p-2 rounded-full hover:bg-white/10 text-white cursor-pointer" aria-label={soundEnabled ? "Mute Sound" : "Unmute Sound"}>
-          {soundEnabled ? <Volume2 size={20}/> : <VolumeX size={20}/>}
-        </button>
-      </header>
+    <div className="h-[calc(100dvh-58px)] max-h-[100dvh] bg-[#0a0f1a] font-sans selection:bg-neon-mint relative flex flex-col pb-safe overflow-hidden">
+
 
       {/* Main Game Area */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -313,6 +305,6 @@ export default function SlotsGame() {
         celebration={celebration}
         onComplete={() => setCelebration(null)}
       />
-    </main>
+    </div>
   );
 }

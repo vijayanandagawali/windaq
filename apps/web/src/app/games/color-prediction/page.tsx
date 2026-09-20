@@ -7,7 +7,7 @@ import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
 
 const COLORS = [
@@ -178,14 +178,8 @@ export default function ColorPrediction() {
   };
 
   return (
-    <main className="min-h-screen bg-deep-ocean font-sans selection:bg-neon-mint relative flex flex-col pb-safe">
-      <header className="flex-none bg-deep-ocean border-b border-white/5 px-4 py-3 flex items-center justify-between z-20 shadow-lg">
-        <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-          <ChevronLeft size={24} className="text-white" />
-        </Link>
-        <h1 className="text-white font-bold tracking-widest text-sm uppercase">WinDaq Color</h1>
-        <span className="text-neon-mint font-bold text-sm">₹{balance.toFixed(2)}</span>
-      </header>
+    <div className="h-[calc(100dvh-58px)] bg-deep-ocean font-sans selection:bg-neon-mint relative flex flex-col pb-safe overflow-y-auto">
+
 
       {/* Tabs */}
       <div className="flex bg-ocean-card/50 p-1 m-4 rounded-xl border border-white/10">
@@ -329,6 +323,6 @@ export default function ColorPrediction() {
         celebration={celebration}
         onComplete={() => setCelebration(null)}
       />
-    </main>
+    </div>
   );
 }

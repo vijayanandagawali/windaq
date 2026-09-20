@@ -2,7 +2,8 @@
  * Centralized Configuration for WinDaq Frontend.
  * Reads environment variables with production-ready fallbacks for Vercel deployment.
  */
-import { io, Socket } from 'socket.io-client';
+import { getGameSocket } from './gameSocket';
+import type { Socket } from 'socket.io-client';
 
 export const API_BASE_URL = 
   typeof window !== 'undefined'
@@ -27,8 +28,9 @@ export function getApiUrl(endpoint: string): string {
 }
 
 export function createGameSocket(path = '', options = {}): Socket {
-  return io(WS_BASE_URL, {
+  return getGameSocket(WS_BASE_URL, {
     transports: ['websocket', 'polling'],
     ...options
   });
 }
+

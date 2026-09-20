@@ -6,7 +6,7 @@ import { ChevronLeft, Info, HelpCircle } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 
 export default function RummyGame() {
   const { balance, fetchBalance } = useWalletStore();
@@ -163,21 +163,8 @@ export default function RummyGame() {
   );
 
   return (
-    <main className="min-h-screen w-full bg-[#1b263b] text-white font-sans selection:bg-yellow-500 flex flex-col relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/dark-leather.png')]">
-      
-      {/* Header */}
-      <header className="bg-black/40 border-b border-white/5 px-4 py-3 flex items-center justify-between z-50 backdrop-blur-md">
-        <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-          <ChevronLeft size={24} />
-        </Link>
-        <div className="flex flex-col items-center">
-          <h1 className="font-bold tracking-widest text-sm uppercase text-yellow-400">Points Rummy</h1>
-          <div className="text-white/70 text-[10px]">Point Value: ₹10</div>
-        </div>
-        <button className="p-2 rounded-full hover:bg-white/10">
-          <Info size={20}/>
-        </button>
-      </header>
+    <div className="h-[calc(100dvh-58px)] w-full bg-[#1b263b] text-white font-sans selection:bg-yellow-500 flex flex-col relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/dark-leather.png')]">
+
 
       {/* Table Area */}
       <div className="flex-1 w-full relative flex flex-col items-center justify-center p-4">
@@ -300,6 +287,6 @@ export default function RummyGame() {
 
       </div>
 
-    </main>
+    </div>
   );
 }

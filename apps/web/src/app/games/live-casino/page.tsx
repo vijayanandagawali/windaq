@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, Maximize2, Volume2, ShieldCheck, History, Clock } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import toast from 'react-hot-toast';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 import UniversalBetPanel from '@/components/games/UniversalBetPanel';
 
 export default function LiveCasino() {
@@ -93,7 +93,8 @@ export default function LiveCasino() {
   const isBettingOpen = gameState?.status === 'BETTING_OPEN';
 
   return (
-    <main className="min-h-screen bg-black font-sans selection:bg-neon-mint flex flex-col">
+    <div className="h-[calc(100dvh-58px)] bg-black font-sans selection:bg-neon-mint flex flex-col overflow-y-auto">
+
       {/* Video Stream Area (Top Half) */}
       <div className="relative w-full h-[40vh] md:h-[45vh] bg-gray-900 border-b-2 border-neon-mint/50 overflow-hidden">
         <video 
@@ -225,6 +226,6 @@ export default function LiveCasino() {
           transform: scale(0.96);
         }
       `}</style>
-    </main>
+    </div>
   );
 }

@@ -6,7 +6,7 @@ import { ChevronLeft } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
 
 export default function BlackjackGame() {
@@ -159,19 +159,8 @@ export default function BlackjackGame() {
   };
 
   return (
-    <main className="min-h-screen w-full bg-[#1e4620] bg-[url('https://www.transparenttextures.com/patterns/felt.png')] text-white font-sans flex flex-col relative overflow-hidden">
-      
-      {/* Navbar */}
-      <header className="bg-black/40 border-b border-white/10 px-4 py-3 flex items-center justify-between sticky top-0 z-50 backdrop-blur-md">
-        <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-          <ChevronLeft size={24} />
-        </Link>
-        <div className="flex flex-col items-center">
-          <h1 className="font-bold tracking-widest text-sm uppercase text-yellow-400">Premium Blackjack</h1>
-          <div className="text-white font-bold text-xs bg-black/50 px-2 py-0.5 rounded-full mt-1 border border-white/20">₹ {balance.toFixed(2)}</div>
-        </div>
-        <div className="w-10"></div>
-      </header>
+    <div className="h-[calc(100dvh-58px)] w-full bg-[#1e4620] bg-[url('https://www.transparenttextures.com/patterns/felt.png')] text-white font-sans flex flex-col relative overflow-hidden">
+
 
       {/* Table Area */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
@@ -288,6 +277,6 @@ export default function BlackjackGame() {
         onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
       />
 
-    </main>
+    </div>
   );
 }

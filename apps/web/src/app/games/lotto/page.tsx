@@ -7,7 +7,7 @@ import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 
 const TICKET_PRICE = 100;
 
@@ -154,16 +154,8 @@ export default function LottoGame() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0f1a] font-sans selection:bg-neon-mint flex flex-col pb-safe">
-      <header className="flex-none bg-black/40 border-b border-white/5 px-4 py-3 flex items-center justify-between z-20">
-        <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-          <ChevronLeft size={24} className="text-white" />
-        </Link>
-        <h1 className="text-white font-bold tracking-widest text-sm uppercase">Quick Draw 6/49</h1>
-        <button className="p-2 rounded-full hover:bg-white/10 text-white">
-          <Info size={20}/>
-        </button>
-      </header>
+    <div className="h-[calc(100dvh-58px)] bg-[#0a0f1a] font-sans selection:bg-neon-mint flex flex-col pb-safe overflow-y-auto">
+
 
       <div className="flex-1 overflow-y-auto flex flex-col relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#0a0f1a] to-[#0a0f1a] pointer-events-none" />
@@ -359,6 +351,6 @@ export default function LottoGame() {
 
         </div>
       </div>
-    </main>
+    </div>
   );
 }

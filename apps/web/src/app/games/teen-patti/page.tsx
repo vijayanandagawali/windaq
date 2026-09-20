@@ -6,7 +6,7 @@ import { ChevronLeft, Info, Eye, LogOut, CheckCircle2 } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 
 import confetti from 'canvas-confetti';
 
@@ -94,21 +94,8 @@ export default function TeenPattiGame() {
   };
 
   return (
-    <main className="h-screen w-full bg-[#0a0f1a] overflow-hidden flex flex-col font-sans selection:bg-neon-mint relative">
-      
-      {/* Navbar */}
-      <header className="flex-none bg-black/40 border-b border-white/5 px-4 py-3 flex items-center justify-between z-20 absolute top-0 w-full">
-        <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-          <ChevronLeft size={24} className="text-white" />
-        </Link>
-        <div className="text-center">
-           <h1 className="text-white font-bold tracking-widest text-sm uppercase">Teen Patti Classic</h1>
-           <p className="text-xs text-gray-400">Boot: ₹{BOOT_AMOUNT}</p>
-        </div>
-        <button className="p-2 rounded-full hover:bg-white/10 text-white">
-          <Info size={20}/>
-        </button>
-      </header>
+    <div className="h-[calc(100dvh-58px)] w-full bg-[#0a0f1a] overflow-hidden flex flex-col font-sans selection:bg-neon-mint relative">
+
 
       {/* Game Table Area */}
       <div className="flex-1 relative w-full h-full pt-16 pb-32 flex items-center justify-center">
@@ -300,6 +287,6 @@ export default function TeenPattiGame() {
         </div>
       </div>
 
-    </main>
+    </div>
   );
 }

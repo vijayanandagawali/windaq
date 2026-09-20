@@ -6,7 +6,7 @@ import { ChevronLeft, Info, HelpCircle, Activity, Wifi, ShieldCheck, History } f
 import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 
 const ROULETTE_NUMBERS = [
   0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
@@ -82,7 +82,7 @@ export default function LiveRoulette() {
   };
 
   return (
-    <main className="min-h-screen w-full bg-[#111] text-white font-sans flex flex-col relative overflow-hidden">
+    <div className="h-[calc(100dvh-58px)] w-full bg-[#111] text-white font-sans flex flex-col relative overflow-hidden">
       
       {/* VIDEO HERO BACKGROUND */}
       <div className="absolute inset-0 z-0">
@@ -102,33 +102,15 @@ export default function LiveRoulette() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#111] via-black/40 to-black/80 pointer-events-none"></div>
       </div>
 
-      {/* HEADER */}
-      <header className="relative z-10 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 bg-black/40 backdrop-blur-md">
-            <ChevronLeft size={24} />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse">LIVE</span>
-              <h1 className="font-bold text-sm tracking-widest uppercase">VIP Roulette</h1>
-            </div>
-            <div className="text-[10px] text-white/50 flex items-center gap-1">
-              <ShieldCheck size={12} className="text-green-400" /> Provably Fair
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
+        <div className="relative z-10 px-4 py-3 flex items-center justify-end">
           <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
             <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Bal</span>
-            <span className="font-bold text-green-400 text-sm">₹{(balance / 100).toLocaleString()}</span>
+            <span className="font-bold text-green-400 text-sm">₹{balance.toLocaleString()}</span>
           </div>
-          <button className="p-2 rounded-full hover:bg-white/10 bg-black/40 backdrop-blur-md">
+          <button className="p-2 ml-2 rounded-full hover:bg-white/10 bg-black/40 backdrop-blur-md">
             <Wifi size={18} className="text-green-400" />
           </button>
         </div>
-      </header>
 
       {/* CENTER STATUS MESSAGE */}
       <div className="relative z-10 flex-1 flex items-center justify-center pointer-events-none">
@@ -247,6 +229,6 @@ export default function LiveRoulette() {
 
       </div>
 
-    </main>
+    </div>
   );
 }

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import toast from 'react-hot-toast';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 import SimulatedLiveTable, { SimulatedLiveState } from '@/components/games/SimulatedLiveTable';
 import { stateRecovery } from '@/lib/stateRecovery';
 
@@ -239,34 +239,8 @@ export default function DragonTigerGamePage() {
   }, [socket, tableState.phase, fetchBalance, userId]);
 
   return (
-    <main className="h-screen w-full bg-[#070b12] text-white flex flex-col overflow-hidden">
-      
-      {/* Top Navigation */}
-      <header className="bg-black/60 border-b border-white/10 px-4 py-2 flex items-center justify-between z-40 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <Link 
-            href="/" 
-            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
-            title="Back to Game Hub"
-          >
-            <ChevronLeft size={20} />
-          </Link>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm font-black tracking-widest uppercase">Dragon Tiger</h1>
-              <span className="text-[10px] bg-amber-500/20 text-amber-400 font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
-                SIMULATED LIVE
-              </span>
-            </div>
-            <span className="text-[10px] text-white/40">Continuously Running Server-Authoritative Table</span>
-          </div>
-        </div>
+    <div className="h-[calc(100dvh-58px)] w-full bg-[#070b12] text-white flex flex-col overflow-hidden">
 
-        {/* Balance Badge */}
-        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
-          <span className="text-xs text-emerald-400 font-bold">₹ {balance.toFixed(2)}</span>
-        </div>
-      </header>
 
       {/* Simulated Live Table Component */}
       <div className="flex-1 overflow-hidden relative">
@@ -279,6 +253,6 @@ export default function DragonTigerGamePage() {
         />
       </div>
 
-    </main>
+    </div>
   );
 }

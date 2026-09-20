@@ -6,7 +6,7 @@ import { ChevronLeft, History } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from '@/lib/gameSocket';
 import RouletteWheel from '@/components/games/RouletteWheel';
 import { audioEngine } from '@/lib/audioEngine';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
@@ -210,20 +210,8 @@ export default function RouletteGame() {
   };
 
   return (
-    <main className="min-h-screen w-full bg-[#0a0f1a] text-white font-sans selection:bg-neon-mint flex flex-col">
-      {/* Navbar */}
-      <header className="bg-black/40 border-b border-white/5 px-4 py-3 flex items-center justify-between sticky top-0 z-50 backdrop-blur-md">
-        <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-          <ChevronLeft size={24} />
-        </Link>
-        <div className="flex flex-col items-center">
-          <h1 className="font-bold tracking-widest text-sm uppercase">European Roulette</h1>
-          <div className="text-neon-mint font-bold text-xs bg-neon-mint/10 px-2 py-0.5 rounded-full mt-1">₹ {balance.toFixed(2)}</div>
-        </div>
-        <button className="p-2 rounded-full hover:bg-white/10" onClick={() => toast("View History coming soon")}>
-          <History size={20}/>
-        </button>
-      </header>
+    <div className="h-[calc(100dvh-58px)] w-full bg-[#0a0f1a] text-white font-sans selection:bg-neon-mint flex flex-col overflow-y-auto">
+
 
       {/* Game Stage Area */}
       <div className="w-full min-h-[220px] py-4 bg-gradient-to-b from-[#1a2b1f] to-[#0a0f1a] relative flex flex-col items-center justify-center overflow-hidden border-b border-white/10">
@@ -382,6 +370,6 @@ export default function RouletteGame() {
         message={celebration.message}
         onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
       />
-    </main>
+    </div>
   );
 }
