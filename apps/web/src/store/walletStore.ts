@@ -16,7 +16,7 @@ interface WalletState {
   bonusBalance: number;
   isLoggedIn: boolean;
   userId: string;
-  user: { id: string; name: string; phone: string };
+  user: { id: string; name: string; phone: string } | null;
   userName: string;
   userPhone: string;
   vipTier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond';
@@ -47,17 +47,19 @@ interface WalletState {
   setReferralOpen: (status: boolean) => void;
   setPassbookOpen: (status: boolean) => void;
   setNotifOpen: (status: boolean) => void;
+  setAuthenticatedUser: (user: { id: string; phone: string; role?: string; isGuest?: boolean }, initialBalance?: number) => void;
+  resetWallet: () => void;
   fetchBalance: () => void;
 }
 
 export const useWalletStore = create<WalletState>((set, get) => ({
-  balance: 9420.00,
-  bonusBalance: 500.00,
-  isLoggedIn: true,
-  userId: "sbx-usr-normal-001",
-  user: { id: "sbx-usr-normal-001", name: "Sandbox Player", phone: "+919999900001" },
-  userName: "Player_3210",
-  userPhone: "9876543210",
+  balance: 0,
+  bonusBalance: 0,
+  isLoggedIn: false,
+  userId: "",
+  user: null,
+  userName: "Guest",
+  userPhone: "",
   vipTier: "Gold",
   vipPoints: 2450,
   referralCode: "WIN9420",
@@ -217,12 +219,50 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   setReferralOpen: (status) => set({ isReferralOpen: status }),
   setPassbookOpen: (status) => set({ isPassbookOpen: status }),
   setNotifOpen: (status) => set({ isNotifOpen: status }),
+
+  setAuthenticatedUser: (user, initialBalance) => {
+    set({
+      isLoggedIn: true,
+      userId: user.id,
+      user: { id: user.id, name: user.isGuest ? 'Test Guest' : `Player_${user.id.slice(-4)}`, phone: user.phone },
+      userName: user.isGuest ? 'Test Guest' : `Player_${user.id.slice(-4)}`,
+      userPhone: user.phone,
+      ...(typeof initialBalance === 'number' ? { balance: initialBalance } : {})
+    });
+  },
+
+  resetWallet: () => {
+    set({
+      balance: 0,
+      bonusBalance: 0,
+      isLoggedIn: false,
+      userId: '',
+      user: null,
+      userName: 'Guest',
+      userPhone: '',
+      transactions: []
+    });
+  },
+
   fetchBalance: async () => {
     try {
-      const uid = get().userId || 'sbx-usr-normal-001';
-      const res = await fetch(getApiUrl('/api/ledger/balance'), {
-        headers: { 'x-user-id': uid }
-      });
+      let uid = get().userId;
+      let token: string | null = null;
+      if (typeof window !== 'undefined') {
+        token = localStorage.getItem('windaq_auth_token');
+        if (!uid) {
+          const cached = localStorage.getItem('windaq_user_data');
+          if (cached) {
+            try { uid = JSON.parse(cached).id; } catch {}
+          }
+        }
+      }
+      if (!uid) uid = 'sbx-usr-normal-001';
+
+      const headers: Record<string, string> = { 'x-user-id': uid };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(getApiUrl('/api/ledger/balance'), { headers });
       const data = await res.json();
       if (data.success && typeof data.balance === 'number') {
         set({ balance: data.balance });

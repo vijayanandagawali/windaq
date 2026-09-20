@@ -31,10 +31,16 @@ router.get('/', async (req, res) => {
   }
 });
 
+const { ensureUserAndWallet } = require('../services/walletService');
+
 router.get('/balance', async (req, res) => {
   try {
     const userId = req.headers['x-user-id'] || req.user?.userId || 'sbx-usr-normal-001';
-    const wallet = await prisma.wallet.findFirst({ where: { userId, currency: 'INR' } });
+    let wallet = await prisma.wallet.findFirst({ where: { userId, currency: 'INR' } });
+    if (!wallet) {
+      const ensured = await ensureUserAndWallet(prisma, userId);
+      wallet = ensured.wallet;
+    }
     res.json({ 
       success: true, 
       balancePaise: wallet ? wallet.balance.toString() : '0',

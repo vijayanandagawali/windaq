@@ -11,7 +11,18 @@ const requireAuth = (req, res, next) => {
       req.headers['x-user-id'] = payload.userId;
       return next();
     } catch (error) {
-      return res.status(403).json({ success: false, message: 'Invalid or expired token' });
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({ 
+          success: false, 
+          code: 'SESSION_EXPIRED', 
+          message: 'Session expired. Please log in again.' 
+        });
+      }
+      return res.status(401).json({ 
+        success: false, 
+        code: 'INVALID_TOKEN', 
+        message: 'Invalid authorization token.' 
+      });
     }
   }
 

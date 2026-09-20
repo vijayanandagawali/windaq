@@ -5,14 +5,16 @@ import { ArrowDownLeft, ArrowUpRight, History, ShieldCheck, CreditCard, ChevronR
 import { useWalletStore } from '@/store/walletStore';
 import AndroidStatusBar from '@/components/layout/AndroidStatusBar';
 import Header from '@/components/layout/Header';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 export default function WalletHub() {
   const { balance, bonusBalance, setDepositing, setWithdrawing, setPassbookOpen, setVipOpen, setReferralOpen } = useWalletStore();
 
   return (
-    <main className="min-h-screen bg-deep-ocean pb-24 font-sans selection:bg-neon-mint selection:text-deep-ocean max-w-lg mx-auto">
-      <AndroidStatusBar />
-      <Header />
+    <ProtectedRoute title="MY GAMING WALLET">
+      <main className="min-h-screen bg-deep-ocean pb-24 font-sans selection:bg-neon-mint selection:text-deep-ocean max-w-lg mx-auto">
+        <AndroidStatusBar />
+        <Header />
       
       <div className="px-4 pt-4">
         <h2 className="text-xl font-black text-white mb-4 tracking-wide">MY GAMING WALLET</h2>
@@ -115,5 +117,6 @@ export default function WalletHub() {
         </div>
       </div>
     </main>
+  </ProtectedRoute>
   );
 }

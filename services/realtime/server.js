@@ -65,8 +65,14 @@ const apiLimiter = rateLimit({
 
 const strictLimiter = rateLimit({
   windowMs: 60 * 1000, 
-  max: 10, // 10 req/min for sensitive actions (payments, auth)
+  max: 10, // 10 req/min for sensitive actions (payments)
   message: { success: false, message: 'Rate limit exceeded for sensitive action' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100, // 100 req/min for auth operations
+  message: { success: false, message: 'Too many auth requests, please try again in a moment' }
 });
 
 app.use('/api/', apiLimiter);
@@ -87,7 +93,7 @@ app.post('/api/wallet/deduct', requireAuth, async (req, res) => {
 });
 
 // APIs
-app.use('/api/auth', strictLimiter, authRouter);
+app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/catalog', catalogRouter);
 app.use('/api/ledger', requireAuth, ledgerRouter);
 app.use('/api/wager', requireAuth, wagerRouter);
