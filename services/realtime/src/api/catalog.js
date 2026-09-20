@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 // We use the root prisma client
 const { PrismaClient } = require('@prisma/client');
+const { ensureUserAndWallet } = require('../services/walletService');
 const prisma = new PrismaClient();
 
 // GET /api/catalog
@@ -50,16 +51,25 @@ router.get('/', async (req, res) => {
 router.post('/favorite', async (req, res) => {
   try {
     const { userId, gameId, isFavorite } = req.body;
+    if (!userId || !gameId) return res.status(400).json({ success: false, message: 'userId and gameId required' });
     
+    await ensureUserAndWallet(prisma, userId);
+    
+    // Resolve gameId if slug was passed
+    const game = await prisma.game.findFirst({
+      where: { OR: [{ id: gameId }, { slug: gameId }] }
+    });
+    if (!game) return res.status(404).json({ success: false, message: 'Game not found' });
+
     if (isFavorite) {
       await prisma.playerFavorite.upsert({
-        where: { userId_gameId: { userId, gameId } },
+        where: { userId_gameId: { userId, gameId: game.id } },
         update: {},
-        create: { userId, gameId }
+        create: { userId, gameId: game.id }
       });
     } else {
       await prisma.playerFavorite.deleteMany({
-        where: { userId, gameId }
+        where: { userId, gameId: game.id }
       });
     }
 
@@ -73,10 +83,19 @@ router.post('/favorite', async (req, res) => {
 router.post('/track', async (req, res) => {
   try {
     const { userId, gameId } = req.body;
+    if (!userId || !gameId) return res.status(400).json({ success: false, message: 'userId and gameId required' });
+    
+    await ensureUserAndWallet(prisma, userId);
+
+    const game = await prisma.game.findFirst({
+      where: { OR: [{ id: gameId }, { slug: gameId }] }
+    });
+    if (!game) return res.status(404).json({ success: false, message: 'Game not found' });
+
     await prisma.gameSession.create({
       data: {
         userId,
-        gameId
+        gameId: game.id
       }
     });
     res.json({ success: true });

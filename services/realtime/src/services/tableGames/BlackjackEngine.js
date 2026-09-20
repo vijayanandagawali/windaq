@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const crypto = require('crypto');
+const { ensureUserAndWallet } = require('../walletService');
 
 class BlackjackEngine {
   constructor() {
@@ -60,6 +61,7 @@ class BlackjackEngine {
   }
 
   async createGame(userId) {
+    await ensureUserAndWallet(prisma, userId);
     const shoe = this.generateShoe(6);
     return await prisma.blackjackGame.create({
       data: {

@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { smsAdapter, emailAdapter, inAppAdapter } = require('./notificationAdapters');
+const { ensureUserAndWallet } = require('./walletService');
 
 class NotificationService {
   constructor() {
@@ -66,14 +67,20 @@ class NotificationService {
    * @param {boolean} isTransactional - If true, bypasses marketing opt-outs
    */
   async dispatch(userId, templateName, variables, channels = ['IN_APP'], isTransactional = false) {
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { id: userId },
       include: { notifPrefs: true }
     });
 
-    if (!user) throw new Error('User not found');
+    if (!user) {
+      await ensureUserAndWallet(prisma, userId);
+      user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { notifPrefs: true }
+      });
+    }
 
-    const prefs = user.notifPrefs || { marketingSms: true, marketingEmail: true, transactionalInApp: true };
+    const prefs = user?.notifPrefs || { marketingSms: true, marketingEmail: true, transactionalInApp: true };
 
     const results = [];
 

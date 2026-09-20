@@ -12,6 +12,8 @@ test.describe('WINDAQ - COMPLETE AUTHENTICATION & SESSION LIFECYCLE', () => {
     // ==========================================
     console.log('Step 1: Navigating to Home Lobby as unauthenticated Visitor...');
     await page.goto('http://localhost:3000', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => localStorage.clear());
+    await page.reload({ waitUntil: 'domcontentloaded' });
     
     // Visitor should see LOGIN and REGISTER buttons in Header
     const loginBtn = page.locator('button', { hasText: 'LOGIN' }).first();

@@ -49,6 +49,9 @@ async function placeWager({ userId, gameType, referenceId, market, selection, ty
   }
 
   const result = await prisma.$transaction(async (tx) => {
+    // 0. Ensure User, Wallet, and Ledger account exist
+    await walletService.ensureUserAndWallet(tx, userId);
+
     // 1. Create the Wager
     const wager = await tx.wager.create({
       data: {

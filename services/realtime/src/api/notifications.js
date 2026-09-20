@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
+const { ensureUserAndWallet } = require('../services/walletService');
 const prisma = new PrismaClient();
 const notificationService = require('../services/notificationService');
 
@@ -42,6 +43,8 @@ router.post('/preferences', async (req, res) => {
   try {
     const userId = req.headers['x-user-id'] || 'mock-user-id';
     const { marketingEmail, marketingSms, transactionalInApp } = req.body;
+
+    await ensureUserAndWallet(prisma, userId);
 
     const prefs = await prisma.notificationPreference.upsert({
       where: { userId },

@@ -12,8 +12,32 @@ export default function GameFallbackPage({ params }: { params: Promise<{ slug: s
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If it's a known implemented game, Next.js routing should have handled it if the specific folder exists.
-    // However, if we reach here, it means we fallback to this catch-all or it's unbuilt.
+    const KNOWN_SLUGS: Record<string, string> = {
+      'colour-prediction': '/games/colour-prediction',
+      'color-prediction': '/games/colour-prediction',
+      'lightning-roulette': '/games/lightning-roulette',
+      'live-roulette': '/games/live-roulette',
+      'european-roulette': '/games/european-roulette',
+      'texas-holdem': '/games/texas-holdem',
+      'aviator': '/games/aviator',
+      'slots': '/games/slots',
+      'scratch': '/games/scratch',
+      'lotto': '/games/lotto',
+      'dice': '/games/dice',
+      'blackjack': '/games/blackjack',
+      'rummy': '/games/rummy',
+      'teen-patti': '/games/teen-patti',
+      'dragon-tiger': '/games/dragon-tiger',
+      'andar-bahar': '/games/andar-bahar',
+      'sportsbook': '/games/sportsbook',
+      'live-casino': '/games/live-casino',
+    };
+
+    if (KNOWN_SLUGS[slug]) {
+      router.replace(KNOWN_SLUGS[slug]);
+      return;
+    }
+
     fetch('http://localhost:4000/api/catalog')
       .then(res => res.json())
       .then(data => {
@@ -24,7 +48,7 @@ export default function GameFallbackPage({ params }: { params: Promise<{ slug: s
         }
       })
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, router]);
 
   if (loading) {
     return (

@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { ensureUserAndWallet } = require('../services/walletService');
 
 function handleRouletteSockets(socket, io, engines) {
   
@@ -44,10 +45,7 @@ function handleRouletteSockets(socket, io, engines) {
         if (!round) throw new Error('No open round available.');
         if (new Date() >= round.lockTime) throw new Error('Round is locked.');
 
-        let wallet = await tx.wallet.findFirst({ where: { userId, currency: 'INR' } });
-        if (!wallet) {
-          throw new Error('Wallet not found');
-        }
+        let { wallet } = await ensureUserAndWallet(tx, userId);
 
         if (wallet.balance < betAmount) throw new Error('Insufficient balance.');
 

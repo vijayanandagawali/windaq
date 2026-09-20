@@ -12,6 +12,7 @@
     "lint": "npm run lint --workspaces --if-present",
     "bootstrap:sandbox": "node scripts/bootstrap_sandbox.js",
     "teardown:sandbox": "node scripts/teardown_sandbox.js",
+    "db:reset-and-seed": "node scripts/reset_and_seed_db.js",
     "test:e2e": "playwright test"
   },
   "dependencies": {

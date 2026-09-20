@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { ensureUserAndWallet } = require('../services/walletService');
 const prisma = new PrismaClient();
 
 function handleDiceSockets(socket, io, engines) {
@@ -43,18 +44,7 @@ function handleDiceSockets(socket, io, engines) {
         if (!roll) throw new Error('No open round available.');
         if (new Date() >= roll.lockTime) throw new Error('Round is locked.');
 
-        let wallet = await tx.wallet.findFirst({ where: { userId, currency: 'INR' } });
-        if (!wallet) {
-          const autoPhone = `+9198${Math.abs(userId.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0) % 100000000).toString().padStart(8, '0')}`;
-          await tx.user.upsert({
-            where: { id: userId },
-            update: {},
-            create: { id: userId, phone: autoPhone }
-          });
-          wallet = await tx.wallet.create({
-            data: { userId, currency: 'INR', balance: 1000000n }
-          });
-        }
+        let { wallet } = await ensureUserAndWallet(tx, userId);
 
         if (wallet.balance < betAmount) throw new Error('Insufficient balance.');
 

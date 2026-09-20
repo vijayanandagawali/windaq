@@ -30,14 +30,10 @@ export default function ResponsibleGamingPage() {
 
   return (
     <main className="min-h-screen bg-[#061625] font-sans selection:bg-[#26F0B2] text-[#F4FBFF] max-w-lg mx-auto pb-12 shadow-2xl">
-      {/* Header */}
-      <header className="sticky top-0 bg-[#0B2236]/90 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center justify-between z-30">
-        <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-          <ChevronLeft size={24} className="text-white" />
-        </Link>
+      {/* Page Title Banner */}
+      <div className="px-4 py-3 bg-[#0B2236]/90 border-b border-white/10 flex items-center justify-between">
         <h1 className="font-black text-sm tracking-wider uppercase text-white">RESPONSIBLE GAMING</h1>
-        <span className="w-8" />
-      </header>
+      </div>
 
       <div className="p-4 space-y-4">
         {/* 18+ Caution Card */}

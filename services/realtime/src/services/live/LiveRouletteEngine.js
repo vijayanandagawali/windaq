@@ -158,6 +158,8 @@ class LiveRouletteEngine {
 
       if (!round) throw new Error("Betting is currently closed.");
 
+      await walletService.ensureUserAndWallet(tx, userId);
+
       const bet = await tx.liveBet.create({
         data: {
           userId,

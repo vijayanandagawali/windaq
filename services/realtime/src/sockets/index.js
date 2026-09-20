@@ -96,15 +96,20 @@ function initSockets(coreManager, io, engines = {}) {
 
     // Real Prisma-backed Aviator Bet & Settlement Engine
     const { PrismaClient } = require('@prisma/client');
+    const { ensureUserAndWallet } = require('../services/walletService');
     const prisma = new PrismaClient();
 
     socket.on('place_bet', async (data, callback) => {
-      const userId = data.userId || (socket.user.id !== 'guest' ? socket.user.id : 'sbx-usr-normal-001');
-      const amount = Number(data.amount || 100);
+      const userId = data?.userId || (socket.user?.id && socket.user.id !== 'guest' ? socket.user.id : 'sbx-usr-normal-001');
+      const amount = Number(data?.amount || 100);
       const amountPaise = BigInt(amount * 100);
 
       try {
-        const wallet = await prisma.wallet.findFirst({ where: { userId, currency: 'INR' } });
+        let wallet = await prisma.wallet.findFirst({ where: { userId, currency: 'INR' } });
+        if (!wallet) {
+          const ensured = await ensureUserAndWallet(prisma, userId);
+          wallet = ensured.wallet;
+        }
         if (!wallet || wallet.balance < amountPaise) {
           if (callback) callback({ success: false, message: 'Insufficient balance in wallet.' });
           return socket.emit('error', 'Insufficient balance');
@@ -135,12 +140,16 @@ function initSockets(coreManager, io, engines = {}) {
     });
 
     socket.on('aviator:cashout', async (data, callback) => {
-      const userId = data.userId || (socket.user.id !== 'guest' ? socket.user.id : 'sbx-usr-normal-001');
-      const winAmount = Number(data.winAmount || (data.amount * data.multiplier));
+      const userId = data?.userId || (socket.user?.id && socket.user.id !== 'guest' ? socket.user.id : 'sbx-usr-normal-001');
+      const winAmount = Number(data?.winAmount || (data?.amount * data?.multiplier));
       const winPaise = BigInt(Math.floor(winAmount * 100));
 
       try {
-        const wallet = await prisma.wallet.findFirst({ where: { userId, currency: 'INR' } });
+        let wallet = await prisma.wallet.findFirst({ where: { userId, currency: 'INR' } });
+        if (!wallet) {
+          const ensured = await ensureUserAndWallet(prisma, userId);
+          wallet = ensured.wallet;
+        }
         if (wallet) {
           const newBal = wallet.balance + winPaise;
           await prisma.wallet.update({

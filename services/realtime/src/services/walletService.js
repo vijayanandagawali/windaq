@@ -20,18 +20,34 @@ async function ensureAccount(tx, accountId, type) {
  * "User not found" or "Wallet not found" errors.
  */
 async function ensureUserAndWallet(client, userId, options = {}) {
-  const initialPaise = typeof options.initialPaise === 'bigint' ? options.initialPaise : BigInt(options.initialPaise || 0);
+  // If initialPaise is explicitly specified (e.g. 50000n for welcome bonus, or 0n), use it;
+  // Otherwise default to 1,000,000n (₹10,000) so newly provisioned guests/testers have playable funds
+  const initialPaise = typeof options.initialPaise === 'bigint' 
+    ? options.initialPaise 
+    : (options.initialPaise !== undefined ? BigInt(options.initialPaise) : 1000000n);
   const role = options.role || 'USER';
-  const phone = options.phone || `+91${Date.now().toString().slice(-10)}`;
 
   let user = await client.user.findUnique({ where: { id: userId } });
   if (!user) {
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+    const phone = options.phone || `+9198${Date.now().toString().slice(-4)}${randomSuffix}`;
     try {
       user = await client.user.create({
         data: { id: userId, phone, role }
       });
     } catch {
       user = await client.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        // Second attempt with ultra-random phone if timestamp collided
+        const fallbackPhone = `+9199${Math.floor(10000000 + Math.random() * 90000000)}`;
+        try {
+          user = await client.user.create({
+            data: { id: userId, phone: fallbackPhone, role }
+          });
+        } catch {
+          user = await client.user.findUnique({ where: { id: userId } });
+        }
+      }
     }
   }
 

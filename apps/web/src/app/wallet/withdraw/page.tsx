@@ -36,13 +36,10 @@ export default function WithdrawScreen() {
 
   return (
     <main className="min-h-screen bg-deep-ocean font-sans selection:bg-neon-mint selection:text-deep-ocean relative overflow-x-hidden">
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass-card rounded-none border-t-0 border-x-0 px-4 py-4 flex items-center justify-center">
-        <Link href="/wallet" className="absolute left-4 p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-          <ChevronLeft size={24} className="text-white" />
-        </Link>
-        <h1 className="text-lg font-bold text-white">Withdraw Winnings</h1>
-      </header>
+      {/* Page Title Banner */}
+      <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+        <h1 className="text-base font-extrabold text-white">Withdraw Winnings</h1>
+      </div>
 
       <div className="px-4 pt-6 pb-24">
         

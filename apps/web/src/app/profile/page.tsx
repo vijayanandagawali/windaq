@@ -73,21 +73,18 @@ export default function ProfilePage() {
   return (
     <ProtectedRoute title="MY PROFILE & KYC">
       <main className="min-h-screen bg-[#061625] font-sans selection:bg-[#26F0B2] text-[#F4FBFF] max-w-lg mx-auto pb-24 shadow-2xl">
-        {/* Header */}
-        <header className="sticky top-0 bg-[#0B2236]/90 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center justify-between z-30">
-          <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
-            <ChevronLeft size={24} className="text-white" />
-          </Link>
+        {/* Page Title Banner */}
+        <div className="px-4 py-3 bg-[#0B2236]/90 border-b border-white/10 flex items-center justify-between">
           <h1 className="font-black text-sm tracking-wider uppercase text-white">MY PROFILE & KYC</h1>
           <button
             onClick={handleLogout}
-            className="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1"
+            className="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1 cursor-pointer"
             title="Log Out"
           >
             <LogOut size={15} />
             <span className="hidden sm:inline">LOGOUT</span>
           </button>
-        </header>
+        </div>
 
         <div className="p-4 space-y-4">
           {/* User Card */}

@@ -62,6 +62,8 @@ function handleTableSockets(socket, io, engines) {
           throw new Error('Round is locked.');
         }
 
+        await walletService.ensureUserAndWallet(tx, userId);
+
         const bet = await tx.tableGameBet.create({
           data: {
             userId,

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import BottomNav from '@/components/layout/BottomNav';
 import DepositModal from '@/components/modals/DepositModal';
 import WithdrawModal from '@/components/modals/WithdrawModal';
 import PassbookModal from '@/components/modals/PassbookModal';
@@ -21,7 +20,6 @@ export default function GlobalModalProvider() {
 
   return (
     <>
-      <BottomNav />
       <AuthModal />
       <DepositModal />
       <WithdrawModal />

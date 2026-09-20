@@ -4,7 +4,6 @@ import React from 'react';
 import { ArrowDownLeft, ArrowUpRight, History, ShieldCheck, CreditCard, ChevronRight, Gift, Trophy } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import AndroidStatusBar from '@/components/layout/AndroidStatusBar';
-import Header from '@/components/layout/Header';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 export default function WalletHub() {
@@ -12,9 +11,8 @@ export default function WalletHub() {
 
   return (
     <ProtectedRoute title="MY GAMING WALLET">
-      <main className="min-h-screen bg-deep-ocean pb-24 font-sans selection:bg-neon-mint selection:text-deep-ocean max-w-lg mx-auto">
+      <div className="min-h-screen bg-deep-ocean pb-24 font-sans selection:bg-neon-mint selection:text-deep-ocean max-w-lg mx-auto">
         <AndroidStatusBar />
-        <Header />
       
       <div className="px-4 pt-4">
         <h2 className="text-xl font-black text-white mb-4 tracking-wide">MY GAMING WALLET</h2>
@@ -116,7 +114,7 @@ export default function WalletHub() {
           </button>
         </div>
       </div>
-    </main>
+    </div>
   </ProtectedRoute>
   );
 }
