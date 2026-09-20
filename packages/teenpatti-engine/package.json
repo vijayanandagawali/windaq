@@ -1,0 +1,6 @@
+{
+  "name": "@windaq/teenpatti-engine",
+  "version": "1.0.0",
+  "description": "Teen Patti Game Rules & Math Engine",
+  "main": "index.js"
+}

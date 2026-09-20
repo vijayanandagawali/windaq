@@ -1,0 +1,13 @@
+{
+  "name": "@windaq/provably-fair",
+  "version": "1.0.0",
+  "description": "Cryptographic RNG for WinDaq games",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "crypto-js": "^4.2.0"
+  }
+}

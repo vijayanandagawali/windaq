@@ -1,19 +1,23 @@
 {
-  "name": "chaska-gaming-platform",
-  "version": "1.0.0",
-  "description": "World-Class Ultra-Fast Real-Money Gaming Platform & Android App",
-  "main": "server/server.js",
+  "name": "windaq-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "node server/server.js",
-    "test": "playwright test"
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "bootstrap:sandbox": "node scripts/bootstrap_sandbox.js",
+    "teardown:sandbox": "node scripts/teardown_sandbox.js",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "ws": "^8.17.0"
+    "@prisma/client": "^5.22.0"
   },
-  "keywords": ["gaming", "casino", "aviator", "roulette", "teen-patti", "sportsbook", "real-money"],
-  "author": "Antigravity Team",
-  "license": "ISC"
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  }
 }

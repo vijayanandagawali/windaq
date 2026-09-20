@@ -1,0 +1,856 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  phone     String   @unique
+  role      Role     @default(USER)
+  mfaEnabled Boolean @default(false)
+  mfaSecret String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wallets    Wallet[]
+  favorites  PlayerFavorite[]
+  sessions       GameSession[]
+  colourBets     ColourBet[]
+  slotSpins      SlotSpin[]
+  scratchTickets ScratchTicket[]
+  lottoTickets   LottoTicket[]
+  teenPattiActs  TeenPattiAction[]
+  diceBets       DiceBet[]
+  tableBets      TableGameBet[]
+  rouletteBets   RouletteBet[]
+  blackjackGames BlackjackGame[]
+  blackjackHands BlackjackHand[]
+  rummyHands     RummyHand[]
+  liveBets       LiveBet[]
+  wagers         Wager[]
+  auditLogs      AuditLog[]
+  adjustmentsReq WalletAdjustment[] @relation("Requester")
+  adjustmentsApp WalletAdjustment[] @relation("Approver")
+  riskFlags      RiskFlag[]
+  riskProfile    UserRiskProfile?
+  devices        DeviceFingerprint[]
+  kycProfile     KycProfile?
+  rgLimits       ResponsibleGamingLimits?
+  selfExclusions SelfExclusion[]
+  paymentIntents PaymentIntent[]
+  bonusBalances  BonusBalance[]
+  notifPrefs     NotificationPreference?
+  notifLogs      NotificationLog[]
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  currency  String   @default("INR") // paise
+  balance   BigInt   @default(0)     // stored in integer paise
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+  adjustments  WalletAdjustment[]
+  
+  @@unique([userId, currency])
+}
+
+model Transaction {
+  id             String   @id @default(uuid())
+  walletId       String
+  wallet         Wallet   @relation(fields: [walletId], references: [id])
+  idempotencyKey String   @unique // To prevent double processing
+  type           TxType
+  amount         BigInt   // integer paise
+  balanceAfter   BigInt
+  reference      String?  // e.g., Game ID or Bet ID
+  createdAt      DateTime @default(now())
+}
+
+enum TxType {
+  DEPOSIT
+  WITHDRAWAL
+  BET_PLACE
+  BET_WIN
+  REFUND
+  MANUAL_ADJUSTMENT
+}
+
+enum Role {
+  USER
+  SUPPORT
+  RISK
+  FINANCE
+  SUPER_ADMIN
+}
+
+// --- CATALOG SYSTEM ---
+
+model Game {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  provider    String   @default("WinDaq Originals")
+  thumbnailUrl String
+  type        String   @default("CASINO") // CASINO, SPORTS, LIVE, CRASH
+  variant     String?  // e.g. "Classic", "Turbo"
+  isLive      Boolean  @default(false)
+  isNew       Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  minStake    Int      @default(10)
+  
+  rules       Json?    // e.g. { howToPlay: "..." }
+  limits      Json?    // e.g. { min: 10, max: 100000 }
+  rgInfo      Json?    // e.g. { RTP: 97.5, volatility: "HIGH" }
+  
+  categories  Category[] @relation("GameToCategory")
+  favorites   PlayerFavorite[]
+  sessions    GameSession[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  order       Int      @default(0)
+  
+  games       Game[]   @relation("GameToCategory")
+}
+
+model PlayerFavorite {
+  id        String   @id @default(uuid())
+  userId    String
+  gameId    String
+  
+  user      User     @relation(fields: [userId], references: [id])
+  game      Game     @relation(fields: [gameId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, gameId])
+}
+
+model GameSession {
+  id        String   @id @default(uuid())
+  userId    String
+  gameId    String
+  
+  user      User     @relation(fields: [userId], references: [id])
+  game      Game     @relation(fields: [gameId], references: [id])
+  
+  openedAt  DateTime @default(now())
+  closedAt  DateTime?
+}
+
+// --- COLOUR GAMES ---
+
+model ColourRound {
+  id          String   @id @default(uuid())
+  room        String   // '1min', '3min', '5min', '10min'
+  period      BigInt   // e.g., 20240919001
+  state       String   // 'UPCOMING', 'BETTING_OPEN', 'LOCKED', 'RESULT', 'SETTLED'
+  serverSeed  String   // Revealed after round
+  clientSeed  String   // Revealed after round (or block hash)
+  nonce       Int
+  resultNum   Int?     // 0-9
+  resultColor String?  // 'red', 'green', 'violet'
+  resultSize  String?  // 'big', 'small'
+  
+  bets        ColourBet[]
+
+  createdAt   DateTime @default(now())
+  settledAt   DateTime?
+
+  @@unique([room, period])
+}
+
+model ColourBet {
+  id          String   @id @default(uuid())
+  userId      String
+  roundId     String
+  
+  user        User     @relation(fields: [userId], references: [id])
+  round       ColourRound @relation(fields: [roundId], references: [id])
+  
+  betType     String   // 'color', 'number', 'size'
+  betValue    String   // 'red', '4', 'big'
+  amount      BigInt   // in paise
+  multiplier  Float?   // e.g., 2, 4.5, 9
+  payout      BigInt?  // winning amount (0 if lost)
+  status      String   @default("PENDING") // 'PENDING', 'WON', 'LOST'
+
+  createdAt   DateTime @default(now())
+}
+
+// --- SLOT GAMES ---
+
+model SlotSpin {
+  id          String   @id @default(uuid())
+  userId      String
+  configVer   String   // e.g. "v1-OceanTreasures-96RTP"
+  stake       BigInt   // in paise
+  payout      BigInt   // in paise
+  grid        Json     // Resulting 5x3 grid
+  serverSeed  String
+  clientSeed  String
+  nonce       Int
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+// --- SCRATCH GAMES ---
+
+model ScratchTicket {
+  id          String   @id @default(uuid())
+  userId      String
+  tier        String   // 'Silver', 'Gold', 'Diamond'
+  price       BigInt   // in paise
+  payout      BigInt   // in paise
+  grid        Json     // Resulting 3x3 grid
+  isRevealed  Boolean  @default(false)
+  serverSeed  String
+  clientSeed  String
+  nonce       Int
+  
+  purchasedAt DateTime @default(now())
+  revealedAt  DateTime?
+
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+// --- LOTTO GAMES ---
+
+model LottoDraw {
+  id              String   @id @default(uuid())
+  room            String   // e.g. "5min"
+  status          String   @default("OPEN") // 'OPEN', 'LOCKED', 'RESULT', 'SETTLED'
+  winningNumbers  Int[]    // Array of winning numbers (e.g. 6 numbers)
+  
+  serverSeed      String
+  serverSeedHash  String
+  clientSeed      String
+  
+  startTime       DateTime
+  lockTime        DateTime
+  resultTime      DateTime
+
+  tickets         LottoTicket[]
+}
+
+model LottoTicket {
+  id          String    @id @default(uuid())
+  userId      String
+  drawId      String
+  numbers     Int[]     // User's picked numbers
+  stake       BigInt    // in paise
+  payout      BigInt    @default(0) // in paise
+  matchedCount Int      @default(0)
+  
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id])
+  draw        LottoDraw @relation(fields: [drawId], references: [id])
+}
+
+// --- TEEN PATTI GAMES ---
+
+model TeenPattiHand {
+  id          String   @id @default(uuid())
+  tableId     String   // E.g., "TP-10-INR"
+  potSize     BigInt   // Total pot at the end of the hand
+  rakeAmount  BigInt   @default(0) // Platform fee deducted
+  winnerId    String?  // Who won the pot?
+  winningHand String?  // Description, e.g., "Trail of Aces"
+  boardState  Json?    // Stores final cards of players, actions history
+  
+  startTime   DateTime
+  endTime     DateTime?
+  
+  actions     TeenPattiAction[]
+}
+
+model TeenPattiAction {
+  id          String   @id @default(uuid())
+  handId      String
+  userId      String
+  actionType  String   // 'BLIND', 'CHAAL', 'PACK', 'SHOW'
+  amount      BigInt   @default(0) // Amount bet
+  createdAt   DateTime @default(now())
+  
+  hand        TeenPattiHand @relation(fields: [handId], references: [id])
+  user        User          @relation(fields: [userId], references: [id])
+}
+
+// --- DICE GAMES ---
+
+model DiceRoll {
+  id              String   @id @default(uuid())
+  room            String   // e.g. "1min"
+  status          String   @default("OPEN") // 'OPEN', 'LOCKED', 'RESULT', 'SETTLED'
+  diceResult      Int[]    // Array of 3 numbers (1-6)
+  
+  serverSeed      String
+  serverSeedHash  String
+  clientSeed      String
+  
+  startTime       DateTime
+  lockTime        DateTime
+  resultTime      DateTime
+
+  bets            DiceBet[]
+}
+
+model DiceBet {
+  id          String    @id @default(uuid())
+  userId      String
+  rollId      String
+  market      String    // e.g. "SMALL", "BIG", "SUM_10", "TRIPLE_ANY"
+  amount      BigInt    // in paise
+  payout      BigInt    @default(0) // in paise
+  
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id])
+  roll        DiceRoll  @relation(fields: [rollId], references: [id])
+}
+
+// --- TABLE GAMES (Unified) ---
+
+model TableGameRound {
+  id              String   @id @default(uuid())
+  gameId          String   // e.g. "dragon-tiger", "baccarat"
+  room            String   // e.g. "VIP", "Standard"
+  status          String   @default("OPEN") // 'OPEN', 'LOCKED', 'RESULT', 'SETTLED'
+  result          Json?    // e.g. { dragon: {suit:'S', rank:13}, tiger: {suit:'H', rank:2}, winner: 'DRAGON' }
+  
+  serverSeed      String
+  serverSeedHash  String
+  clientSeed      String
+  
+  startTime       DateTime
+  lockTime        DateTime
+  resultTime      DateTime
+
+  bets            TableGameBet[]
+}
+
+model TableGameBet {
+  id          String    @id @default(uuid())
+  userId      String
+  roundId     String
+  gameId      String    // e.g. "dragon-tiger"
+  market      String    // e.g. "DRAGON", "TIGER", "TIE"
+  amount      BigInt    // in paise
+  payout      BigInt    @default(0) // in paise
+  
+  createdAt   DateTime  @default(now())
+
+  user        User            @relation(fields: [userId], references: [id])
+  round       TableGameRound  @relation(fields: [roundId], references: [id])
+}
+
+// --- ROULETTE GAMES ---
+
+model RouletteRoll {
+  id              String   @id @default(uuid())
+  room            String   // e.g. "Auto"
+  status          String   @default("OPEN") // 'OPEN', 'LOCKED', 'RESULT', 'SETTLED'
+  resultNumber    Int?     // 0-36
+  
+  serverSeed      String
+  serverSeedHash  String
+  clientSeed      String
+  
+  startTime       DateTime
+  lockTime        DateTime
+  resultTime      DateTime
+
+  bets            RouletteBet[]
+}
+
+model RouletteBet {
+  id          String    @id @default(uuid())
+  userId      String
+  rollId      String
+  marketType  String    // e.g., 'STRAIGHT', 'SPLIT', 'RED', 'DOZEN_1'
+  targets     Json      // JSON array of numbers covered e.g. [1,2,3]
+  amount      BigInt    // in paise
+  payout      BigInt    @default(0) // in paise
+  
+  createdAt   DateTime  @default(now())
+
+  user        User         @relation(fields: [userId], references: [id])
+  roll        RouletteRoll @relation(fields: [rollId], references: [id])
+}
+
+// --- BLACKJACK GAMES ---
+
+model BlackjackGame {
+  id              String   @id @default(uuid())
+  userId          String
+  status          String   @default("BETTING") // 'BETTING', 'PLAYING', 'DEALER_TURN', 'SETTLED'
+  shoe            Json?    // Array of remaining cards
+  dealerCards     Json?    // Array of dealer's cards
+  activeHandIndex Int      @default(0) // Which hand is currently playing
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id])
+  hands           BlackjackHand[]
+}
+
+model BlackjackHand {
+  id          String    @id @default(uuid())
+  gameId      String
+  userId      String
+  cards       Json?     // Array of cards
+  bet         BigInt    // in paise
+  payout      BigInt    @default(0) // in paise
+  status      String    @default("PLAYING") // 'PLAYING', 'BUST', 'STAND', 'BLACKJACK', 'DOUBLE_DOWN'
+  isInsured   Boolean   @default(false)
+  
+  createdAt   DateTime  @default(now())
+
+  game        BlackjackGame @relation(fields: [gameId], references: [id])
+  user        User          @relation(fields: [userId], references: [id])
+}
+
+// --- RUMMY GAMES ---
+
+model RummyGame {
+  id              String   @id @default(uuid())
+  tableId         String   // e.g., "Points-10-INR"
+  status          String   @default("WAITING") // 'WAITING', 'PLAYING', 'SHOWDOWN', 'SETTLED'
+  wildJoker       Json?    // e.g., { suit: 'H', rank: '7' }
+  deckState       Json?    // Audit log of closed deck and open pile
+  potSize         BigInt   @default(0) // total points/cash in pot
+  winnerId        String?
+  winningPoints   Int      @default(0)
+  
+  startTime       DateTime @default(now())
+  endTime         DateTime?
+  
+  hands           RummyHand[]
+}
+
+model RummyHand {
+  id          String   @id @default(uuid())
+  gameId      String
+  userId      String
+  
+  cards       Json     // Initial cards dealt
+  points      Int      @default(0) // Final penalty points (max 80)
+  payout      BigInt   @default(0) // Amount won (if positive) or lost (if negative)
+  status      String   @default("PLAYING") // 'PLAYING', 'DROPPED_FIRST', 'DROPPED_MIDDLE', 'DECLARED', 'PACKED'
+  
+  createdAt   DateTime @default(now())
+  
+  game        RummyGame @relation(fields: [gameId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+// --- LIVE DEALER (STUDIO) ---
+
+model LiveDealer {
+  id          String   @id @default(uuid())
+  pinCode     String   @unique
+  name        String
+  isActive    Boolean  @default(true)
+  
+  rounds      LiveRound[]
+}
+
+model LiveTable {
+  id          String   @id // e.g. "live-roulette-1"
+  gameType    String   // 'ROULETTE', 'BACCARAT', 'DRAGON_TIGER'
+  name        String
+  minStake    Int      @default(100)
+  maxStake    Int      @default(100000)
+  isActive    Boolean  @default(true)
+  
+  rounds      LiveRound[]
+}
+
+model LiveRound {
+  id          String   @id @default(uuid())
+  tableId     String
+  dealerId    String
+  
+  status      String   @default("BETTING_OPEN") // 'BETTING_OPEN', 'BETTING_CLOSED', 'RESULT_PENDING', 'SETTLED', 'CANCELLED'
+  result      Json?    // e.g. { number: 32 } for roulette
+  
+  startTime   DateTime @default(now())
+  endTime     DateTime?
+  
+  table       LiveTable  @relation(fields: [tableId], references: [id])
+  dealer      LiveDealer @relation(fields: [dealerId], references: [id])
+  bets        LiveBet[]
+}
+
+model LiveBet {
+  id          String    @id @default(uuid())
+  userId      String
+  roundId     String
+  
+  market      String    // e.g., 'STRAIGHT', 'RED'
+  targets     Json?     // numbers covered
+  amount      BigInt    // in paise
+  payout      BigInt    @default(0)
+  status      String    @default("PENDING") // 'PENDING', 'WON', 'LOST', 'CANCELLED'
+  
+  createdAt   DateTime  @default(now())
+  
+  user        User      @relation(fields: [userId], references: [id])
+  round       LiveRound @relation(fields: [roundId], references: [id])
+}
+
+// --- DOUBLE ENTRY LEDGER SYSTEM ---
+
+model LedgerAccount {
+  id          String   @id // e.g. "USER:uuid", "SYSTEM:WAGER_RESERVE", "SYSTEM:REVENUE", "SYSTEM:EXTERNAL_BANK"
+  type        String   // 'USER', 'LIABILITY', 'ASSET', 'EQUITY', 'REVENUE', 'EXPENSE'
+  currency    String   @default("INR")
+  
+  // Relations to transactions where this account is debited or credited
+  debits      LedgerTransaction[] @relation("DebitAccount")
+  credits     LedgerTransaction[] @relation("CreditAccount")
+}
+
+model LedgerTransaction {
+  id              String   @id @default(uuid())
+  idempotencyKey  String   @unique
+  referenceType   String   // 'DEPOSIT', 'WITHDRAWAL', 'BET_PLACE', 'BET_WIN', 'BET_LOSS', 'REFUND', 'MIGRATION'
+  referenceId     String?  // The game round ID or bet ID
+  
+  debitAccountId  String
+  creditAccountId String
+  
+  amount          BigInt   // in paise. Must be > 0.
+  currency        String   @default("INR")
+  
+  status          String   @default("COMPLETED") // 'PENDING', 'COMPLETED', 'REVERSED'
+  auditMetadata   Json?    // Any extra contextual data (e.g. IP, operator notes)
+  
+  createdAt       DateTime @default(now())
+
+  debitAccount    LedgerAccount @relation("DebitAccount", fields: [debitAccountId], references: [id])
+  creditAccount   LedgerAccount @relation("CreditAccount", fields: [creditAccountId], references: [id])
+}
+
+// --- UNIFIED WAGER & SETTLEMENT ENGINE ---
+
+model Wager {
+  id              String   @id @default(uuid())
+  userId          String
+  gameType        String   // 'SPORTS', 'ROULETTE', 'CRASH'
+  referenceId     String   // matchId or roundId
+  
+  market          String   // 'Match Winner', 'RED', etc.
+  selection       String   // 'India', '32', etc.
+  type            String   @default("BACK") // 'BACK', 'LAY'
+  
+  stake           BigInt   // in paise
+  odds            Float    // Server-validated odds multiplier
+  potentialPayout BigInt   
+  
+  status          String   @default("PENDING") // 'PENDING', 'WON', 'LOST', 'VOID', 'REFUNDED', 'CANCELLED'
+  marketConfig    Json?    // Snapshot of exact odds, limits, and provider data at time of acceptance
+  
+  placedAt        DateTime @default(now())
+  settledAt       DateTime?
+  
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+// --- SPORTSBOOK HIERARCHY ---
+
+model Sport {
+  id        String   @id @default(uuid())
+  name      String   @unique // e.g., "Cricket"
+  isActive  Boolean  @default(true)
+  
+  competitions SportCompetition[]
+}
+
+model SportCompetition {
+  id        String   @id @default(uuid())
+  sportId   String
+  name      String   // e.g., "T20 World Cup"
+  isActive  Boolean  @default(true)
+  
+  sport     Sport    @relation(fields: [sportId], references: [id])
+  events    SportEvent[]
+}
+
+model SportEvent {
+  id             String   @id @default(uuid()) // Unique provider ID usually
+  competitionId  String
+  name           String   // e.g., "India vs Pakistan"
+  status         String   @default("PREMATCH") // 'PREMATCH', 'LIVE', 'ENDED', 'POSTPONED', 'CANCELLED'
+  startTime      DateTime
+  
+  competition    SportCompetition @relation(fields: [competitionId], references: [id])
+  markets        SportMarket[]
+}
+
+model SportMarket {
+  id          String   @id @default(uuid())
+  eventId     String
+  name        String   // e.g., "Match Winner"
+  status      String   @default("ACTIVE") // 'ACTIVE', 'SUSPENDED', 'SETTLED'
+  voidRules   Json?    // e.g., "Void if 5 overs not completed"
+  
+  event       SportEvent @relation(fields: [eventId], references: [id])
+  selections  SportSelection[]
+}
+
+model SportSelection {
+  id          String   @id @default(uuid())
+  marketId    String
+  name        String   // e.g., "India"
+  oddsBack    Float?
+  oddsLay     Float?
+  status      String   @default("ACTIVE") // 'ACTIVE', 'SUSPENDED', 'WINNER', 'LOSER', 'VOID'
+  
+  market      SportMarket @relation(fields: [marketId], references: [id])
+}
+
+// --- ADMIN & OPERATIONS ---
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  adminId     String
+  action      String   // e.g., 'WALLET_CREDIT', 'MARKET_SUSPEND'
+  resourceId  String?  // Target user, wallet, market, etc.
+  details     Json?    // Detailed payload of what changed
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+  
+  admin       User     @relation(fields: [adminId], references: [id])
+}
+
+model WalletAdjustment {
+  id          String   @id @default(uuid())
+  walletId    String
+  requestedBy String
+  approvedBy  String?
+  amount      BigInt   // Can be negative for debit
+  reason      String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  wallet      Wallet   @relation(fields: [walletId], references: [id])
+  requester   User     @relation("Requester", fields: [requestedBy], references: [id])
+  approver    User?    @relation("Approver", fields: [approvedBy], references: [id])
+}
+
+// --- RISK & FRAUD ---
+
+model RiskFlag {
+  id          String   @id @default(uuid())
+  userId      String
+  reasonCode  String   // e.g., 'VELOCITY_ABUSE', 'IMPOSSIBLE_STATE', 'REPLAY_ATTACK', 'MULTI_ACCOUNT'
+  severity    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  evidence    Json?    // Detailed payload of what triggered the flag
+  status      String   @default("OPEN") // OPEN, INVESTIGATING, RESOLVED, FALSE_POSITIVE
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model UserRiskProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  riskScore        Int      @default(0) // 0-100
+  isSuspended      Boolean  @default(false)
+  suspensionReason String?
+  updatedAt        DateTime @updatedAt
+  
+  user             User     @relation(fields: [userId], references: [id])
+}
+
+model DeviceFingerprint {
+  id          String   @id @default(uuid())
+  userId      String
+  deviceId    String   // Server-side hash of User-Agent + IP
+  ipAddress   String
+  lastSeen    DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id])
+  @@unique([userId, deviceId])
+}
+
+// --- COMPLIANCE & RESPONSIBLE GAMING ---
+
+model KycProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED, EXPIRED
+  jurisdiction    String   @default("GLOBAL")  // e.g., 'IN-MH', 'UK', 'ROW'
+  documentHash    String?  // Encrypted reference/content
+  dob             DateTime?
+  verifiedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+model ResponsibleGamingLimits {
+  id                      String   @id @default(uuid())
+  userId                  String   @unique
+  dailyDepositLimit       BigInt?  // in paise
+  dailyWagerLimit         BigInt?  // in paise
+  dailyLossLimit          BigInt?  // in paise
+  sessionTimeLimitMinutes Int?
+  updatedAt               DateTime @updatedAt
+  
+  user                    User     @relation(fields: [userId], references: [id])
+}
+
+model SelfExclusion {
+  id              String   @id @default(uuid())
+  userId          String
+  exclusionEndDate DateTime?
+  isPermanent     Boolean  @default(false)
+  reason          String?
+  createdAt       DateTime @default(now())
+  
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+model JurisdictionConfig {
+  id              String   @id // e.g. 'IN-MH', 'UK'
+  allowCasino     Boolean  @default(true)
+  allowSports     Boolean  @default(true)
+  allowLive       Boolean  @default(true)
+  minAge          Int      @default(18)
+  requireKycForDeposit Boolean @default(false)
+}
+
+// --- PAYMENTS & ORCHESTRATION ---
+
+model PaymentIntent {
+  id                String   @id @default(uuid())
+  userId            String
+  amount            BigInt   // in paise
+  type              String   // 'DEPOSIT', 'WITHDRAWAL'
+  provider          String   // 'MOCK_UPI', 'PHONEPE'
+  providerReference String?  @unique // ID returned by the provider
+  status            String   @default("INITIATED") // INITIATED, PENDING, SUCCESS, FAILED, EXPIRED, REFUNDED, PENDING_REVIEW
+  metadata          Json?    // intent string, qr link, failure reasons
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  user              User     @relation(fields: [userId], references: [id])
+}
+
+// --- BONUS & PROMOTION ENGINE ---
+
+model Campaign {
+  id              String   @id @default(uuid())
+  name            String
+  type            String   // 'DEPOSIT_MATCH', 'NO_DEPOSIT', 'FREE_SPINS'
+  version         Int      @default(1)
+  status          String   @default("ACTIVE") // 'ACTIVE', 'PAUSED', 'EXPIRED'
+  
+  config          Json     // { wageringReqMultiplier: 30, maxBonus: 500000, restrictedGames: ['roulette'], expiryDays: 7 }
+  
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bonusBalances   BonusBalance[]
+}
+
+model BonusBalance {
+  id                  String   @id @default(uuid())
+  userId              String
+  campaignId          String
+  
+  initialAmount       BigInt   // Initial bonus granted (paise)
+  currentAmount       BigInt   // Remaining bonus funds (paise)
+  
+  wageringRequirement BigInt   // Total amount that needs to be wagered (paise)
+  wageredAmount       BigInt   @default(0) // Amount wagered so far (paise)
+  
+  status              String   @default("ACTIVE") // 'ACTIVE', 'COMPLETED', 'EXPIRED', 'CANCELLED'
+  
+  expiresAt           DateTime
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  user                User     @relation(fields: [userId], references: [id])
+  campaign            Campaign @relation(fields: [campaignId], references: [id])
+  transactions        BonusLedgerTransaction[]
+
+  @@unique([userId, campaignId])
+}
+
+model BonusLedgerTransaction {
+  id              String   @id @default(uuid())
+  idempotencyKey  String   @unique
+  bonusBalanceId  String
+  type            String   // 'GRANT', 'WAGER', 'WIN', 'EXPIRE', 'CONVERT_TO_CASH', 'CANCEL'
+  amount          BigInt   // in paise
+  referenceId     String?  // The Wager ID if it's a bet
+  createdAt       DateTime @default(now())
+
+  bonusBalance    BonusBalance @relation(fields: [bonusBalanceId], references: [id])
+}
+
+// --- NOTIFICATION ENGINE ---
+
+model NotificationPreference {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  
+  marketingEmail      Boolean  @default(true)
+  marketingSms        Boolean  @default(true)
+  transactionalInApp  Boolean  @default(true) // e.g., bet settlements
+  
+  updatedAt           DateTime @updatedAt
+  
+  user                User     @relation(fields: [userId], references: [id])
+}
+
+model NotificationTemplate {
+  id              String   @id @default(uuid())
+  name            String   @unique // e.g., 'OTP_LOGIN', 'DEPOSIT_SUCCESS'
+  channel         String   // 'SMS', 'EMAIL', 'IN_APP'
+  locale          String   @default("en")
+  content         String   // e.g., "Your OTP is {{otp}}."
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model NotificationLog {
+  id              String   @id @default(uuid())
+  userId          String
+  templateName    String
+  channel         String   // 'SMS', 'EMAIL', 'IN_APP'
+  status          String   @default("PENDING") // 'PENDING', 'SENT', 'FAILED'
+  
+  providerResponse Json?   // Redacted payload or error message from provider
+  
+  createdAt       DateTime @default(now())
+  
+  user            User     @relation(fields: [userId], references: [id])
+}

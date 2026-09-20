@@ -1,34 +1,37 @@
 version: '3.8'
 
 services:
-  windaq-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    container_name: windaq_backend
-    restart: always
-    ports:
-      - "3001:3001"
+  postgres:
+    image: postgres:15-alpine
     environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - MERCHANT_UPI_ID=s0090792546529042@slc
-      - DOMAIN=daqwon.in
+      POSTGRES_USER: ${DB_USER:-windaq}
+      POSTGRES_PASSWORD: ${DB_PASS:-windaq123}
+      POSTGRES_DB: ${DB_NAME:-windaq_db}
+    ports:
+      - "5432:5432"
     volumes:
-      - ./server:/app/server
-      - ./server/gambling_platform.db:/app/server/gambling_platform.db
-      - ./logs:/app/logs
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-windaq} -d ${DB_NAME:-windaq_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  windaq-frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: windaq_frontend
-    restart: always
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASS:-windaq_redis_secret}
     ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-    depends_on:
-      - windaq-backend
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  redisdata:

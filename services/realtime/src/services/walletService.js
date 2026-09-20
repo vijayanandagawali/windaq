@@ -1,0 +1,214 @@
+/**
+ * Wallet Service (Double-Entry Ledger)
+ * 
+ * Replaces direct wallet balance manipulation with strict double-entry ledger bookkeeping.
+ * The `Wallet` model is preserved as a cached view of the `USER:id` account for fast reads.
+ */
+
+// Helper to ensure an account exists
+async function ensureAccount(tx, accountId, type) {
+  let acc = await tx.ledgerAccount.findUnique({ where: { id: accountId } });
+  if (!acc) {
+    acc = await tx.ledgerAccount.create({ data: { id: accountId, type } });
+  }
+  return acc;
+}
+
+/**
+ * Places a bet. Moves money from USER to SYSTEM:WAGER_RESERVE.
+ */
+async function placeBet(tx, userId, amountPaise, referenceType, referenceId) {
+  const userAccountId = `USER:${userId}`;
+  await ensureAccount(tx, userAccountId, 'USER');
+
+  // Lock the wallet row to prevent concurrent double-spends
+  const wallets = await tx.$queryRaw`SELECT id, balance FROM "Wallet" WHERE "userId" = ${userId} AND "currency" = 'INR' FOR UPDATE`;
+  if (!wallets || wallets.length === 0) throw new Error("Wallet not found");
+  
+  const wallet = wallets[0];
+  if (BigInt(wallet.balance) < amountPaise) throw new Error("Insufficient balance");
+
+  const newBalance = BigInt(wallet.balance) - amountPaise;
+
+  // 1. Update cache
+  await tx.wallet.update({
+    where: { id: wallet.id },
+    data: { balance: newBalance }
+  });
+
+  // 2. Insert Ledger Double Entry
+  await tx.ledgerTransaction.create({
+    data: {
+      idempotencyKey: `bet-place-${referenceId}`,
+      referenceType,
+      referenceId,
+      debitAccountId: userAccountId,
+      creditAccountId: 'SYSTEM:WAGER_RESERVE',
+      amount: amountPaise,
+      status: 'COMPLETED'
+    }
+  });
+
+  // 3. Keep old Transaction log for backward compatibility
+  await tx.transaction.create({
+    data: {
+      walletId: wallet.id,
+      idempotencyKey: `legacy-bet-place-${referenceId}`,
+      type: 'BET_PLACE',
+      amount: amountPaise,
+      balanceAfter: newBalance,
+      reference: referenceId
+    }
+  });
+
+  return newBalance;
+}
+
+/**
+ * Settles a winning bet. Returns reserve to user and pays out from house revenue.
+ */
+async function settleWin(tx, userId, originalBetPaise, payoutPaise, referenceType, referenceId) {
+  const userAccountId = `USER:${userId}`;
+  await ensureAccount(tx, userAccountId, 'USER');
+
+  // Lock the wallet row to prevent concurrent race conditions
+  const wallets = await tx.$queryRaw`SELECT id, balance FROM "Wallet" WHERE "userId" = ${userId} AND "currency" = 'INR' FOR UPDATE`;
+  if (!wallets || wallets.length === 0) throw new Error("Wallet not found");
+
+  const wallet = wallets[0];
+  const newBalance = BigInt(wallet.balance) + payoutPaise;
+
+  // 1. Update cache
+  await tx.wallet.update({
+    where: { id: wallet.id },
+    data: { balance: newBalance }
+  });
+
+  // 2. Ledger Entry 1: Return the original bet from Reserve -> User
+  await tx.ledgerTransaction.create({
+    data: {
+      idempotencyKey: `bet-return-${referenceId}`,
+      referenceType: 'REFUND',
+      referenceId,
+      debitAccountId: 'SYSTEM:WAGER_RESERVE',
+      creditAccountId: userAccountId,
+      amount: originalBetPaise,
+      status: 'COMPLETED'
+    }
+  });
+
+  // 3. Ledger Entry 2: Pay net win from Revenue -> User
+  const netWin = payoutPaise - originalBetPaise;
+  if (netWin > 0n) {
+    await tx.ledgerTransaction.create({
+      data: {
+        idempotencyKey: `bet-win-${referenceId}`,
+        referenceType,
+        referenceId,
+        debitAccountId: 'SYSTEM:REVENUE',
+        creditAccountId: userAccountId,
+        amount: netWin,
+        status: 'COMPLETED'
+      }
+    });
+  } else if (netWin < 0n) {
+    // If they won less than their bet (e.g. half refund), the remaining goes to revenue
+    const loss = originalBetPaise - payoutPaise;
+    await tx.ledgerTransaction.create({
+      data: {
+        idempotencyKey: `bet-loss-partial-${referenceId}`,
+        referenceType: 'BET_LOSS',
+        referenceId,
+        debitAccountId: userAccountId, // They got it all back in step 2, now they pay the house
+        creditAccountId: 'SYSTEM:REVENUE',
+        amount: loss,
+        status: 'COMPLETED'
+      }
+    });
+  }
+
+  // 4. Keep old Transaction log
+  await tx.transaction.create({
+    data: {
+      walletId: wallet.id,
+      idempotencyKey: `legacy-bet-win-${referenceId}`,
+      type: 'BET_WIN',
+      amount: payoutPaise,
+      balanceAfter: newBalance,
+      reference: referenceId
+    }
+  });
+
+  return newBalance;
+}
+
+/**
+ * Settles a losing bet. Moves money from Wager Reserve to House Revenue.
+ * Does not affect user balance cache as it was deducted on bet placement.
+ */
+async function settleLoss(tx, userId, originalBetPaise, referenceType, referenceId) {
+  // Transfer reserve to revenue
+  await tx.ledgerTransaction.create({
+    data: {
+      idempotencyKey: `bet-loss-${referenceId}`,
+      referenceType: 'BET_LOSS',
+      referenceId,
+      debitAccountId: 'SYSTEM:WAGER_RESERVE',
+      creditAccountId: 'SYSTEM:REVENUE',
+      amount: originalBetPaise,
+      status: 'COMPLETED'
+    }
+  });
+}
+
+/**
+ * Refunds a bet. Moves money from Wager Reserve back to User.
+ */
+async function refundBet(tx, userId, originalBetPaise, referenceType, referenceId) {
+  const userAccountId = `USER:${userId}`;
+  await ensureAccount(tx, userAccountId, 'USER');
+
+  // Lock row
+  const wallets = await tx.$queryRaw`SELECT id, balance FROM "Wallet" WHERE "userId" = ${userId} AND "currency" = 'INR' FOR UPDATE`;
+  if (!wallets || wallets.length === 0) throw new Error("Wallet not found");
+  
+  const wallet = wallets[0];
+  const newBalance = BigInt(wallet.balance) + originalBetPaise;
+
+  await tx.wallet.update({
+    where: { id: wallet.id },
+    data: { balance: newBalance }
+  });
+
+  await tx.ledgerTransaction.create({
+    data: {
+      idempotencyKey: `bet-refund-${referenceId}`,
+      referenceType: 'REFUND',
+      referenceId,
+      debitAccountId: 'SYSTEM:WAGER_RESERVE',
+      creditAccountId: userAccountId,
+      amount: originalBetPaise,
+      status: 'COMPLETED'
+    }
+  });
+
+  await tx.transaction.create({
+    data: {
+      walletId: wallet.id,
+      idempotencyKey: `legacy-bet-refund-${referenceId}`,
+      type: 'REFUND',
+      amount: originalBetPaise,
+      balanceAfter: newBalance,
+      reference: referenceId
+    }
+  });
+
+  return newBalance;
+}
+
+module.exports = {
+  placeBet,
+  settleWin,
+  settleLoss,
+  refundBet
+};
