@@ -14,16 +14,26 @@ function handleTableSockets(socket, io, engines) {
     socket.join(`tg:${gameId}:${room}`);
     console.log(`Client ${socket.id} joined tg:${gameId}:${room}`);
 
-    // If we have an engine for this game, send current state
+    // If we have an engine for this game, send complete state snapshot immediately
     const engineKey = `${gameId.replace('-', '')}Engine`; // e.g. dragontigerEngine
     const engine = engines[engineKey];
     
     if (engine && engine.currentRound) {
       socket.emit('tg:tick', {
         roundId: engine.currentRound.id,
-        status: engine.currentRound.status,
-        lockTime: engine.currentRound.lockTime.getTime(),
-        resultTime: engine.currentRound.resultTime.getTime(),
+        gameId: engine.gameId,
+        room: engine.room,
+        phase: engine.currentPhase,
+        phaseTimeLeft: Math.max(0, engine.phaseTimeLeft),
+        totalPhaseDuration: engine.totalPhaseDuration,
+        phaseEndsAt: engine.phaseEndsAt,
+        dealer: engine.dealer,
+        result: (engine.currentPhase === 'RESULT' || engine.currentPhase === 'SETTLEMENT' || engine.currentPhase === 'NEXT_ROUND') ? engine.currentResult : null,
+        dealingStep: engine.dealingStep,
+        serverSeedHash: engine.currentRound.serverSeedHash,
+        serverSeed: (engine.currentPhase === 'RESULT' || engine.currentPhase === 'SETTLEMENT' || engine.currentPhase === 'NEXT_ROUND') ? engine.currentRound.serverSeed : null,
+        clientSeed: (engine.currentPhase === 'RESULT' || engine.currentPhase === 'SETTLEMENT' || engine.currentPhase === 'NEXT_ROUND') ? engine.clientSeed : null,
+        history: engine.recentHistory?.slice(0, 20) || [],
         now: Date.now()
       });
     }
@@ -36,11 +46,19 @@ function handleTableSockets(socket, io, engines) {
   });
 
   socket.on('tg:bet', async (data, callback) => {
-    const { userId, gameId, room = 'Standard', market, amount } = data;
-    const betAmount = BigInt(amount * 100); // converting to paise
+    const { userId = 'guest', gameId, room = 'Standard', market, amount } = data;
+    const betAmount = BigInt(Math.floor(amount * 100)); // converting to paise
 
     if (betAmount < 1000n) { // Minimum 10 INR
       return callback({ success: false, message: 'Minimum bet is ₹10.' });
+    }
+
+    const engineKey = `${gameId?.replace('-', '')}Engine`;
+    const engine = engines[engineKey];
+
+    // Server-authoritative phase check
+    if (engine && engine.currentPhase !== 'BETTING_OPEN') {
+      return callback({ success: false, message: 'Betting is currently closed for this round.' });
     }
 
     try {
@@ -56,10 +74,6 @@ function handleTableSockets(socket, io, engines) {
         if (!round) {
           await riskService.flagUser(userId, 'IMPOSSIBLE_STATE', { action: 'tg:bet', error: 'No open round', gameId, room }, 'HIGH');
           throw new Error('No open round available.');
-        }
-        if (new Date() >= round.lockTime) {
-          await riskService.flagUser(userId, 'IMPOSSIBLE_STATE', { action: 'tg:bet', error: 'Round is locked', gameId, room }, 'HIGH');
-          throw new Error('Round is locked.');
         }
 
         await walletService.ensureUserAndWallet(tx, userId);
@@ -80,6 +94,7 @@ function handleTableSockets(socket, io, engines) {
           betId: bet.id,
           roundId: round.id,
           market,
+          amount,
           newBalance: newBalance.toString()
         };
       });

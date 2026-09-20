@@ -1,19 +1,58 @@
-const crypto = require('crypto');
-const { BaseTableEngine } = require('./BaseTableEngine');
+const { BaseTableEngine, PHASES } = require('./BaseTableEngine');
 const provablyFair = require('../ProvablyFairService');
 
-// Standard 52 Card Deck setup
-const SUITS = ['S', 'H', 'D', 'C'];
-const RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]; // A = 14, K=13, Q=12, J=11
-
 class DragonTigerEngine extends BaseTableEngine {
-  constructor(room = 'Standard', io) {
-    super('dragon-tiger', room, io);
+  constructor(room = 'Standard', coreManager) {
+    super('dragon-tiger', room, coreManager);
+    
+    // Set custom dealer details for Dragon Tiger
+    this.dealer = {
+      name: 'Maya',
+      title: 'Virtual Live Dealer',
+      tableId: 'DT-LIVETABLE-01',
+      avatar: 'maya',
+      speech: 'Welcome! Place your bets on Dragon, Tiger, or Tie.',
+      action: 'INVITING_BETS'
+    };
   }
 
   dealAndResolve(serverSeed, clientSeed) {
     const result = provablyFair.deriveDragonTigerResult(serverSeed, clientSeed, 0);
     return result.outcome;
+  }
+
+  getDealingSteps(result) {
+    return [
+      { step: 1, target: 'DRAGON', card: result.dragon, faceUp: true },
+      { step: 2, target: 'TIGER', card: result.tiger, faceUp: true }
+    ];
+  }
+
+  getDealerSpeech(phase, result) {
+    const ranks = { 14: 'Ace', 13: 'King', 12: 'Queen', 11: 'Jack' };
+    const formatRank = (r) => ranks[r] || r;
+
+    switch (phase) {
+      case PHASES.BETTING_OPEN:
+        return 'Bets are OPEN! 15 seconds to place your chips on Dragon, Tiger, or Tie.';
+      case PHASES.BETTING_CLOSED:
+        return 'Bets are CLOSED! No more bets. Dealing starts now.';
+      case PHASES.DEALING:
+        return 'Dealing cards from the shoe... Dragon card and Tiger card.';
+      case PHASES.RESULT:
+        if (!result) return 'Round complete.';
+        if (result.winner === 'TIE') {
+          return `It's a TIE with rank ${formatRank(result.dragon.rank)}! 8 to 1 payout for Tie bets!`;
+        }
+        const winningRank = result.winner === 'DRAGON' ? formatRank(result.dragon.rank) : formatRank(result.tiger.rank);
+        return `${result.winner} WINS with ${winningRank}! Congratulations!`;
+      case PHASES.SETTLEMENT:
+        return 'Settling winning bets into player wallets now.';
+      case PHASES.NEXT_ROUND:
+        return 'Cards cleared into discard tray. Preparing next round...';
+      default:
+        return 'Welcome to Simulated Live Dragon Tiger.';
+    }
   }
 
   calculatePayouts(market, result) {
