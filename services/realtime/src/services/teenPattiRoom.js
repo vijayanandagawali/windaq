@@ -1,6 +1,7 @@
 const { Deck, findWinners } = require('@windaq/teenpatti-engine');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const walletService = require('./walletService');
 
 const BOOT_AMOUNT = 1000n; // 10 INR
 const MAX_PLAYERS = 6;
@@ -22,11 +23,46 @@ class TeenPattiRoom {
     
     this.turnTimer = null;
     this.turnEndTime = 0;
+
+    this.seedAiPlayers();
+  }
+
+  seedAiPlayers() {
+    if (!this.seats[1]) {
+      this.seats[1] = {
+        id: 'bot_aarav',
+        socketId: 'bot_socket_1',
+        name: 'Aarav [AI]',
+        seatIndex: 1,
+        balance: 500000n,
+        isReady: true,
+        cards: [],
+        isActive: false,
+        isSeen: false,
+        isPacked: false,
+        betAmount: 0n
+      };
+    }
+    if (!this.seats[2]) {
+      this.seats[2] = {
+        id: 'bot_priya',
+        socketId: 'bot_socket_2',
+        name: 'Priya [VIP]',
+        seatIndex: 2,
+        balance: 750000n,
+        isReady: true,
+        cards: [],
+        isActive: false,
+        isSeen: false,
+        isPacked: false,
+        betAmount: 0n
+      };
+    }
   }
 
   // --- PLAYER MANAGEMENT ---
 
-  join(user, socketId) {
+  async join(user, socketId) {
     // Find empty seat
     const seatIndex = this.seats.findIndex(s => s === null);
     if (seatIndex === -1) throw new Error("Table is full");
@@ -34,12 +70,20 @@ class TeenPattiRoom {
     // Check if already in room
     if (this.seats.some(s => s?.id === user.id)) return;
 
+    let userBalance = 1000000n; // 10,000 INR
+    try {
+      const { wallet } = await walletService.ensureUserAndWallet(prisma, user.id);
+      if (wallet) userBalance = wallet.balance;
+    } catch (wErr) {
+      console.warn('[TeenPatti] Fallback to default balance for', user.id);
+    }
+
     const player = {
       id: user.id,
       socketId,
       name: user.id, // Replace with actual name if available
       seatIndex,
-      balance: 1000000n, // Dummy balance (10,000 INR), will be synced with DB in real flow
+      balance: userBalance,
       isReady: true,
       
       // Hand state
@@ -98,6 +142,30 @@ class TeenPattiRoom {
         p.isSeen = false;
         p.isPacked = false;
         p.cards = [];
+
+        // Deduct from DB wallet if real user
+        if (!p.id.startsWith('bot_')) {
+          try {
+            const { wallet } = await walletService.ensureUserAndWallet(prisma, p.id);
+            if (wallet && wallet.balance >= BOOT_AMOUNT) {
+              const newBal = wallet.balance - BOOT_AMOUNT;
+              await prisma.wallet.update({ where: { id: wallet.id }, data: { balance: newBal } });
+              await prisma.transaction.create({
+                data: {
+                  walletId: wallet.id,
+                  idempotencyKey: `tp_boot_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                  type: 'BET_PLACE',
+                  amount: BOOT_AMOUNT,
+                  balanceAfter: newBal,
+                  reference: `tp_${this.roomId}_boot`
+                }
+              });
+              p.balance = newBal;
+            }
+          } catch (bErr) {
+            console.error('[TeenPatti Boot Error]', bErr.message);
+          }
+        }
       } else {
         p.isActive = false; // Not enough money
       }
@@ -148,6 +216,19 @@ class TeenPattiRoom {
     this.activePlayerIndex = nextIdx;
     this.turnEndTime = Date.now() + TURN_TIMEOUT_MS;
     
+    // Auto-action for AI bots
+    if (this.seats[nextIdx] && this.seats[nextIdx].id.startsWith('bot_')) {
+      setTimeout(() => {
+        if (this.activePlayerIndex === nextIdx && this.state === 'PLAYING') {
+          if (Math.random() < 0.85) {
+            this.chaal(this.seats[nextIdx].id, false);
+          } else {
+            this.pack(this.seats[nextIdx].id);
+          }
+        }
+      }, 1200);
+    }
+
     // Auto-pack on timeout
     this.turnTimer = setTimeout(() => {
       if (this.seats[nextIdx]) {
@@ -182,7 +263,7 @@ class TeenPattiRoom {
     }
   }
 
-  chaal(userId, isShowRequest = false) {
+  async chaal(userId, isShowRequest = false) {
     const p = this.seats.find(s => s?.id === userId);
     if (!p || p.seatIndex !== this.activePlayerIndex || p.isPacked) return;
 
@@ -197,6 +278,30 @@ class TeenPattiRoom {
     p.balance -= betAmount;
     p.betAmount += betAmount;
     this.pot += betAmount;
+
+    // Deduct from DB wallet if real user
+    if (!p.id.startsWith('bot_')) {
+      try {
+        const { wallet } = await walletService.ensureUserAndWallet(prisma, p.id);
+        if (wallet && wallet.balance >= betAmount) {
+          const newBal = wallet.balance - betAmount;
+          await prisma.wallet.update({ where: { id: wallet.id }, data: { balance: newBal } });
+          await prisma.transaction.create({
+            data: {
+              walletId: wallet.id,
+              idempotencyKey: `tp_chaal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+              type: 'BET_PLACE',
+              amount: betAmount,
+              balanceAfter: newBal,
+              reference: `tp_${this.roomId}_chaal`
+            }
+          });
+          p.balance = newBal;
+        }
+      } catch (cErr) {
+        console.error('[TeenPatti Chaal Error]', cErr.message);
+      }
+    }
     
     if (isShowRequest) {
       // Show is only allowed if 2 players remain
@@ -233,6 +338,28 @@ class TeenPattiRoom {
       const winnerPlayer = this.seats.find(s => s?.id === winner.id);
       if (winnerPlayer) {
         winnerPlayer.balance += this.pot;
+
+        // Credit real wallet if real user
+        if (!winner.id.startsWith('bot_')) {
+          try {
+            const { wallet } = await walletService.ensureUserAndWallet(prisma, winner.id);
+            const newBal = wallet.balance + this.pot;
+            await prisma.wallet.update({ where: { id: wallet.id }, data: { balance: newBal } });
+            await prisma.transaction.create({
+              data: {
+                walletId: wallet.id,
+                idempotencyKey: `tp_win_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                type: 'BET_WIN',
+                amount: this.pot,
+                balanceAfter: newBal,
+                reference: `tp_${this.roomId}_pot`
+              }
+            });
+            winnerPlayer.balance = newBal;
+          } catch (wErr) {
+            console.error('[TeenPatti Settle Error]', wErr.message);
+          }
+        }
       }
     }
 

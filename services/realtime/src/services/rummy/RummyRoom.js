@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { MeldEngine } = require('./MeldEngine');
+const walletService = require('../walletService');
 
 const MAX_PLAYERS = 6;
 const TURN_TIMEOUT_MS = 30000; // 30 seconds per turn
@@ -53,17 +54,25 @@ class RummyRoom {
     return deck;
   }
 
-  join(user, socketId) {
+  async join(user, socketId) {
     const seatIndex = this.seats.findIndex(s => s === null);
     if (seatIndex === -1) throw new Error("Table is full");
     if (this.seats.some(s => s?.id === user.id)) return;
+
+    let userBalance = 100000n; // 1,000 INR
+    try {
+      const { wallet } = await walletService.ensureUserAndWallet(prisma, user.id);
+      if (wallet) userBalance = wallet.balance;
+    } catch (wErr) {
+      console.warn('[Rummy] Using default balance for', user.id);
+    }
 
     this.seats[seatIndex] = {
       id: user.id,
       socketId,
       name: user.id.substring(0, 5),
       seatIndex,
-      balance: 100000n, // Dummy balance (1000 INR)
+      balance: userBalance,
       isReady: true,
       cards: [],
       isActive: false,
@@ -336,8 +345,32 @@ class RummyRoom {
         if (p.id !== winnerId) {
           const lostAmount = BigInt(p.points) * POINT_VALUE;
           totalWinnings += lostAmount;
-          // Deduct from wallet
-          p.balance -= lostAmount; 
+          p.balance -= lostAmount;
+
+          // Deduct from real wallet if real user
+          if (!p.id.startsWith('bot_')) {
+            try {
+              const { wallet } = await walletService.ensureUserAndWallet(prisma, p.id);
+              if (wallet && wallet.balance >= lostAmount) {
+                const newBal = wallet.balance - lostAmount;
+                await prisma.wallet.update({ where: { id: wallet.id }, data: { balance: newBal } });
+                await prisma.transaction.create({
+                  data: {
+                    walletId: wallet.id,
+                    idempotencyKey: `rm_loss_${p.id}_${Date.now()}`,
+                    type: 'BET_PLACE',
+                    amount: lostAmount,
+                    balanceAfter: newBal,
+                    reference: `rm_${this.roomId}_loss`
+                  }
+                });
+                p.balance = newBal;
+              }
+            } catch (lErr) {
+              console.error('[Rummy Loss Error]', lErr.message);
+            }
+          }
+
           // Update DB Hand
           if (p.handRecordId) {
             await prisma.rummyHand.update({
@@ -355,6 +388,28 @@ class RummyRoom {
       const platformFee = totalWinnings / 10n; // 10% rake
       const netWin = totalWinnings - platformFee;
       winner.balance += netWin;
+
+      // Credit real wallet if real user
+      if (!winner.id.startsWith('bot_') && netWin > 0n) {
+        try {
+          const { wallet } = await walletService.ensureUserAndWallet(prisma, winner.id);
+          const newBal = wallet.balance + netWin;
+          await prisma.wallet.update({ where: { id: wallet.id }, data: { balance: newBal } });
+          await prisma.transaction.create({
+            data: {
+              walletId: wallet.id,
+              idempotencyKey: `rm_win_${winner.id}_${Date.now()}`,
+              type: 'BET_WIN',
+              amount: netWin,
+              balanceAfter: newBal,
+              reference: `rm_${this.roomId}_win`
+            }
+          });
+          winner.balance = newBal;
+        } catch (wErr) {
+          console.error('[Rummy Win Error]', wErr.message);
+        }
+      }
 
       if (winner.handRecordId) {
         await prisma.rummyHand.update({

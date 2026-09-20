@@ -11,7 +11,7 @@ import { io, Socket } from 'socket.io-client';
 const BOOT_AMOUNT = 10; // Fixed for MVP display
 
 export default function TeenPattiGame() {
-  const { balance } = useWalletStore();
+  const { balance, userId, fetchBalance } = useWalletStore();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [myId, setMyId] = useState<string>('');
 
@@ -29,13 +29,14 @@ export default function TeenPattiGame() {
 
   // Init Socket
   useEffect(() => {
+    const activeId = userId || (typeof window !== 'undefined' ? (localStorage.getItem('windaq_user_id') || 'guest') : 'guest');
+    setMyId(activeId);
+
     const s = io('http://localhost:4000', { auth: { token: null } });
     setSocket(s);
     
     s.on('connect', () => {
-      // In a real app we'd get this from auth
-      setMyId(`guest-${s.id?.substring(0,4)}`);
-      s.emit('tp:join');
+      s.emit('tp:join', { userId: activeId });
     });
 
     s.on('tp:state', (data: any) => {
@@ -48,17 +49,18 @@ export default function TeenPattiGame() {
     s.on('tp:showdown', (data: any) => {
       setShowdownResult(data);
       toast(`Winner: ${data.winningHandDesc}`, { icon: '🏆' });
+      fetchBalance();
     });
 
     return () => { 
-      s.emit('tp:leave');
+      s.emit('tp:leave', { userId: activeId });
       s.disconnect(); 
     };
-  }, []);
+  }, [userId, fetchBalance]);
 
   const sendAction = (action: string) => {
     if (socket) {
-      socket.emit('tp:action', { action }, (res: any) => {
+      socket.emit('tp:action', { action, userId: myId }, (res: any) => {
         if (!res.success) toast.error(res.message);
       });
     }

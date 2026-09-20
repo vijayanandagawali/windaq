@@ -5,6 +5,7 @@ import { useBetSlipStore } from '@/store/betSlipStore';
 import { useWalletStore } from '@/store/walletStore';
 import { X, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getApiUrl } from '@/lib/config';
 
 export default function GlobalBetSlip() {
   const { 
@@ -12,7 +13,7 @@ export default function GlobalBetSlip() {
     setStake, close, clearSelection, setStatus 
   } = useBetSlipStore();
   
-  const { balance, fetchBalance } = useWalletStore();
+  const { balance, fetchBalance, userId } = useWalletStore();
 
   if (!isOpen || !selection) return null;
 
@@ -25,11 +26,18 @@ export default function GlobalBetSlip() {
     setStatus('LOADING');
     
     try {
-      const res = await fetch('/api/v1/wager/place', {
+      const activeUserId = userId || (typeof window !== 'undefined' ? (localStorage.getItem('windaq_user_id') || 'sbx-usr-normal-001') : 'sbx-usr-normal-001');
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+      const res = await fetch(getApiUrl('/api/wager/place'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          'x-user-id': activeUserId
+        },
         body: JSON.stringify({
-          userId: 'test-user', // Should come from session
+          userId: activeUserId,
           gameType: selection.gameType,
           referenceId: selection.referenceId,
           market: selection.market,

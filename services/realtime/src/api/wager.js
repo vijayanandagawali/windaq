@@ -4,10 +4,10 @@ const router = express.Router();
 
 router.post('/place', async (req, res) => {
   try {
-    // In production, userId comes from authenticated session (JWT)
-    const { userId, gameType, referenceId, market, selection, type, stake, odds } = req.body;
+    const userId = req.body?.userId || req.user?.userId || req.headers['x-user-id'] || 'sbx-usr-normal-001';
+    const { gameType, referenceId, market, selection, type, stake, odds } = req.body;
     
-    if (!userId || !gameType || !referenceId || !market || !stake || !odds) {
+    if (!gameType || !referenceId || !market || !stake || !odds) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 

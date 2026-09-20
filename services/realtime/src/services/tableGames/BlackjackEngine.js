@@ -280,6 +280,31 @@ class BlackjackEngine {
         where: { id: hand.id },
         data: { payout: payout, status: newStatus }
       });
+
+      // Credit payout to wallet if won or pushed
+      if (payout > 0) {
+        try {
+          const payoutPaise = BigInt(Math.floor(payout * 100));
+          const { wallet } = await ensureUserAndWallet(prisma, hand.userId);
+          const newBal = wallet.balance + payoutPaise;
+          await prisma.wallet.update({
+            where: { id: wallet.id },
+            data: { balance: newBal }
+          });
+          await prisma.transaction.create({
+            data: {
+              walletId: wallet.id,
+              idempotencyKey: `bj_settle_${hand.id}_${Date.now()}`,
+              type: newStatus === 'PUSH' ? 'REFUND' : 'BET_WIN',
+              amount: payoutPaise,
+              balanceAfter: newBal,
+              reference: `bj_hand_${hand.id}`
+            }
+          });
+        } catch (wErr) {
+          console.error('[Blackjack Settlement Error]', wErr.message);
+        }
+      }
     }
 
     return await this.getGame(game.id);

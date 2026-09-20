@@ -3,34 +3,35 @@ function handleTeenPattiSockets(socket, io, engines) {
 
   socket.on('tp:join', (data, callback) => {
     try {
-      const user = socket.user || { id: `guest-${socket.id.substring(0,4)}` };
+      const userId = data?.userId || socket.user?.id || `guest-${socket.id.substring(0,4)}`;
+      const user = { id: userId, name: data?.userName || userId };
       socket.join(`tp:${tpRoom.roomId}`);
       tpRoom.join(user, socket.id);
-      if (callback) callback({ success: true });
+      if (callback) callback({ success: true, userId });
     } catch (e) {
       if (callback) callback({ success: false, message: e.message });
     }
   });
 
-  socket.on('tp:leave', () => {
-    const user = socket.user || { id: `guest-${socket.id.substring(0,4)}` };
-    tpRoom.leave(user.id);
+  socket.on('tp:leave', (data) => {
+    const userId = data?.userId || socket.user?.id || `guest-${socket.id.substring(0,4)}`;
+    tpRoom.leave(userId);
     socket.leave(`tp:${tpRoom.roomId}`);
   });
 
   socket.on('tp:action', (data, callback) => {
     const { action } = data; // 'see', 'pack', 'chaal', 'show'
-    const user = socket.user || { id: `guest-${socket.id.substring(0,4)}` };
+    const userId = data?.userId || socket.user?.id || `guest-${socket.id.substring(0,4)}`;
 
     try {
       if (action === 'see') {
-        tpRoom.seeCards(user.id);
+        tpRoom.seeCards(userId);
       } else if (action === 'pack') {
-        tpRoom.pack(user.id);
+        tpRoom.pack(userId);
       } else if (action === 'chaal') {
-        tpRoom.chaal(user.id, false);
+        tpRoom.chaal(userId, false);
       } else if (action === 'show') {
-        tpRoom.chaal(user.id, true);
+        tpRoom.chaal(userId, true);
       }
       if (callback) callback({ success: true });
     } catch (e) {
@@ -40,9 +41,9 @@ function handleTeenPattiSockets(socket, io, engines) {
 
   // Handle disconnect
   socket.on('disconnect', () => {
-    const user = socket.user || { id: `guest-${socket.id.substring(0,4)}` };
+    const userId = socket.user?.id || `guest-${socket.id.substring(0,4)}`;
     if (tpRoom) {
-      tpRoom.leave(user.id);
+      tpRoom.leave(userId);
     }
   });
 }
