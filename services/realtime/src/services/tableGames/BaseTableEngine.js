@@ -22,6 +22,7 @@ class BaseTableEngine extends UniversalRoundEngine {
 
     // Database record reference
     this.dbRound = null;
+    this.currentRound = null;
     this.dealingStep = null;
 
     // Virtual Live Dealer Profile
@@ -32,6 +33,18 @@ class BaseTableEngine extends UniversalRoundEngine {
       avatar: 'maya',
       speech: 'Welcome! Place your bets on Dragon, Tiger, or Tie.',
       action: 'INVITING_BETS'
+    };
+  }
+
+  /**
+   * Complete state snapshot for instant refresh recovery
+   */
+  getSnapshot(userId = 'guest') {
+    const base = super.getSnapshot(userId);
+    return {
+      ...base,
+      dealer: this.dealer,
+      dealingStep: this.dealingStep
     };
   }
 
@@ -123,6 +136,7 @@ class BaseTableEngine extends UniversalRoundEngine {
           resultTime
         }
       });
+      this.currentRound = this.dbRound;
       console.log(`[BaseTableEngine:${this.gameId}] Created DB round ${roundId}`);
     } catch (err) {
       console.error(`[BaseTableEngine:${this.gameId}] DB round create error:`, err.message);
@@ -147,6 +161,7 @@ class BaseTableEngine extends UniversalRoundEngine {
   async onPlay(roundId) {
     this.updateDealerState(UNIVERSAL_PHASES.PLAYING);
     this.dealingStep = { step: 1, totalSteps: 2, name: 'Dragon' };
+    this.animationState = this.dealingStep;
   }
 
   async onResult(roundId) {
@@ -242,10 +257,11 @@ class BaseTableEngine extends UniversalRoundEngine {
   async onNextRound() {
     this.updateDealerState(UNIVERSAL_PHASES.NEXT_ROUND);
     this.dealingStep = null;
+    this.animationState = null;
   }
 
   /**
-   * Overwrite loop to emit game-specific tg:tick alongside round:tick
+   * Loop with real-time dealing animation progression
    */
   async loop() {
     while (this.isRunning) {
@@ -257,9 +273,11 @@ class BaseTableEngine extends UniversalRoundEngine {
         if (this.currentPhase === UNIVERSAL_PHASES.PLAYING) {
           if (this.phaseTimeLeft === 2) {
             this.dealingStep = { step: 2, totalSteps: 2, name: 'Tiger' };
+            this.animationState = this.dealingStep;
             this.emitEvent('tg:dealing_step', { step: 2, target: 'TIGER' });
           } else if (this.phaseTimeLeft === 3) {
             this.dealingStep = { step: 1, totalSteps: 2, name: 'Dragon' };
+            this.animationState = this.dealingStep;
             this.emitEvent('tg:dealing_step', { step: 1, target: 'DRAGON' });
           }
         }
@@ -280,6 +298,7 @@ class BaseTableEngine extends UniversalRoundEngine {
           totalPhaseDuration: this.totalPhaseDuration,
           dealer: this.dealer,
           dealingStep: this.dealingStep,
+          animationState: this.animationState,
           serverSeedHash: this.serverSeedHash,
           serverSeed: (this.currentPhase === UNIVERSAL_PHASES.RESULT || 
                        this.currentPhase === UNIVERSAL_PHASES.SETTLEMENT || 

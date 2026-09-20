@@ -7,7 +7,7 @@ const UNIVERSAL_PHASES = {
   CREATED: 'CREATED',               // Round initialized, seeds generated, hash pre-committed
   BETTING_OPEN: 'BETTING_OPEN',     // Player bets accepted, visual timer running
   BETTING_CLOSED: 'BETTING_CLOSED', // Server locks bets, no more bets allowed
-  PLAYING: 'PLAYING',               // Game action (dealing, spinning, rolling, flying)
+  PLAYING: 'PLAYING',               // Game animation action (dealing, spinning, rolling, flying)
   RESULT: 'RESULT',                 // Provably fair outcome revealed & verified
   SETTLEMENT: 'SETTLEMENT',         // Atomic payouts, wallet updates, ledger entries
   COMPLETED: 'COMPLETED',           // Round finalized in DB and added to history
@@ -45,6 +45,10 @@ class UniversalRoundEngine {
     this.phaseEndsAt = this.phaseStartedAt + (this.totalPhaseDuration * 1000);
     this.phaseTimeLeft = this.totalPhaseDuration;
 
+    // Active Bets Store for Instant Reconnection & Refresh State Recovery
+    // Map<userId, Record<market, number>>
+    this.activeBets = new Map();
+
     // Provably Fair Cryptographic Entropy
     this.serverSeed = crypto.randomBytes(32).toString('hex');
     this.serverSeedHash = crypto.createHash('sha256').update(this.serverSeed).digest('hex');
@@ -55,6 +59,7 @@ class UniversalRoundEngine {
     this.currentResult = null;
     this.history = [];
     this.isRunning = false;
+    this.animationState = null;
   }
 
   /**
@@ -64,6 +69,58 @@ class UniversalRoundEngine {
     const timestamp = Date.now();
     const entropy = crypto.randomBytes(4).toString('hex');
     return `${this.gameId}-${timestamp}-${entropy}`;
+  }
+
+  /**
+   * Records a user's bet in the active round
+   */
+  recordBet(userId, market, amount) {
+    if (!this.activeBets.has(userId)) {
+      this.activeBets.set(userId, {});
+    }
+    const userBets = this.activeBets.get(userId);
+    userBets[market] = (userBets[market] || 0) + amount;
+    return userBets;
+  }
+
+  /**
+   * Retrieves active bets for a specific user in this round
+   */
+  getUserBets(userId) {
+    return this.activeBets.get(userId) || {};
+  }
+
+  /**
+   * Returns a complete state snapshot for instant client rehydration on refresh
+   */
+  getSnapshot(userId = 'guest') {
+    const now = Date.now();
+    return {
+      roundId: this.roundId,
+      gameId: this.gameId,
+      room: this.room,
+      phase: this.currentPhase,
+      serverTime: now,
+      phaseEndsAt: this.phaseEndsAt,
+      phaseTimeLeft: Math.max(0, Math.ceil((this.phaseEndsAt - now) / 1000)),
+      totalPhaseDuration: this.totalPhaseDuration,
+      animationState: this.animationState,
+      serverSeedHash: this.serverSeedHash,
+      serverSeed: (this.currentPhase === UNIVERSAL_PHASES.RESULT || 
+                   this.currentPhase === UNIVERSAL_PHASES.SETTLEMENT || 
+                   this.currentPhase === UNIVERSAL_PHASES.COMPLETED ||
+                   this.currentPhase === UNIVERSAL_PHASES.NEXT_ROUND) ? this.serverSeed : null,
+      clientSeed: (this.currentPhase === UNIVERSAL_PHASES.RESULT || 
+                   this.currentPhase === UNIVERSAL_PHASES.SETTLEMENT || 
+                   this.currentPhase === UNIVERSAL_PHASES.COMPLETED ||
+                   this.currentPhase === UNIVERSAL_PHASES.NEXT_ROUND) ? this.clientSeed : null,
+      result: (this.currentPhase === UNIVERSAL_PHASES.RESULT || 
+               this.currentPhase === UNIVERSAL_PHASES.SETTLEMENT || 
+               this.currentPhase === UNIVERSAL_PHASES.COMPLETED ||
+               this.currentPhase === UNIVERSAL_PHASES.NEXT_ROUND) ? this.currentResult : null,
+      history: this.history.slice(0, 20),
+      myBets: this.getUserBets(userId)
+    };
   }
 
   /**
@@ -85,12 +142,22 @@ class UniversalRoundEngine {
    */
   async initRound() {
     this.roundId = this.generateUniqueRoundId();
+    this.activeBets.clear();
+    this.animationState = null;
     this.serverSeed = crypto.randomBytes(32).toString('hex');
     this.serverSeedHash = crypto.createHash('sha256').update(this.serverSeed).digest('hex');
     this.clientSeed = '';
     this.currentResult = null;
 
     await this.onCreateRound(this.roundId);
+    this.emitEvent('round:created', {
+      roundId: this.roundId,
+      gameId: this.gameId,
+      room: this.room,
+      serverSeedHash: this.serverSeedHash,
+      serverTime: Date.now()
+    });
+
     this.setPhase(UNIVERSAL_PHASES.BETTING_OPEN);
   }
 
@@ -105,8 +172,7 @@ class UniversalRoundEngine {
     this.phaseStartedAt = Date.now();
     this.phaseEndsAt = this.phaseStartedAt + (duration * 1000);
 
-    // Emit phase change
-    this.emitEvent('round:phase_change', {
+    const eventPayload = {
       roundId: this.roundId,
       gameId: this.gameId,
       room: this.room,
@@ -115,12 +181,31 @@ class UniversalRoundEngine {
       phaseEndsAt: this.phaseEndsAt,
       totalPhaseDuration: this.totalPhaseDuration,
       phaseTimeLeft: this.phaseTimeLeft,
+      animationState: this.animationState,
       serverSeedHash: this.serverSeedHash,
       result: (this.currentPhase === UNIVERSAL_PHASES.RESULT || 
                this.currentPhase === UNIVERSAL_PHASES.SETTLEMENT || 
                this.currentPhase === UNIVERSAL_PHASES.COMPLETED ||
                this.currentPhase === UNIVERSAL_PHASES.NEXT_ROUND) ? this.currentResult : null
-    });
+    };
+
+    // Emit general phase change
+    this.emitEvent('round:phase_change', eventPayload);
+
+    // Emit granular lifecycle events
+    if (phase === UNIVERSAL_PHASES.BETTING_OPEN) {
+      this.emitEvent('round:betting_open', eventPayload);
+    } else if (phase === UNIVERSAL_PHASES.BETTING_CLOSED) {
+      this.emitEvent('round:betting_closed', eventPayload);
+    } else if (phase === UNIVERSAL_PHASES.PLAYING) {
+      this.emitEvent('round:playing', eventPayload);
+    } else if (phase === UNIVERSAL_PHASES.RESULT) {
+      this.emitEvent('round:result', eventPayload);
+    } else if (phase === UNIVERSAL_PHASES.SETTLEMENT) {
+      this.emitEvent('round:settlement', eventPayload);
+    } else if (phase === UNIVERSAL_PHASES.NEXT_ROUND) {
+      this.emitEvent('round:next_round', eventPayload);
+    }
   }
 
   /**
@@ -130,10 +215,8 @@ class UniversalRoundEngine {
     if (!this.emitter) return;
     const roomName = `${this.gameId}:${this.room}`;
     
-    // Support CoreSocketManager (emitToRoom) and Socket.io (to(room).emit)
     if (typeof this.emitter.emitToRoom === 'function') {
       this.emitter.emitToRoom(roomName, eventName, payload);
-      // Also emit on legacy channel for backwards compatibility
       this.emitter.emitToRoom(`tg:${this.gameId}:${this.room}`, eventName, payload);
     } else if (typeof this.emitter.to === 'function') {
       this.emitter.to(roomName).emit(eventName, payload);
@@ -236,6 +319,7 @@ class UniversalRoundEngine {
           phaseEndsAt: this.phaseEndsAt,
           phaseTimeLeft: this.phaseTimeLeft,
           totalPhaseDuration: this.totalPhaseDuration,
+          animationState: this.animationState,
           serverSeedHash: this.serverSeedHash,
           serverSeed: (this.currentPhase === UNIVERSAL_PHASES.RESULT || 
                        this.currentPhase === UNIVERSAL_PHASES.SETTLEMENT || 

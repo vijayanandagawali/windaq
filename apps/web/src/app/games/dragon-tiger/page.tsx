@@ -9,7 +9,7 @@ import { io, Socket } from 'socket.io-client';
 import SimulatedLiveTable, { SimulatedLiveState } from '@/components/games/SimulatedLiveTable';
 
 export default function DragonTigerGamePage() {
-  const { balance, fetchBalance } = useWalletStore();
+  const { balance, fetchBalance, userId } = useWalletStore();
   const [socket, setSocket] = useState<Socket | null>(null);
 
   // Simulated Live Dealer State
@@ -44,8 +44,32 @@ export default function DragonTigerGamePage() {
 
     s.on('connect', () => {
       console.log('[DragonTiger] Connected to realtime live table engine');
-      s.emit('tg:join', { gameId: 'dragon-tiger', room: 'Standard' });
+      const activeUserId = userId || (typeof window !== 'undefined' ? (localStorage.getItem('windaq_user_id') || 'guest') : 'guest');
+      s.emit('tg:join', { gameId: 'dragon-tiger', room: 'Standard', userId: activeUserId });
     });
+
+    // Handle complete state snapshot on connect or page refresh
+    const handleSnapshot = (data: any) => {
+      setTableState(prev => ({
+        ...prev,
+        roundId: data.roundId || prev.roundId,
+        phase: data.phase || prev.phase,
+        phaseTimeLeft: data.phaseTimeLeft ?? prev.phaseTimeLeft,
+        totalPhaseDuration: data.totalPhaseDuration ?? prev.totalPhaseDuration,
+        phaseEndsAt: data.phaseEndsAt || prev.phaseEndsAt,
+        dealer: data.dealer || prev.dealer,
+        result: data.result !== undefined ? data.result : prev.result,
+        dealingStep: data.dealingStep !== undefined ? data.dealingStep : prev.dealingStep,
+        serverSeedHash: data.serverSeedHash || prev.serverSeedHash,
+        serverSeed: data.serverSeed || prev.serverSeed,
+        clientSeed: data.clientSeed || prev.clientSeed,
+        history: data.history || prev.history,
+        myBets: data.myBets || prev.myBets
+      }));
+    };
+
+    s.on('tg:snapshot', handleSnapshot);
+    s.on('round:snapshot', handleSnapshot);
 
     s.on('tg:tick', (data: any) => {
       setTableState(prev => ({
@@ -61,7 +85,8 @@ export default function DragonTigerGamePage() {
         serverSeedHash: data.serverSeedHash,
         serverSeed: data.serverSeed,
         clientSeed: data.clientSeed,
-        history: data.history || prev.history
+        history: data.history || prev.history,
+        myBets: data.myBets !== undefined ? data.myBets : prev.myBets
       }));
     });
 
@@ -129,9 +154,9 @@ export default function DragonTigerGamePage() {
     }
 
     return new Promise((resolve) => {
-      const userId = 'guest'; // Standard guest/session user
+      const activeUserId = userId || (typeof window !== 'undefined' ? (localStorage.getItem('windaq_user_id') || 'guest') : 'guest');
       socket.emit('tg:bet', {
-        userId,
+        userId: activeUserId,
         gameId: 'dragon-tiger',
         room: 'Standard',
         market,
@@ -147,7 +172,7 @@ export default function DragonTigerGamePage() {
         }
       });
     });
-  }, [socket, tableState.phase, fetchBalance]);
+  }, [socket, tableState.phase, fetchBalance, userId]);
 
   return (
     <main className="h-screen w-full bg-[#070b12] text-white flex flex-col overflow-hidden">

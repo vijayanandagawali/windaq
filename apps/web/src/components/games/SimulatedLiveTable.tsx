@@ -42,6 +42,7 @@ export interface SimulatedLiveState {
   serverSeed?: string | null;
   clientSeed?: string | null;
   history: Array<{ roundId: string; result: DragonTigerResult; resultTime: string | Date }>;
+  myBets?: Record<string, number>;
 }
 
 interface Props {
@@ -76,6 +77,13 @@ export default function SimulatedLiveTable({
   const [previousBets, setPreviousBets] = useState<Record<string, number>>({});
   const [showProvablyFair, setShowProvablyFair] = useState<boolean>(false);
   const [showRoadmap, setShowRoadmap] = useState<boolean>(true);
+
+  // Sync active bets from server snapshot (for refresh state recovery)
+  useEffect(() => {
+    if (state.myBets && Object.keys(state.myBets).length > 0) {
+      setMyBets(state.myBets);
+    }
+  }, [state.myBets]);
 
   // Sound Synthesizer using Web Audio API
   const audioCtxRef = useRef<AudioContext | null>(null);

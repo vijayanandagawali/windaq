@@ -12,6 +12,7 @@ const { handleRouletteSockets } = require('./rouletteHandler');
 const { handleBlackjackSockets } = require('./blackjackHandler');
 const { handleRummySockets } = require('./rummyHandler');
 const { handleLiveDealerSockets } = require('./liveDealerHandler');
+const { handleUniversalSockets } = require('./universalHandler');
 const CoreSocketManager = require('./CoreSocketManager');
 
 // Store active connections per user to enforce limits
@@ -93,6 +94,7 @@ function initSockets(coreManager, io, engines = {}) {
     handleBlackjackSockets(socket, io, engines.blackjackEngine);
     handleRummySockets(socket, io, engines.rummyRoom);
     handleLiveDealerSockets(socket, io, engines.liveRouletteEngine);
+    handleUniversalSockets(socket, io, engines);
 
     // Real Prisma-backed Aviator Bet & Settlement Engine
     const { PrismaClient } = require('@prisma/client');
