@@ -1,200 +1,239 @@
 const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { UniversalRoundEngine, UNIVERSAL_PHASES } = require('./engine/UniversalRoundEngine');
 
-const STATE = {
-  UPCOMING: 'UPCOMING',
-  BETTING_OPEN: 'BETTING_OPEN',
-  LOCKED: 'LOCKED',
-  RESULT: 'RESULT',
-  SETTLED: 'SETTLED'
-};
+class ColourEngine extends UniversalRoundEngine {
+  constructor(io, roomName = '1min', durationMs = 60000) {
+    const totalSeconds = Math.floor(durationMs / 1000);
+    const bettingOpenSeconds = Math.max(10, totalSeconds - 15);
 
-class ColourEngine {
-  constructor(io, roomName, durationMs) {
+    const customDurations = {
+      CREATED: 1,
+      BETTING_OPEN: bettingOpenSeconds,
+      BETTING_CLOSED: 5,
+      PLAYING: 3,
+      RESULT: 3,
+      SETTLEMENT: 2,
+      COMPLETED: 1,
+      NEXT_ROUND: 1
+    };
+
+    super('colour', roomName, io, customDurations);
+    this.roomName = roomName;
     this.io = io;
-    this.roomName = roomName; // '1min', '3min', '5min', '10min'
     this.durationMs = durationMs;
-    
-    // Timing config
-    this.lockDurationMs = 10000; // Last 10 seconds is locked
-    this.resultDurationMs = 3000; // Show result for 3 seconds before next round
-    
-    this.state = STATE.UPCOMING;
     this.period = BigInt(parseInt(new Date().toISOString().replace(/\D/g, '').substring(0, 12)) + "001");
-    this.serverSeed = "";
-    this.clientSeed = "0000000000000000000fa3b65e43e4240d71762a5bf397d5304b2596d116859c";
-    this.nonce = 1;
-    this.roundId = null;
-    this.remainingMs = 0;
+    this.dbRound = null;
   }
 
   async startLoop() {
-    console.log(`Starting Colour Engine for room: ${this.roomName} (${this.durationMs/1000}s)`);
-    this.scheduleNextRound();
+    await this.start();
   }
 
-  async scheduleNextRound() {
-    this.state = STATE.UPCOMING;
+  // --- UNIVERSAL ENGINE HOOKS ---
+
+  async onCreateRound(roundId) {
     this.period++;
     this.nonce++;
-    this.serverSeed = crypto.randomBytes(32).toString('hex');
-    this.hash = crypto.createHmac('sha256', this.serverSeed).update(this.nonce.toString()).digest('hex');
-    
-    // Create DB Round
-      // Create or Resume DB Round
-      const round = await prisma.colourRound.upsert({
+
+    try {
+      this.dbRound = await prisma.colourRound.upsert({
         where: { room_period: { room: this.roomName, period: this.period } },
         update: {
-          state: this.state
+          state: UNIVERSAL_PHASES.CREATED,
+          serverSeed: this.serverSeed,
+          clientSeed: this.clientSeed,
+          nonce: this.nonce
         },
         create: {
+          id: roundId,
           room: this.roomName,
           period: this.period,
-          state: this.state,
+          state: UNIVERSAL_PHASES.CREATED,
           serverSeed: this.serverSeed,
           clientSeed: this.clientSeed,
           nonce: this.nonce
         }
       });
-      // If we recovered an existing round, use its ID
-      this.currentRoundId = round.id;
-      this.roundId = round.id;
-    
-    this.startBetting();
+      console.log(`[ColourEngine:${this.roomName}] Created round ${this.period} (${roundId})`);
+    } catch (err) {
+      console.error(`[ColourEngine:${this.roomName}] DB create error:`, err.message);
+    }
   }
 
-  async startBetting() {
-    this.state = STATE.BETTING_OPEN;
-    await prisma.colourRound.update({ where: { id: this.roundId }, data: { state: this.state } });
-    
-    const bettingDurationMs = this.durationMs - this.lockDurationMs - this.resultDurationMs;
-    this.remainingMs = bettingDurationMs + this.lockDurationMs;
-    
-    // Tick loop
-    this.tickInterval = setInterval(() => {
-      this.remainingMs -= 1000;
-      this.io.to(`colour:${this.roomName}`).emit('colour:tick', {
-        period: this.period.toString(),
-        state: this.state,
-        remainingSeconds: Math.floor(this.remainingMs / 1000),
-        hash: this.hash
-      });
-      
-      if (this.remainingMs <= this.lockDurationMs && this.state === STATE.BETTING_OPEN) {
-        this.lockBetting();
-      }
-      
-      if (this.remainingMs <= 0) {
-        clearInterval(this.tickInterval);
-        this.generateResult();
-      }
-    }, 1000);
+  async onBettingOpen(roundId) {
+    if (this.dbRound) {
+      await prisma.colourRound.update({
+        where: { id: this.dbRound.id },
+        data: { state: UNIVERSAL_PHASES.BETTING_OPEN }
+      }).catch(err => console.error(`[ColourEngine] Open error:`, err.message));
+    }
   }
 
-  async lockBetting() {
-    this.state = STATE.LOCKED;
-    await prisma.colourRound.update({ where: { id: this.roundId }, data: { state: this.state } });
-    this.io.to(`colour:${this.roomName}`).emit('colour:state', { state: this.state });
+  async onBettingClosed(roundId) {
+    if (this.dbRound) {
+      await prisma.colourRound.update({
+        where: { id: this.dbRound.id },
+        data: { state: 'LOCKED' }
+      }).catch(err => console.error(`[ColourEngine] Lock error:`, err.message));
+    }
+    this.io.to(`colour:${this.roomName}`).emit('colour:state', { state: 'LOCKED' });
   }
 
-  async generateResult() {
-    this.state = STATE.RESULT;
-    
-    // Provably fair generation
+  async onPlay(roundId) {
+    this.io.to(`colour:${this.roomName}`).emit('colour:state', { state: 'PLAYING' });
+  }
+
+  async onResult(roundId) {
+    // Provably fair derivation
     const hmac = crypto.createHmac('sha256', this.serverSeed).update(`${this.clientSeed}:${this.nonce}`).digest('hex');
-    // Simple mock logic using first byte for number 0-9
     const winningNumber = parseInt(hmac.substring(0, 2), 16) % 10;
     
     let winningColor = 'green';
     if (winningNumber === 0 || winningNumber === 5) winningColor = 'violet';
     else if (winningNumber % 2 === 0) winningColor = 'red';
     
-    let winningSize = winningNumber >= 5 ? 'big' : 'small';
-    
-    try {
-      await prisma.colourRound.update({ 
-        where: { id: this.roundId }, 
-        data: { 
-          state: this.state,
+    const winningSize = winningNumber >= 5 ? 'big' : 'small';
+
+    const result = {
+      number: winningNumber,
+      color: winningColor,
+      size: winningSize
+    };
+
+    if (this.dbRound) {
+      await prisma.colourRound.update({
+        where: { id: this.dbRound.id },
+        data: {
+          state: 'RESULT',
           resultNum: winningNumber,
           resultColor: winningColor,
           resultSize: winningSize
-        } 
-      });
-    } catch (e) {
-      console.warn(`[ColourEngine] Could not update round ${this.roundId}:`, e.message);
+        }
+      }).catch(err => console.error(`[ColourEngine] Result save error:`, err.message));
     }
 
     this.io.to(`colour:${this.roomName}`).emit('colour:result', {
       period: this.period.toString(),
-      number: winningNumber,
-      color: winningColor,
-      size: winningSize,
+      resultNum: winningNumber,
+      resultColor: winningColor,
+      resultSize: winningSize,
       serverSeed: this.serverSeed
     });
-    
-    this.settleBets(winningNumber, winningColor, winningSize);
+
+    return result;
   }
 
-  async settleBets(num, color, size) {
-    this.state = STATE.SETTLED;
-    
-    try {
-      await prisma.$transaction(async (tx) => {
-        // Update round
-        await tx.colourRound.update({ where: { id: this.roundId }, data: { state: this.state, settledAt: new Date() } });
-        
-        // Find all pending bets for this round
-        const bets = await tx.colourBet.findMany({ where: { roundId: this.roundId, status: 'PENDING' } });
-        
-        for (const bet of bets) {
-          let won = false;
-          if (bet.betType === 'number' && parseInt(bet.betValue) === num) won = true;
-          if (bet.betType === 'color' && bet.betValue === color) won = true;
-          if (bet.betType === 'size' && bet.betValue === size) won = true;
+  async onSettlement(roundId, result) {
+    if (!this.dbRound || !result) return;
 
-          if (won) {
-            const payoutAmount = BigInt(bet.amount) * BigInt(Math.floor(bet.multiplier * 100)) / 100n;
-            
+    try {
+      const bets = await prisma.colourBet.findMany({
+        where: { roundId: this.dbRound.id, status: 'PENDING' }
+      });
+
+      for (const bet of bets) {
+        let isWin = false;
+
+        if (bet.betType === 'color' && bet.betValue === result.color) isWin = true;
+        else if (bet.betType === 'number' && parseInt(bet.betValue) === result.number) isWin = true;
+        else if (bet.betType === 'size' && bet.betValue === result.size) isWin = true;
+
+        if (isWin) {
+          const payout = BigInt(Math.floor(Number(bet.amount) * (bet.multiplier || 2)));
+          await prisma.$transaction(async (tx) => {
             await tx.colourBet.update({
               where: { id: bet.id },
-              data: { status: 'WON', payout: payoutAmount }
+              data: { status: 'WON', payout }
             });
 
-            // Credit Wallet (assuming currency INR)
             const wallet = await tx.wallet.findFirst({ where: { userId: bet.userId, currency: 'INR' } });
             if (wallet) {
-              const newBalance = BigInt(wallet.balance) + payoutAmount;
+              const newBalance = wallet.balance + payout;
               await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
-              
+
               await tx.transaction.create({
                 data: {
                   walletId: wallet.id,
-                  idempotencyKey: `win-${bet.id}`,
+                  idempotencyKey: `colour-win-${bet.id}`,
                   type: 'BET_WIN',
-                  amount: payoutAmount,
+                  amount: payout,
                   balanceAfter: newBalance,
                   reference: bet.id
                 }
               });
             }
-          } else {
-            await tx.colourBet.update({
-              where: { id: bet.id },
-              data: { status: 'LOST', payout: 0n }
-            });
-          }
+          });
+        } else {
+          await prisma.colourBet.update({
+            where: { id: bet.id },
+            data: { status: 'LOST', payout: 0n }
+          });
         }
-      });
-      console.log(`[ColourEngine] Round ${this.period} settled successfully.`);
-    } catch (e) {
-      console.error(`[ColourEngine] Failed to settle round ${this.period}:`, e);
+      }
+
+      console.log(`[ColourEngine:${this.roomName}] Settled round ${this.period}. Bets: ${bets.length}`);
+    } catch (err) {
+      console.error(`[ColourEngine:${this.roomName}] Settle error:`, err.message);
     }
-    
-    setTimeout(() => {
-      this.scheduleNextRound();
-    }, this.resultDurationMs);
+  }
+
+  async onCompleted(roundId, result) {
+    if (this.dbRound) {
+      await prisma.colourRound.update({
+        where: { id: this.dbRound.id },
+        data: { state: 'SETTLED', settledAt: new Date() }
+      }).catch(err => console.error(`[ColourEngine] Settle status error:`, err.message));
+    }
+  }
+
+  async onNextRound() {}
+
+  /**
+   * Overwrite loop to emit colour:tick alongside round:tick
+   */
+  async loop() {
+    while (this.isRunning) {
+      try {
+        const now = Date.now();
+        this.phaseTimeLeft = Math.max(0, Math.ceil((this.phaseEndsAt - now) / 1000));
+
+        if (now >= this.phaseEndsAt) {
+          await this.handlePhaseTransition();
+        }
+
+        // Authoritative Tick Broadcast
+        const tickPayload = {
+          roundId: this.roundId,
+          gameId: 'colour',
+          room: this.roomName,
+          period: this.period.toString(),
+          phase: this.currentPhase,
+          state: this.currentPhase === UNIVERSAL_PHASES.BETTING_OPEN ? 'BETTING_OPEN' : this.currentPhase,
+          serverTime: now,
+          phaseEndsAt: this.phaseEndsAt,
+          phaseTimeLeft: this.phaseTimeLeft,
+          totalPhaseDuration: this.totalPhaseDuration,
+          remainingSeconds: this.phaseTimeLeft,
+          hash: this.serverSeedHash,
+          serverSeed: (this.currentPhase === UNIVERSAL_PHASES.RESULT || 
+                       this.currentPhase === UNIVERSAL_PHASES.SETTLEMENT || 
+                       this.currentPhase === UNIVERSAL_PHASES.COMPLETED ||
+                       this.currentPhase === UNIVERSAL_PHASES.NEXT_ROUND) ? this.serverSeed : null,
+          result: this.currentResult,
+          history: this.history.slice(0, 20)
+        };
+
+        this.io.to(`colour:${this.roomName}`).emit('colour:tick', tickPayload);
+        this.emitEvent('round:tick', tickPayload);
+
+      } catch (err) {
+        console.error(`[ColourEngine:${this.roomName}] Error in loop:`, err.message);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
   }
 }
 

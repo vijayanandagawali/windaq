@@ -1,12 +1,9 @@
 const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-
-const DRAW_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-const LOCK_DURATION_MS = 30 * 1000;     // 30 seconds before draw
+const { UniversalRoundEngine, UNIVERSAL_PHASES } = require('./engine/UniversalRoundEngine');
 
 // Payout structure for ₹100 stake (10000 paise)
-const TICKET_PRICE = 10000n; // 100 INR in paise
 const PAYOUTS = {
   3: 50000n,        // 500 INR
   4: 500000n,       // 5,000 INR
@@ -14,156 +11,120 @@ const PAYOUTS = {
   6: 1000000000n    // 10,000,000 INR (Jackpot)
 };
 
-class LottoEngine {
+class LottoEngine extends UniversalRoundEngine {
   constructor(room = '5min', io) {
-    this.room = room;
+    const customDurations = {
+      CREATED: 1,
+      BETTING_OPEN: 240, // 4 mins
+      BETTING_CLOSED: 30, // 30 sec locked
+      PLAYING: 15,       // Drawing balls
+      RESULT: 5,         // Show numbers
+      SETTLEMENT: 5,     // Payout tickets
+      COMPLETED: 2,
+      NEXT_ROUND: 2
+    };
+
+    super('lotto', room, io, customDurations);
     this.io = io;
     this.currentDraw = null;
-    this.isRunning = false;
   }
 
-  async start() {
-    this.isRunning = true;
-    console.log(`[LottoEngine] Starting engine for room: ${this.room}`);
-    await this.syncDraw();
-    this.loop();
+  // --- UNIVERSAL ENGINE HOOKS ---
+
+  async onCreateRound(roundId) {
+    try {
+      const startTime = new Date();
+      const totalSeconds = Object.values(this.phaseDurations).reduce((a, b) => a + b, 0);
+      const resultTime = new Date(startTime.getTime() + (totalSeconds * 1000));
+      const lockTime = new Date(startTime.getTime() + (this.phaseDurations.BETTING_OPEN * 1000));
+
+      this.currentDraw = await prisma.lottoDraw.create({
+        data: {
+          id: roundId,
+          room: this.room,
+          status: 'OPEN',
+          serverSeed: this.serverSeed,
+          serverSeedHash: this.serverSeedHash,
+          clientSeed: '',
+          startTime,
+          lockTime,
+          resultTime
+        }
+      });
+      console.log(`[LottoEngine:${this.room}] Created draw ${roundId}`);
+    } catch (err) {
+      console.error(`[LottoEngine:${this.room}] DB create error:`, err.message);
+    }
   }
 
-  stop() {
-    this.isRunning = false;
+  async onBettingOpen(roundId) {}
+
+  async onBettingClosed(roundId) {
+    if (this.currentDraw) {
+      await prisma.lottoDraw.update({
+        where: { id: this.currentDraw.id },
+        data: { status: 'LOCKED' }
+      }).catch(err => console.error(`[LottoEngine] Lock error:`, err.message));
+    }
+    this.io.to(`lotto:${this.room}`).emit('lotto:locked', { drawId: roundId });
   }
 
-  async syncDraw() {
-    // Find the latest draw
-    let draw = await prisma.lottoDraw.findFirst({
-      where: { room: this.room },
-      orderBy: { startTime: 'desc' }
-    });
+  async onPlay(roundId) {
+    this.io.to(`lotto:${this.room}`).emit('lotto:drawing', { drawId: roundId });
+  }
 
-    const now = new Date();
+  async onResult(roundId) {
+    // Generate 6 unique numbers (1-49)
+    const numbers = [];
+    let seed = this.serverSeed;
+    while (numbers.length < 6) {
+      const hash = crypto.createHmac('sha256', seed).update(this.clientSeed).digest('hex');
+      const num = (parseInt(hash.substring(0, 8), 16) % 49) + 1;
+      if (!numbers.includes(num)) {
+        numbers.push(num);
+      }
+      seed = hash;
+    }
+    numbers.sort((a, b) => a - b);
 
-    if (!draw || ['RESULT', 'SETTLED'].includes(draw.status)) {
-      draw = await this.createNewDraw();
-    } else if (draw.status === 'LOCKED' && now >= draw.resultTime) {
-      await this.settleDraw(draw);
-      draw = await this.createNewDraw();
-    } else if (draw.status === 'OPEN' && now >= draw.lockTime) {
-      draw = await this.lockDraw(draw);
+    if (this.currentDraw) {
+      await prisma.lottoDraw.update({
+        where: { id: this.currentDraw.id },
+        data: {
+          status: 'RESULT',
+          clientSeed: this.clientSeed,
+          winningNumbers: numbers
+        }
+      }).catch(err => console.error(`[LottoEngine] Result save error:`, err.message));
     }
 
-    this.currentDraw = draw;
-  }
-
-  async createNewDraw() {
-    const now = Date.now();
-    
-    // Align to nearest 5 min
-    const nextInterval = Math.ceil(now / DRAW_INTERVAL_MS) * DRAW_INTERVAL_MS;
-    
-    let startTime = new Date(nextInterval);
-    // If it's too close (e.g. less than 1 min), jump to the next one
-    if (startTime.getTime() - now < 60000) {
-      startTime = new Date(nextInterval + DRAW_INTERVAL_MS);
-    }
-
-    const resultTime = new Date(startTime.getTime() + DRAW_INTERVAL_MS);
-    const lockTime = new Date(resultTime.getTime() - LOCK_DURATION_MS);
-
-    const serverSeed = crypto.randomBytes(32).toString('hex');
-    const serverSeedHash = crypto.createHash('sha256').update(serverSeed).digest('hex');
-
-    const draw = await prisma.lottoDraw.create({
-      data: {
-        room: this.room,
-        status: 'OPEN',
-        serverSeed,
-        serverSeedHash,
-        clientSeed: '',
-        startTime,
-        lockTime,
-        resultTime
-      }
+    this.io.to(`lotto:${this.room}`).emit('lotto:result', {
+      drawId: roundId,
+      winningNumbers: numbers,
+      serverSeed: this.serverSeed
     });
 
-    console.log(`[LottoEngine] Created new draw ${draw.id}. Ends at ${resultTime.toISOString()}`);
-    return draw;
+    return { winningNumbers: numbers };
   }
 
-  async lockDraw(draw) {
-    const updated = await prisma.lottoDraw.update({
-      where: { id: draw.id },
-      data: { status: 'LOCKED' }
-    });
-    
-    this.io.to(`lotto:${this.room}`).emit('lotto:locked', { drawId: draw.id });
-    console.log(`[LottoEngine] Locked draw ${draw.id}`);
-    return updated;
-  }
+  async onSettlement(roundId, result) {
+    if (!this.currentDraw || !result) return;
+    const winningNumbers = result.winningNumbers;
 
-  generateWinningNumbers(serverSeed, clientSeed) {
-    const hash = crypto.createHmac('sha256', serverSeed).update(clientSeed || '00000000000000000000000000000000').digest('hex');
-    
-    const pool = Array.from({length: 49}, (_, i) => i + 1);
-    const winningNumbers = [];
-    
-    // Use chunks of the hash to pick and remove numbers from the pool
-    for (let i = 0; i < 6; i++) {
-      const hexSegment = hash.substring(i * 4, i * 4 + 4);
-      const randInt = parseInt(hexSegment, 16);
-      
-      const selectedIndex = randInt % pool.length;
-      winningNumbers.push(pool[selectedIndex]);
-      
-      // Remove selected number from pool to prevent duplicates
-      pool.splice(selectedIndex, 1);
-    }
-    
-    // Sort for presentation
-    return winningNumbers.sort((a, b) => a - b);
-  }
+    try {
+      const tickets = await prisma.lottoTicket.findMany({ where: { drawId: this.currentDraw.id } });
 
-  async settleDraw(draw) {
-    console.log(`[LottoEngine] Settling draw ${draw.id}`);
-    
-    // 1. Mark as RESULT
-    const clientSeed = crypto.randomBytes(16).toString('hex'); // In a real app, combine seeds of last N bets
-    const winningNumbers = this.generateWinningNumbers(draw.serverSeed, clientSeed);
+      for (const ticket of tickets) {
+        const matched = ticket.numbers.filter(n => winningNumbers.includes(n)).length;
+        const payout = PAYOUTS[matched] || 0n;
 
-    await prisma.lottoDraw.update({
-      where: { id: draw.id },
-      data: { 
-        status: 'RESULT',
-        clientSeed,
-        winningNumbers
-      }
-    });
+        if (payout > 0n) {
+          await prisma.$transaction(async (tx) => {
+            await tx.lottoTicket.update({
+              where: { id: ticket.id },
+              data: { matchedCount: matched, payout }
+            });
 
-    this.io.to(`lotto:${this.room}`).emit('lotto:result', { 
-      drawId: draw.id, 
-      winningNumbers 
-    });
-
-    // 2. Fetch all tickets and calculate payouts
-    const tickets = await prisma.lottoTicket.findMany({ where: { drawId: draw.id } });
-    
-    for (const ticket of tickets) {
-      let matches = 0;
-      for (const num of ticket.numbers) {
-        if (winningNumbers.includes(num)) matches++;
-      }
-
-      const payout = PAYOUTS[matches] || 0n;
-
-      if (matches > 0 || payout > 0n) {
-        await prisma.$transaction(async (tx) => {
-          // Update ticket
-          await tx.lottoTicket.update({
-            where: { id: ticket.id },
-            data: { matchedCount: matches, payout }
-          });
-
-          if (payout > 0n) {
-            // Credit wallet
             const wallet = await tx.wallet.findFirst({ where: { userId: ticket.userId, currency: 'INR' } });
             if (wallet) {
               const newBalance = wallet.balance + payout;
@@ -180,48 +141,68 @@ class LottoEngine {
                 }
               });
             }
-          }
-        });
-      }
-    }
-
-    // 3. Mark as SETTLED
-    await prisma.lottoDraw.update({
-      where: { id: draw.id },
-      data: { status: 'SETTLED' }
-    });
-
-    console.log(`[LottoEngine] Draw ${draw.id} settled. Total tickets evaluated: ${tickets.length}`);
-  }
-
-  async loop() {
-    while (this.isRunning) {
-      const now = new Date();
-
-      if (this.currentDraw) {
-        if (this.currentDraw.status === 'OPEN' && now >= this.currentDraw.lockTime) {
-          this.currentDraw = await this.lockDraw(this.currentDraw);
-        } else if (this.currentDraw.status === 'LOCKED' && now >= this.currentDraw.resultTime) {
-          await this.settleDraw(this.currentDraw);
-          this.currentDraw = await this.createNewDraw();
+          });
+        } else {
+          await prisma.lottoTicket.update({
+            where: { id: ticket.id },
+            data: { matchedCount: matched, payout: 0n }
+          });
         }
       }
 
-      // Emit tick
-      if (this.currentDraw) {
-        this.io.to(`lotto:${this.room}`).emit('lotto:tick', {
-          drawId: this.currentDraw.id,
-          status: this.currentDraw.status,
-          lockTime: this.currentDraw.lockTime.getTime(),
-          resultTime: this.currentDraw.resultTime.getTime(),
-          now: now.getTime()
-        });
+      console.log(`[LottoEngine:${this.room}] Settled draw ${roundId}. Tickets: ${tickets.length}`);
+    } catch (err) {
+      console.error(`[LottoEngine:${this.room}] Settlement error:`, err.message);
+    }
+  }
+
+  async onCompleted(roundId, result) {
+    if (this.currentDraw) {
+      await prisma.lottoDraw.update({
+        where: { id: this.currentDraw.id },
+        data: { status: 'SETTLED' }
+      }).catch(err => console.error(`[LottoEngine] Settle status error:`, err.message));
+    }
+  }
+
+  async onNextRound() {}
+
+  async loop() {
+    while (this.isRunning) {
+      try {
+        const now = Date.now();
+        this.phaseTimeLeft = Math.max(0, Math.ceil((this.phaseEndsAt - now) / 1000));
+
+        if (now >= this.phaseEndsAt) {
+          await this.handlePhaseTransition();
+        }
+
+        const tickPayload = {
+          roundId: this.roundId,
+          drawId: this.roundId,
+          gameId: 'lotto',
+          room: this.room,
+          phase: this.currentPhase,
+          status: this.currentPhase === UNIVERSAL_PHASES.BETTING_OPEN ? 'OPEN' : this.currentPhase,
+          serverTime: now,
+          phaseEndsAt: this.phaseEndsAt,
+          phaseTimeLeft: this.phaseTimeLeft,
+          totalPhaseDuration: this.totalPhaseDuration,
+          serverSeedHash: this.serverSeedHash,
+          result: this.currentResult,
+          history: this.history.slice(0, 10)
+        };
+
+        this.io.to(`lotto:${this.room}`).emit('lotto:tick', tickPayload);
+        this.emitEvent('round:tick', tickPayload);
+
+      } catch (err) {
+        console.error(`[LottoEngine:${this.room}] Error in loop:`, err.message);
       }
 
-      // Wait 1 second
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
 }
 
-module.exports = { LottoEngine, TICKET_PRICE, PAYOUTS };
+module.exports = { LottoEngine };

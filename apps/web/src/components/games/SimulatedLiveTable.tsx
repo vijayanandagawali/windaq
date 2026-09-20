@@ -31,7 +31,7 @@ export interface VirtualDealer {
 
 export interface SimulatedLiveState {
   roundId?: string;
-  phase: 'BETTING_OPEN' | 'BETTING_CLOSED' | 'DEALING' | 'RESULT' | 'SETTLEMENT' | 'NEXT_ROUND';
+  phase: 'CREATED' | 'BETTING_OPEN' | 'BETTING_CLOSED' | 'PLAYING' | 'DEALING' | 'RESULT' | 'SETTLEMENT' | 'COMPLETED' | 'NEXT_ROUND' | string;
   phaseTimeLeft: number;
   totalPhaseDuration: number;
   phaseEndsAt: number;
@@ -335,14 +335,16 @@ export default function SimulatedLiveTable({
     );
   };
 
-  // Phase tracker badge
+  // Universal Phase tracker badge
   const phasesOrder = [
-    { key: 'BETTING_OPEN', label: '1. Betting Open' },
-    { key: 'BETTING_CLOSED', label: '2. Closed' },
-    { key: 'DEALING', label: '3. Dealing' },
-    { key: 'RESULT', label: '4. Result' },
-    { key: 'SETTLEMENT', label: '5. Settlement' },
-    { key: 'NEXT_ROUND', label: '6. Next Round' }
+    { key: 'CREATED', label: '1. Created' },
+    { key: 'BETTING_OPEN', label: '2. Betting Open' },
+    { key: 'BETTING_CLOSED', label: '3. Closed' },
+    { key: 'PLAYING', label: '4. Playing' },
+    { key: 'RESULT', label: '5. Result' },
+    { key: 'SETTLEMENT', label: '6. Settlement' },
+    { key: 'COMPLETED', label: '7. Completed' },
+    { key: 'NEXT_ROUND', label: '8. Next Round' }
   ];
 
   // Roadmap calculations
@@ -576,11 +578,13 @@ export default function SimulatedLiveTable({
                 state.phase === 'DEALING' ? 'bg-amber-400 animate-spin' : 'bg-blue-400'
               }`} />
               <span className="font-black text-xs uppercase tracking-widest">
-                {state.phase === 'BETTING_OPEN' ? 'PLACE YOUR BETS' :
+                {state.phase === 'CREATED' ? 'ROUND CREATED' :
+                 state.phase === 'BETTING_OPEN' ? 'PLACE YOUR BETS' :
                  state.phase === 'BETTING_CLOSED' ? 'BETS CLOSED' :
-                 state.phase === 'DEALING' ? 'DEALING CARDS' :
+                 (state.phase === 'PLAYING' || state.phase === 'DEALING') ? 'DEALING CARDS' :
                  state.phase === 'RESULT' ? 'WINNER ANNOUNCED' :
-                 state.phase === 'SETTLEMENT' ? 'SETTLING WINNERS' : 'NEXT ROUND'}
+                 state.phase === 'SETTLEMENT' ? 'SETTLING WINNERS' :
+                 state.phase === 'COMPLETED' ? 'ROUND COMPLETED' : 'NEXT ROUND'}
               </span>
               
               {/* Countdown Number */}
@@ -614,7 +618,7 @@ export default function SimulatedLiveTable({
               
               {/* Dragon Card Slot */}
               <div className="relative">
-                {renderCard(state.result?.dragon, state.phase === 'DEALING' || state.phase === 'RESULT' || state.phase === 'SETTLEMENT')}
+                {renderCard(state.result?.dragon, state.phase === 'PLAYING' || state.phase === 'DEALING' || state.phase === 'RESULT' || state.phase === 'SETTLEMENT' || state.phase === 'COMPLETED')}
               </div>
             </div>
 
@@ -650,7 +654,7 @@ export default function SimulatedLiveTable({
               
               {/* Tiger Card Slot */}
               <div className="relative">
-                {renderCard(state.result?.tiger, (state.phase === 'DEALING' && state.dealingStep?.step === 2) || state.phase === 'RESULT' || state.phase === 'SETTLEMENT')}
+                {renderCard(state.result?.tiger, ((state.phase === 'PLAYING' || state.phase === 'DEALING') && state.dealingStep?.step === 2) || state.phase === 'RESULT' || state.phase === 'SETTLEMENT' || state.phase === 'COMPLETED')}
               </div>
             </div>
 
