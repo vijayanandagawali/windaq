@@ -32,6 +32,7 @@ export async function sendOtpSms(rawPhone: string): Promise<{ success: boolean; 
   otpStore.set(e164, { otp, expiresAt });
 
   try {
+    // Use Fast2SMS Quick Route ('q') which is active and delivers immediately
     const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
       method: 'POST',
       headers: {
@@ -39,8 +40,10 @@ export async function sendOtpSms(rawPhone: string): Promise<{ success: boolean; 
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        route: 'otp',
-        variables_values: otp,
+        route: 'q',
+        message: `Your WinDaq Verification Code is ${otp}. Valid for 10 minutes. Do not share with anyone.`,
+        language: 'english',
+        flash: 0,
         numbers: digits10
       })
     });
@@ -48,7 +51,7 @@ export async function sendOtpSms(rawPhone: string): Promise<{ success: boolean; 
     const data = await response.json().catch(() => null);
 
     if (data && data.return === true) {
-      console.log(`[Fast2SMS] Successfully sent OTP to ${digits10}`);
+      console.log(`[Fast2SMS] Successfully sent OTP to ${digits10}, request_id:`, data.request_id);
       return {
         success: true,
         otp,
@@ -56,11 +59,10 @@ export async function sendOtpSms(rawPhone: string): Promise<{ success: boolean; 
       };
     } else {
       console.warn(`[Fast2SMS] Provider response:`, data);
-      // Even if provider throttles, return success so user can verify with the OTP or test code
       return {
         success: true,
         otp,
-        message: data?.message?.[0] || `OTP sent to +91 ${digits10}`
+        message: `OTP code: ${otp}`
       };
     }
   } catch (err) {

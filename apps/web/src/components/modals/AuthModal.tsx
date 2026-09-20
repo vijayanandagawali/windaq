@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Smartphone, KeyRound, Sparkles, ShieldCheck, ArrowRight, Loader2, AlertCircle, Gift, UserCheck } from 'lucide-react';
+import { X, Smartphone, KeyRound, Sparkles, ShieldCheck, ArrowRight, Loader2, AlertCircle, Gift, UserCheck, Send } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import toast from 'react-hot-toast';
+import { getApiUrl } from '@/lib/config';
 
 export default function AuthModal() {
   const {
@@ -21,12 +23,24 @@ export default function AuthModal() {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   // Keep internal tab synchronized with store mode
   useEffect(() => {
     setActiveTab(authModalMode);
     clearError();
   }, [authModalMode, isAuthModalOpen, clearError]);
+
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setInterval(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   // Handle escape key
   useEffect(() => {
@@ -41,6 +55,33 @@ export default function AuthModal() {
 
   if (!isAuthModalOpen) return null;
 
+  const handleSendOtp = async () => {
+    if (phone.length !== 10) {
+      toast.error('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+    setSendingOtp(true);
+    try {
+      const res = await fetch(getApiUrl('/api/auth/send-otp'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOtpSent(true);
+        setCountdown(30);
+        toast.success(data.message || 'OTP sent to your mobile via SMS!');
+      } else {
+        toast.error(data.message || 'Could not send OTP.');
+      }
+    } catch {
+      toast.error('Network error sending OTP.');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (activeTab === 'GUEST') {
@@ -51,14 +92,19 @@ export default function AuthModal() {
     if (activeTab === 'REGISTER') {
       await register(phone, referralCode);
     } else {
-      await login(phone, otp || '1234');
+      if (!otp) {
+        toast.error('Please enter the OTP sent to your phone.');
+        return;
+      }
+      await login(phone, otp);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in">
+      {/* Sleek, cleanly proportioned card with zero browser scrollbars */}
       <div 
-        className="relative w-full max-w-md max-h-[88dvh] overflow-y-auto overscroll-contain pb-safe bg-[#0a0f1d] border border-white/15 rounded-3xl p-6 shadow-[0_10px_50px_rgba(0,0,0,0.8)]"
+        className="relative w-full max-w-md bg-[#0a0f1d] border border-white/15 rounded-3xl p-6 sm:p-7 shadow-[0_20px_70px_rgba(0,0,0,0.9)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Glow ambient background */}
@@ -86,7 +132,7 @@ export default function AuthModal() {
               ? 'Instant sandbox session with test currency'
               : activeTab === 'REGISTER'
               ? 'Create your verified account & claim ₹500 welcome bonus'
-              : 'Sign in to access your wallet, games, and VIP rewards'}
+              : 'Sign in with your mobile OTP to access your wallet'}
           </p>
         </div>
 
@@ -148,7 +194,7 @@ export default function AuthModal() {
               </div>
               <p className="text-xs text-gray-300 leading-relaxed">
                 Test the platform with a synthetic sandbox account. Automatically provisioned with{' '}
-                <strong className="text-yellow-400">₹50,000 test credits</strong>. Zero SMS or real money required.
+                <strong className="text-yellow-400">₹10,000 test credits</strong>. Zero SMS or real money required.
               </p>
             </div>
 
@@ -165,7 +211,7 @@ export default function AuthModal() {
               ) : (
                 <>
                   <UserCheck size={18} strokeWidth={2.5} />
-                  <span>PLAY AS GUEST (₹50,000 CREDIT)</span>
+                  <span>PLAY AS GUEST (₹10,000 CREDIT)</span>
                 </>
               )}
             </button>
@@ -196,7 +242,7 @@ export default function AuthModal() {
               </div>
             </div>
 
-            {/* Login: OTP Input with 1-Tap Demo helper */}
+            {/* Login: Real OTP Input with Send OTP Button */}
             {activeTab === 'LOGIN' && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
@@ -205,10 +251,20 @@ export default function AuthModal() {
                   </label>
                   <button
                     type="button"
-                    onClick={() => setOtp('1234')}
-                    className="text-[10px] font-bold text-neon-mint hover:underline"
+                    disabled={sendingOtp || countdown > 0 || phone.length !== 10}
+                    onClick={handleSendOtp}
+                    className="text-[11px] font-bold text-neon-mint hover:underline disabled:opacity-50 disabled:no-underline flex items-center gap-1 cursor-pointer"
                   >
-                    ⚡ Use Demo OTP (1234)
+                    {sendingOtp ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : countdown > 0 ? (
+                      `Resend in ${countdown}s`
+                    ) : (
+                      <>
+                        <Send size={11} />
+                        <span>{otpSent ? 'Resend OTP' : 'Send OTP via SMS'}</span>
+                      </>
+                    )}
                   </button>
                 </div>
                 <div className="relative flex items-center">
@@ -216,8 +272,8 @@ export default function AuthModal() {
                   <input
                     type="text"
                     data-testid="auth-otp-input"
-                    maxLength={4}
-                    placeholder="Enter 1234"
+                    maxLength={6}
+                    placeholder="Enter 6-digit OTP"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                     className="w-full bg-white/5 border border-white/15 focus:border-neon-mint rounded-2xl py-3 pl-10 pr-4 text-white font-mono text-sm tracking-widest outline-none transition-colors"
@@ -272,9 +328,9 @@ export default function AuthModal() {
         )}
 
         {/* Security Footer */}
-        <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+        <div className="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
           <ShieldCheck size={13} className="text-neon-mint" />
-          <span>256-Bit Encrypted • Provably Fair Architecture</span>
+          <span>256-Bit Encrypted • Fast2SMS Verified OTP</span>
         </div>
       </div>
     </div>
