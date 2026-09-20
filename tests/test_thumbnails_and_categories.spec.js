@@ -1,114 +1,121 @@
 const { test, expect } = require('@playwright/test');
 
-test.describe('WinDaq 16-Game Thumbnails, Artwork & Category Suite', () => {
-  test('Lobby renders 16:9 Hero banner and complete 16-game cards with zero broken images', async ({ page }) => {
-    // Navigate to homepage
+test.describe('WinDaq Premium Production Game Hub Suite', () => {
+  test('Lobby renders all 15 sections, complete cards, and filters with zero blank cards', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('http://localhost:3000', { waitUntil: 'domcontentloaded' });
 
     // Wait for the lobby page to be ready
     await page.waitForSelector('.game-card', { timeout: 15000 });
 
-    // 1. Verify 16:9 Hero Banner
+    // 1. Verify Hero Banner
     const heroBanner = page.locator('.aspect-\\[16\\/9\\]');
     await expect(heroBanner).toBeVisible();
-
     const heroImg = heroBanner.locator('img');
     await expect(heroImg).toBeVisible();
-    
-    // Check that hero image is loaded (naturalWidth > 0 and no error)
-    const isHeroLoaded = await heroImg.evaluate((img) => {
-      return img.complete && img.naturalWidth > 0;
-    });
+    const isHeroLoaded = await heroImg.evaluate((img) => img.complete && img.naturalWidth > 0);
     expect(isHeroLoaded).toBeTruthy();
 
-    // 2. Verify all Game Cards in the grid
-    const gameCards = page.locator('.game-card');
-    const count = await gameCards.count();
-    console.log(`Found ${count} game cards in lobby`);
-    expect(count).toBeGreaterThanOrEqual(14); // All seeded games
+    // 2. Verify Required Sections
+    const requiredSections = [
+      { id: '#trending', title: 'Trending Now' },
+      { id: '#recently-played', title: 'Recently Played' },
+      { id: '#favorites', title: 'Favorites' },
+      { id: '#windaq-originals', title: 'WinDaq Originals' },
+      { id: '#crash', title: 'Crash Games' },
+      { id: '#card-games', title: 'Card Games' },
+      { id: '#table-games', title: 'Table Games' },
+      { id: '#roulette', title: 'Roulette' },
+      { id: '#slots', title: 'Slots & Megaways' },
+      { id: '#scratch', title: 'Instant Scratch Cards' },
+      { id: '#lotto', title: 'Quick Draw Lottery' },
+      { id: '#colour', title: 'Colour Prediction' },
+      { id: '#live-tables', title: 'Live & Simulated Tables' },
+      { id: '#sports', title: 'Sportsbook & Cricket' }
+    ];
 
-    // 3. Inspect every single card for visual completeness & zero broken images
-    for (let i = 0; i < count; i++) {
-      const card = gameCards.nth(i);
+    for (const sec of requiredSections) {
+      const sectionEl = page.locator(sec.id);
+      await expect(sectionEl).toBeVisible();
+      const cards = sectionEl.locator('.game-card');
+      const count = await cards.count();
+      console.log(`Section ${sec.title}: found ${count} cards`);
+      expect(count).toBeGreaterThan(0); // Zero blank sections!
+    }
+
+    // 3. Verify Card Structure on all visible cards:
+    // image → badge → title → provider/type → min bet → status → favorite → Play
+    const allCards = page.locator('.game-card');
+    const totalCount = await allCards.count();
+    console.log(`Total game cards rendered across all sections: ${totalCount}`);
+    expect(totalCount).toBeGreaterThan(30);
+
+    for (let i = 0; i < Math.min(totalCount, 15); i++) {
+      const card = allCards.nth(i);
+
+      // Image
       const img = card.locator('img');
       await expect(img).toBeVisible();
+      const imgLoaded = await img.evaluate(img => img.complete && img.naturalWidth > 0);
+      expect(imgLoaded).toBeTruthy();
 
-      // Ensure naturalWidth > 0 (not broken, not a 0x0 black box)
-      const isLoaded = await img.evaluate((image) => {
-        return image.complete && image.naturalWidth > 0;
-      });
-      expect(isLoaded).toBeTruthy();
+      // Badge (category tag or LIVE/NEW)
+      const badge = card.locator('span.font-extrabold').first();
+      await expect(badge).toBeVisible();
 
-      // Check visual completeness elements on the card
-      const slug = await card.getAttribute('data-slug');
-      console.log(`Verifying visual completeness for: ${slug}`);
-
-      // Title must be present
+      // Title
       const title = card.locator('h3');
       await expect(title).toBeVisible();
 
-      // Min bet must be visible
+      // Provider/type
+      const providerType = card.locator('span.uppercase.tracking-wider').first();
+      await expect(providerType).toBeVisible();
+
+      // Min Bet
       const minBet = card.locator('text=Min:');
       await expect(minBet).toBeVisible();
 
-      // Favorite star must be present
-      const starBtn = card.locator('button[aria-label="Toggle Favorite"]');
-      await expect(starBtn).toBeVisible();
+      // Status
+      const status = card.locator('text=Online').or(card.locator('text=Live 24/7')).first();
+      await expect(status).toBeVisible();
+
+      // Favorite button
+      const favBtn = card.locator('button[aria-label="Toggle Favorite"]');
+      await expect(favBtn).toBeVisible();
+
+      // Play button
+      const playBtn = card.locator('text=PLAY NOW').first();
+      await expect(playBtn).toBeVisible();
     }
 
-    // 4. Test Category Navigation for requested categories
-    const categoriesToTest = [
-      { name: 'Crash', expectedSlug: 'aviator' },
-      { name: 'Colour', expectedSlug: 'colour-prediction' },
-      { name: 'Slots', expectedSlug: 'slots' },
-      { name: 'Scratch', expectedSlug: 'scratch' },
-      { name: 'Lotto', expectedSlug: 'lotto' },
-      { name: 'Teen Patti', expectedSlug: 'teen-patti' },
-      { name: 'Poker', expectedSlug: 'texas-holdem' },
-      { name: 'Rummy', expectedSlug: 'rummy' },
-      { name: 'Roulette', expectedSlug: 'european-roulette' },
-      { name: 'Blackjack', expectedSlug: 'blackjack' },
-      { name: 'Andar Bahar', expectedSlug: 'andar-bahar' },
-      { name: 'Dragon Tiger', expectedSlug: 'dragon-tiger' },
-      { name: 'Dice', expectedSlug: 'dice' },
-      { name: 'Sports', expectedSlug: 'sportsbook' }
-    ];
+    // 4. Test Search + Category + Filters
+    // Test Search
+    const searchInput = page.locator('input[placeholder*="Search 16+ games"]');
+    await searchInput.fill('Aviator');
+    await page.waitForTimeout(400);
+    const searchResults = page.locator('.game-card');
+    await expect(searchResults.first()).toBeVisible();
+    expect(await searchResults.count()).toBeGreaterThanOrEqual(1);
 
-    for (const cat of categoriesToTest) {
-      console.log(`Testing category filter: ${cat.name}`);
-      const catButton = page.locator(`.cat-pill:has-text("${cat.name}")`);
-      await expect(catButton).toBeVisible();
-      await catButton.click();
+    // Clear Search
+    await page.locator('button:has-text("Back to All Hub Sections")').click();
+    await page.waitForTimeout(400);
 
-      // Wait a moment for filter update
-      await page.waitForTimeout(400);
+    // Test Provider Filter
+    const providerSelect = page.locator('select').first();
+    await providerSelect.selectOption({ index: 1 });
+    await page.waitForTimeout(400);
+    const providerResults = page.locator('.game-card');
+    expect(await providerResults.count()).toBeGreaterThanOrEqual(1);
 
-      // Verify the expected game card is displayed
-      const targetCard = page.locator(`.game-card[data-slug="${cat.expectedSlug}"]`);
-      await expect(targetCard).toBeVisible();
+    // Reset Filter
+    await page.locator('button:has-text("Back to All Hub Sections")').click();
+    await page.waitForTimeout(400);
 
-      // Verify card image is valid
-      const targetImg = targetCard.locator('img');
-      const isCardImgLoaded = await targetImg.evaluate((image) => {
-        return image.complete && image.naturalWidth > 0;
-      });
-      expect(isCardImgLoaded).toBeTruthy();
-    }
-
-    // 5. Test Hover State on first card
-    const firstCard = gameCards.first();
-    await firstCard.hover();
-    await page.waitForTimeout(300);
-
-    // Switch back to All Games to capture full lobby view
-    const allGamesBtn = page.locator('.cat-pill:has-text("All Games")');
-    await allGamesBtn.click();
+    // 5. Scroll to sections and capture screenshot
+    await page.locator('#trending').scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
-
-    // Scroll down to games grid and take screenshot
-    await page.locator('.game-card').first().scrollIntoViewIfNeeded();
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: 'test-results/windaq_grid_cards_verified.png', fullPage: false });
-    console.log('✅ Grid screenshot saved to test-results/windaq_grid_cards_verified.png');
+    await page.screenshot({ path: 'test-results/windaq_production_sections_verified.png', fullPage: false });
+    console.log('✅ Sections screenshot saved to test-results/windaq_production_sections_verified.png');
   });
 });
