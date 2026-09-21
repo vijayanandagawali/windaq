@@ -1,0 +1,6 @@
+tests/*.png
+test-results/
+playwright-report/
+.git/
+node_modules/
+*.log
