@@ -48,13 +48,21 @@ model User {
 }
 
 model Wallet {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  currency  String   @default("INR") // paise
-  balance   BigInt   @default(0)     // stored in integer paise
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  currency          String   @default("INR") // paise
+  balance           BigInt   @default(0)     // stored in integer paise (total balance)
+  lockedBalance     BigInt   @default(0)     // in paise (reserved for pending withdrawals or active holds)
+  pendingDeposit    BigInt   @default(0)     // in paise (initiated deposits not yet finalized)
+  pendingWithdrawal BigInt   @default(0)     // in paise (requested withdrawals in progress)
+  bonusBalance      BigInt   @default(0)     // in paise (promotional non-withdrawable funds)
+  totalDeposited    BigInt   @default(0)     // lifetime total deposited in paise
+  totalWithdrawn    BigInt   @default(0)     // lifetime total withdrawn in paise
+  totalWon          BigInt   @default(0)     // lifetime total won in paise
+  totalLost         BigInt   @default(0)     // lifetime total lost in paise
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   transactions Transaction[]
   adjustments  WalletAdjustment[]
@@ -1010,6 +1018,32 @@ model ResultCorrection {
 
   @@index([roundId])
   @@index([resultHistoryId])
+}
+
+// --- FINANCIAL RECONCILIATION ENGINE (Prompt #69) ---
+
+model ReconciliationCase {
+  id                  String   @id @default(uuid())
+  caseId              String   @unique // e.g. REC-20260921-ABCD
+  referenceId         String?  // PaymentIntent ID or LedgerTransaction ID or UTR
+  provider            String   @default("SYSTEM") // RAZORPAY, PHONEPE, MOCK_UPI, LEDGER
+  userId              String?
+  expectedAmount      BigInt   @default(0) // in paise
+  ledgerAmount        BigInt   @default(0) // in paise
+  walletAmount        BigInt   @default(0) // in paise
+  difference          BigInt   @default(0) // in paise
+  status              String   @default("PENDING") // MATCHED, MISSING_LEDGER, MISSING_PAYMENT, AMOUNT_MISMATCH, STATUS_MISMATCH, DUPLICATE_PAYMENT, DUPLICATE_LEDGER, UNKNOWN_REFERENCE, MANUAL_REVIEW_REQUIRED, RESOLVED
+  reason              String   // Detailed discrepancy explanation
+  auditMetadata       Json?    // Detailed payloads from provider and ledger
+  resolvedBy          String?  // Admin ID
+  resolvedAt          DateTime?
+  resolutionReference String?  // Compensating transaction ID or manual note
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([status])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 

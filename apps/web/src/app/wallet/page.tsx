@@ -13,6 +13,8 @@ import { useAuthStore } from '@/store/authStore';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { getApiUrl } from '@/lib/config';
 import toast from 'react-hot-toast';
+import { AnimatedWalletBalance } from '@/components/wallet/AnimatedWalletBalance';
+import { TransactionStatusAnimation } from '@/components/wallet/TransactionStatusAnimation';
 
 interface TransactionItem {
   id: string;
@@ -47,7 +49,20 @@ interface WagerItem {
 }
 
 export default function WalletHub() {
-  const { balance, fetchBalance, userId } = useWalletStore();
+  const { 
+    balance, 
+    availableBalance, 
+    lockedBalance, 
+    pendingDeposit, 
+    pendingWithdrawal, 
+    bonusBalance, 
+    totalDeposited, 
+    totalWithdrawn, 
+    fetchBalance, 
+    setDepositing, 
+    setWithdrawing, 
+    userId 
+  } = useWalletStore();
   
   // State
   const [activeTab, setActiveTab] = useState<'transactions' | 'wagers' | 'pending'>('transactions');
@@ -249,8 +264,8 @@ export default function WalletHub() {
 
   return (
     <ProtectedRoute title="MY GAMING WALLET">
-      <div className="min-h-screen bg-[#070b12] text-white flex flex-col">
-        <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6">
+      <div className="min-h-screen bg-[#070b12] text-white flex flex-col overflow-x-hidden w-full max-w-[100vw]">
+        <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6 overflow-x-hidden">
         
         {/* Page Title & Breadcrumbs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -287,25 +302,34 @@ export default function WalletHub() {
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 sm:gap-6 relative z-10">
               <div>
-                <span className="text-xs uppercase font-bold tracking-widest text-gray-400">Total Available Balance</span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl sm:text-3xl font-black text-neon-mint">₹</span>
-                  <span data-testid="wallet-total-balance" className="text-3xl sm:text-5xl font-black tracking-tight text-white font-mono">
-                    {balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
+                <span className="text-xs uppercase font-bold tracking-widest text-gray-400">Total Authoritative Balance</span>
+                <div className="mt-1">
+                  <AnimatedWalletBalance value={balance} testId="wallet-total-balance" size="xl" />
                 </div>
                 <div className="flex items-center gap-2.5 sm:gap-4 mt-3 text-xs text-white/60 flex-wrap">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    <span>Deposit: <strong className="text-white">₹{(balance * 0.6).toFixed(2)}</strong></span>
+                    <span>Available: <strong className="text-white">₹{(availableBalance > 0 ? availableBalance : balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+                  </div>
+                  {lockedBalance > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                      <span>Locked: <strong className="text-amber-300">₹{lockedBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+                    </div>
+                  )}
+                  {bonusBalance > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+                      <span>Bonus: <strong className="text-cyan-300">₹{bonusBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                    <span>Total Deposited: <strong className="text-white">₹{totalDeposited.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-                    <span>Winnings: <strong className="text-white">₹{(balance * 0.4).toFixed(2)}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                    <span>Bonus: <strong className="text-white">₹500.00</strong></span>
+                    <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+                    <span>Total Withdrawn: <strong className="text-white">₹{totalWithdrawn.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
                   </div>
                 </div>
               </div>
@@ -313,7 +337,7 @@ export default function WalletHub() {
               {/* Action Buttons: Stack on mobile, inline on desktop */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto shrink-0">
                 <button
-                  onClick={() => setIsDepositOpen(true)}
+                  onClick={() => setDepositing(true)}
                   className="flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-neon-mint to-emerald-400 hover:from-emerald-400 hover:to-neon-mint text-deep-ocean font-black text-sm rounded-2xl shadow-[0_0_20px_rgba(0,255,163,0.4)] active:scale-95 transition-all cursor-pointer min-h-[44px]"
                 >
                   <ArrowDownLeft size={20} strokeWidth={3} />
@@ -321,7 +345,7 @@ export default function WalletHub() {
                 </button>
 
                 <button
-                  onClick={() => setIsWithdrawOpen(true)}
+                  onClick={() => setWithdrawing(true)}
                   className="flex items-center justify-center gap-2 px-5 py-3.5 bg-white/10 hover:bg-white/15 border border-white/15 text-white font-black text-sm rounded-2xl active:scale-95 transition-all cursor-pointer min-h-[44px]"
                 >
                   <ArrowUpRight size={20} strokeWidth={2.5} />
@@ -933,12 +957,20 @@ export default function WalletHub() {
                 </div>
               )}
 
-              <button
-                onClick={() => setSelectedTx(null)}
-                className="mt-4 w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 font-bold text-white transition-colors cursor-pointer"
-              >
-                Close Receipt
-              </button>
+              <div className="flex gap-2 mt-4">
+                <Link
+                  href={`/wallet/transactions/${selectedTx.id}`}
+                  className="flex-1 py-2.5 rounded-xl bg-neon-mint/20 hover:bg-neon-mint/30 text-neon-mint font-bold text-xs border border-neon-mint/30 text-center transition-colors cursor-pointer"
+                >
+                  View Full Audit Timeline ➔
+                </Link>
+                <button
+                  onClick={() => setSelectedTx(null)}
+                  className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 font-bold text-white transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

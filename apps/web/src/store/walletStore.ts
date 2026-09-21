@@ -1,19 +1,34 @@
 import { create } from 'zustand';
-import { getApiUrl } from '@/lib/config';
+import { getApiUrl, createGameSocket } from '@/lib/config';
+import toast from 'react-hot-toast';
 
 export interface Transaction {
   id: string;
-  type: 'DEPOSIT' | 'WITHDRAW' | 'BET' | 'WIN' | 'BONUS' | 'SPIN';
+  type: 'DEPOSIT' | 'WITHDRAW' | 'WITHDRAWAL' | 'BET' | 'BET_PLACE' | 'WIN' | 'BET_WIN' | 'BONUS' | 'REFUND' | 'SPIN' | string;
   amount: number;
+  amountPaise?: string;
+  balanceAfter?: number;
   description: string;
-  status: 'SUCCESS' | 'PENDING' | 'FAILED';
+  status: 'SUCCESS' | 'COMPLETED' | 'PENDING' | 'FAILED' | 'REVERSED' | string;
   date: string;
+  reference?: string;
   utr?: string;
+  idempotencyKey?: string;
+  ledger?: any;
 }
 
 interface WalletState {
   balance: number;
+  availableBalance: number;
+  lockedBalance: number;
+  pendingDeposit: number;
+  pendingWithdrawal: number;
   bonusBalance: number;
+  totalDeposited: number;
+  totalWithdrawn: number;
+  totalWon: number;
+  totalLost: number;
+
   isLoggedIn: boolean;
   userId: string;
   user: { id: string; name: string; phone: string } | null;
@@ -22,6 +37,7 @@ interface WalletState {
   vipTier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond';
   vipPoints: number;
   referralCode: string;
+
   isDepositing: boolean;
   isWithdrawing: boolean;
   isSpinOpen: boolean;
@@ -30,13 +46,16 @@ interface WalletState {
   isPassbookOpen: boolean;
   isNotifOpen: boolean;
   transactions: Transaction[];
-  
+  isLoading: boolean;
+
   // Actions
   setBalance: (amount: number) => void;
   deductBalance: (amount: number, gameName?: string) => boolean;
   addWinnings: (amount: number, gameName?: string, multiplier?: number) => void;
-  deposit: (amount: number, utr?: string, method?: string) => void;
-  withdraw: (amount: number, upiId?: string) => boolean;
+  deposit: (amount: number, utr?: string, method?: string) => Promise<boolean>;
+  withdraw: (amount: number, upiId?: string) => Promise<boolean>;
+  submitDeposit: (amount: number, utr?: string, method?: string, idempotencyKey?: string) => Promise<{ success: boolean; data?: any; message?: string }>;
+  submitWithdraw: (amount: number, upiId: string, method?: string, idempotencyKey?: string) => Promise<{ success: boolean; data?: any; message?: string }>;
   claimSpin: (amount: number, prizeLabel: string) => void;
   claimCashback: (amount: number) => void;
   setIsLoggedIn: (status: boolean) => void;
@@ -49,12 +68,25 @@ interface WalletState {
   setNotifOpen: (status: boolean) => void;
   setAuthenticatedUser: (user: { id: string; phone: string; role?: string; isGuest?: boolean }, initialBalance?: number) => void;
   resetWallet: () => void;
-  fetchBalance: () => void;
+  fetchBalance: () => Promise<void>;
+  fetchTransactions: () => Promise<void>;
+  initRealtimeSync: () => void;
 }
+
+let socketInitialized = false;
 
 export const useWalletStore = create<WalletState>((set, get) => ({
   balance: 0,
+  availableBalance: 0,
+  lockedBalance: 0,
+  pendingDeposit: 0,
+  pendingWithdrawal: 0,
   bonusBalance: 0,
+  totalDeposited: 0,
+  totalWithdrawn: 0,
+  totalWon: 0,
+  totalLost: 0,
+
   isLoggedIn: false,
   userId: "",
   user: null,
@@ -70,145 +102,103 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   isReferralOpen: false,
   isPassbookOpen: false,
   isNotifOpen: false,
-  transactions: [
-    {
-      id: 'tx_1001',
-      type: 'DEPOSIT',
-      amount: 10000.00,
-      description: 'UPI Deposit via PhonePe',
-      status: 'SUCCESS',
-      date: 'Today, 02:15 PM',
-      utr: 'UTR849201948201'
-    },
-    {
-      id: 'tx_1002',
-      type: 'BET',
-      amount: -300.00,
-      description: 'Bet on WinDaq Aviator Crash',
-      status: 'SUCCESS',
-      date: 'Today, 02:30 PM'
-    },
-    {
-      id: 'tx_1003',
-      type: 'BET',
-      amount: -280.00,
-      description: 'Bet on Color Prediction (Green)',
-      status: 'SUCCESS',
-      date: 'Today, 02:45 PM'
-    }
-  ],
+  transactions: [],
+  isLoading: false,
 
-  setBalance: (amount) => set({ balance: amount }),
+  setBalance: (amount) => set({ balance: amount, availableBalance: amount - get().lockedBalance }),
 
   deductBalance: (amount, gameName = 'Game') => {
-    const current = get().balance;
-    if (current < amount) return false;
+    const currentAvailable = get().availableBalance || get().balance;
+    if (currentAvailable < amount) return false;
 
-    const newBal = parseFloat((current - amount).toFixed(2));
-    const newTx: Transaction = {
-      id: 'tx_' + Date.now().toString(36),
-      type: 'BET',
-      amount: -amount,
-      description: `Bet on ${gameName}`,
-      status: 'SUCCESS',
-      date: 'Just now'
-    };
-
-    set((state) => ({
-      balance: newBal,
-      vipPoints: state.vipPoints + Math.floor(amount / 10),
-      transactions: [newTx, ...state.transactions]
-    }));
+    // Trigger asynchronous authoritative refresh
+    setTimeout(() => get().fetchBalance(), 300);
     return true;
   },
 
   addWinnings: (amount, gameName = 'Game', multiplier = 1.0) => {
-    const multText = multiplier > 1 ? ` (${multiplier.toFixed(2)}x)` : '';
-    const newTx: Transaction = {
-      id: 'tx_' + Date.now().toString(36),
-      type: 'WIN',
-      amount: amount,
-      description: `Win in ${gameName}${multText}`,
-      status: 'SUCCESS',
-      date: 'Just now'
-    };
-
-    set((state) => ({
-      balance: parseFloat((state.balance + amount).toFixed(2)),
-      transactions: [newTx, ...state.transactions]
-    }));
+    // Trigger asynchronous authoritative refresh
+    setTimeout(() => get().fetchBalance(), 300);
   },
 
-  deposit: (amount, utr = '', method = 'UPI') => {
-    const genUtr = utr || ('UTR' + Math.floor(100000000000 + Math.random() * 900000000000));
-    const newTx: Transaction = {
-      id: 'tx_' + Date.now().toString(36),
-      type: 'DEPOSIT',
-      amount: amount,
-      description: `Instant ${method} Deposit`,
-      status: 'SUCCESS',
-      date: 'Just now',
-      utr: genUtr
-    };
+  submitDeposit: async (amount, utr = '', method = 'UPI', idempotencyKey) => {
+    const uid = get().userId || (typeof window !== 'undefined' ? localStorage.getItem('windaq_user_id') : null);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
 
-    set((state) => ({
-      balance: parseFloat((state.balance + amount).toFixed(2)),
-      transactions: [newTx, ...state.transactions],
-      isDepositing: false
-    }));
+    try {
+      const res = await fetch(getApiUrl('/api/ledger/deposit/instant'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(uid ? { 'x-user-id': uid } : {}),
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ amount, utr, method, idempotencyKey })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        await get().fetchBalance();
+        await get().fetchTransactions();
+        return { success: true, data: data.data, message: data.message };
+      }
+      return { success: false, message: data.message || 'Deposit submission failed' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Network error during deposit' };
+    }
   },
 
-  withdraw: (amount, upiId = 'user@upi') => {
-    const current = get().balance;
-    if (current < amount) return false;
+  deposit: async (amount, utr = '', method = 'UPI') => {
+    const res = await get().submitDeposit(amount, utr, method);
+    if (res.success) {
+      set({ isDepositing: false });
+      return true;
+    }
+    return false;
+  },
 
-    const newTx: Transaction = {
-      id: 'tx_' + Date.now().toString(36),
-      type: 'WITHDRAW',
-      amount: -amount,
-      description: `Withdrawal to UPI (${upiId})`,
-      status: 'SUCCESS',
-      date: 'Just now'
-    };
+  submitWithdraw: async (amount, upiId, method = 'UPI', idempotencyKey) => {
+    const uid = get().userId || (typeof window !== 'undefined' ? localStorage.getItem('windaq_user_id') : null);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
 
-    set((state) => ({
-      balance: parseFloat((state.balance - amount).toFixed(2)),
-      transactions: [newTx, ...state.transactions],
-      isWithdrawing: false
-    }));
-    return true;
+    try {
+      const res = await fetch(getApiUrl('/api/ledger/withdraw/instant'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(uid ? { 'x-user-id': uid } : {}),
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ amount, upiId, method, idempotencyKey })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        await get().fetchBalance();
+        await get().fetchTransactions();
+        return { success: true, data: data.data, message: data.message };
+      }
+      return { success: false, message: data.message || 'Withdrawal request failed' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Network error during withdrawal' };
+    }
+  },
+
+  withdraw: async (amount, upiId = 'user@upi') => {
+    const res = await get().submitWithdraw(amount, upiId);
+    if (res.success) {
+      set({ isWithdrawing: false });
+      return true;
+    }
+    return false;
   },
 
   claimSpin: (amount, prizeLabel) => {
-    const newTx: Transaction = {
-      id: 'tx_' + Date.now().toString(36),
-      type: 'SPIN',
-      amount: amount,
-      description: `Daily Lucky Spin Prize (${prizeLabel})`,
-      status: 'SUCCESS',
-      date: 'Just now'
-    };
-
-    set((state) => ({
-      balance: parseFloat((state.balance + amount).toFixed(2)),
-      transactions: [newTx, ...state.transactions]
-    }));
+    setTimeout(() => get().fetchBalance(), 300);
   },
 
   claimCashback: (amount) => {
-    const newTx: Transaction = {
-      id: 'tx_' + Date.now().toString(36),
-      type: 'BONUS',
-      amount: amount,
-      description: `VIP Daily Loss Cashback Credit`,
-      status: 'SUCCESS',
-      date: 'Just now'
-    };
-
-    set((state) => ({
-      balance: parseFloat((state.balance + amount).toFixed(2)),
-      transactions: [newTx, ...state.transactions]
-    }));
+    setTimeout(() => get().fetchBalance(), 300);
   },
 
   setIsLoggedIn: (status) => set({ isLoggedIn: status }),
@@ -227,14 +217,25 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       user: { id: user.id, name: user.isGuest ? 'Test Guest' : `Player_${user.id.slice(-4)}`, phone: user.phone },
       userName: user.isGuest ? 'Test Guest' : `Player_${user.id.slice(-4)}`,
       userPhone: user.phone,
-      ...(typeof initialBalance === 'number' ? { balance: initialBalance } : {})
+      ...(typeof initialBalance === 'number' ? { balance: initialBalance, availableBalance: initialBalance } : {})
     });
+    get().fetchBalance();
+    get().fetchTransactions();
+    get().initRealtimeSync();
   },
 
   resetWallet: () => {
     set({
       balance: 0,
+      availableBalance: 0,
+      lockedBalance: 0,
+      pendingDeposit: 0,
+      pendingWithdrawal: 0,
       bonusBalance: 0,
+      totalDeposited: 0,
+      totalWithdrawn: 0,
+      totalWon: 0,
+      totalLost: 0,
       isLoggedIn: false,
       userId: '',
       user: null,
@@ -255,7 +256,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         }
       }
       if (!uid && !token) {
-        set({ balance: 0 });
+        set({ balance: 0, availableBalance: 0 });
         return;
       }
 
@@ -266,10 +267,80 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       const res = await fetch(getApiUrl('/api/ledger/balance'), { headers });
       const data = await res.json();
       if (data.success && typeof data.balance === 'number') {
-        set({ balance: data.balance });
+        set({ 
+          balance: data.balance,
+          availableBalance: typeof data.availableBalance === 'number' ? data.availableBalance : data.balance,
+          lockedBalance: typeof data.lockedBalance === 'number' ? data.lockedBalance : 0,
+          pendingDeposit: typeof data.pendingDeposit === 'number' ? data.pendingDeposit : 0,
+          pendingWithdrawal: typeof data.pendingWithdrawal === 'number' ? data.pendingWithdrawal : 0,
+          bonusBalance: typeof data.bonusBalance === 'number' ? data.bonusBalance : 0,
+          totalDeposited: typeof data.totalDeposited === 'number' ? data.totalDeposited : 0,
+          totalWithdrawn: typeof data.totalWithdrawn === 'number' ? data.totalWithdrawn : 0,
+          totalWon: typeof data.totalWon === 'number' ? data.totalWon : 0,
+          totalLost: typeof data.totalLost === 'number' ? data.totalLost : 0
+        });
       }
     } catch {
-      // Retain optimistic balance if server unreachable
+      // Retain previous authoritative balance
     }
   },
+
+  fetchTransactions: async () => {
+    try {
+      let uid = get().userId;
+      let token: string | null = null;
+      if (typeof window !== 'undefined') {
+        token = localStorage.getItem('windaq_auth_token');
+        if (!uid) {
+          uid = localStorage.getItem('windaq_user_id') || (localStorage.getItem('windaq_user_data') ? JSON.parse(localStorage.getItem('windaq_user_data') || '{}').id : null);
+        }
+      }
+      if (!uid && !token) return;
+
+      const headers: Record<string, string> = {};
+      if (uid) headers['x-user-id'] = uid;
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(getApiUrl('/api/ledger/transactions?limit=30'), { headers });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        set({ transactions: data.data });
+      }
+    } catch {
+      // ignore
+    }
+  },
+
+  initRealtimeSync: () => {
+    if (socketInitialized || typeof window === 'undefined') return;
+    try {
+      const s = createGameSocket();
+      s.on('WALLET_UPDATED', (payload: any) => {
+        get().fetchBalance();
+        get().fetchTransactions();
+      });
+      s.on('DEPOSIT_COMPLETED', (payload: any) => {
+        toast.success(`₹${payload.amount} deposited successfully!`, { icon: '💰' });
+        get().fetchBalance();
+        get().fetchTransactions();
+      });
+      s.on('WITHDRAWAL_CREATED', (payload: any) => {
+        get().fetchBalance();
+        get().fetchTransactions();
+      });
+      s.on('WITHDRAWAL_COMPLETED', (payload: any) => {
+        toast.success(`Withdrawal of ₹${payload.amount} completed!`, { icon: '✅' });
+        get().fetchBalance();
+        get().fetchTransactions();
+      });
+      s.on('WITHDRAWAL_REVERSED', (payload: any) => {
+        toast.error(`Withdrawal of ₹${payload.amount} reversed: ${payload.reason || 'Restored'}`, { icon: '↩️' });
+        get().fetchBalance();
+        get().fetchTransactions();
+      });
+      socketInitialized = true;
+    } catch {
+      // ignore
+    }
+  }
 }));

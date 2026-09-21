@@ -1,0 +1,33 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
+
+const REALTIME_URL = process.env.REALTIME_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+export async function POST(request: NextRequest) {
+  const userId = request.headers.get('x-user-id');
+  const authHeader = request.headers.get('authorization');
+
+  try {
+    const body = await request.json();
+    const targetUrl = `${REALTIME_URL}/api/ledger/deposit/instant`;
+
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(userId ? { 'x-user-id': userId } : {}),
+        ...(authHeader ? { 'authorization': authHeader } : {})
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, message: err.message || 'Deposit proxy failure' },
+      { status: 500 }
+    );
+  }
+}

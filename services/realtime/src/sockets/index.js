@@ -65,8 +65,13 @@ function initSockets(coreManager, io, engines = {}) {
   });
 
   io.on('connection', (socket) => {
-    console.log(`🔌 Client connected: ${socket.id} [${socket.user?.userId || 'guest'}]`);
+    const uid = socket.user?.userId || socket.user?.id;
+    console.log(`🔌 Client connected: ${socket.id} [${uid || 'guest'}]`);
     coreManager.registerSocket(socket);
+
+    if (uid && uid !== 'guest') {
+      socket.join(`user:${uid}`);
+    }
 
     // Handle joining game rooms (Multiplexing)
     socket.on('join_room', (room, clientSeq) => {

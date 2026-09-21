@@ -66,6 +66,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
             
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6 px-2">Finance</div>
+            <Link href="/admin/reconciliation" className="flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300 group">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" /> Wallet Reconciliation
+              </div>
+              <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/30">ENGINE</span>
+            </Link>
             <Link href="/admin/payments" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
               <CreditCard className="w-4 h-4" /> Payments & UPI
             </Link>

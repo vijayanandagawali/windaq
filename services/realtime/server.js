@@ -40,6 +40,7 @@ const historyRouter = require('./src/api/history');
 const adminRealtimeRouter = require('./src/api/adminRealtime');
 const adminTablesRouter = require('./src/api/adminTables');
 const resultHistoryRouter = require('./src/api/resultHistoryApi');
+const reconciliationRouter = require('./src/api/reconciliationApi');
 const { tableManager } = require('./src/services/tableGames/VirtualTableManager');
 const RoundRegistry = require('./src/services/engine/RoundRegistry');
 
@@ -55,6 +56,9 @@ const io = new Server(server, {
   pingInterval: 10000,
   pingTimeout: 5000,
 });
+
+// Bind io to wallet service for authoritative realtime balance propagation
+walletService.setIo(io);
 
 // Security Middlewares
 app.use(helmet()); // Sets HSTS, X-Frame-Options, X-Content-Type-Options, etc.
@@ -112,6 +116,7 @@ app.use('/api/wager', requireAuth, wagerRouter);
 app.use('/api/sports/admin', requireAuth, sportsAdminRouter);
 app.use('/api/fairness', fairnessRouter);
 app.use('/api', resultHistoryRouter);
+app.use('/api/admin', requireAuth, reconciliationRouter);
 app.use('/api/admin/games', requireAuth, adminGamesRouter);
 app.use('/api/admin', requireAuth, adminRouter);
 app.use('/api/compliance', complianceRouter);
