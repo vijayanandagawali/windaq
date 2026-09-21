@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import { createGameSocket } from '@/lib/config';
 import { audioEngine } from '@/lib/audioEngine';
 import { useAuthStore } from '@/store/authStore';
+import WinLossCelebration from '@/components/games/WinLossCelebration';
 
 export default function AviatorGame() {
   const { balance, deductBalance, addWinnings, userId } = useWalletStore();
@@ -25,6 +26,12 @@ export default function AviatorGame() {
   // Betting Panels State (Dual Panels)
   const [bet1, setBet1] = useState<{ amount: number, placed: boolean, cashedOut: boolean, won: number, autoCashout: number }>({ amount: 100, placed: false, cashedOut: false, won: 0, autoCashout: 0 });
   const [bet2, setBet2] = useState<{ amount: number, placed: boolean, cashedOut: boolean, won: number, autoCashout: number }>({ amount: 0, placed: false, cashedOut: false, won: 0, autoCashout: 0 });
+  const [celebration, setCelebration] = useState<{
+    status: 'IDLE' | 'WON' | 'LOST';
+    amount: number;
+    multiplier?: number;
+    message?: string;
+  }>({ status: 'IDLE', amount: 0 });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -46,6 +53,7 @@ export default function AviatorGame() {
       // Reset bets for new round if they were not placed for *next* round
       setBet1(prev => ({ ...prev, cashedOut: false, won: 0, placed: prev.placed && !prev.cashedOut ? true : false }));
       setBet2(prev => ({ ...prev, cashedOut: false, won: 0, placed: prev.placed && !prev.cashedOut ? true : false }));
+      setCelebration({ status: 'IDLE', amount: 0 });
     });
 
     newSocket.on('aviator:tick', (data) => {
@@ -64,10 +72,20 @@ export default function AviatorGame() {
       setMultiplier(data.multiplier);
       drawCrashed(parseFloat(data.multiplier));
       audioEngine.play('loss');
-      
-      // Reset placed status for next round
-      setBet1(prev => ({ ...prev, placed: false }));
-      setBet2(prev => ({ ...prev, placed: false }));
+
+      setBet1(prev => {
+        if (prev.placed && !prev.cashedOut) {
+          setCelebration({
+            status: 'LOST',
+            amount: prev.amount,
+            message: `Flew Away at ${data.multiplier}x`
+          });
+        }
+        return { ...prev, placed: false };
+      });
+      setBet2(prev => {
+        return { ...prev, placed: false };
+      });
     });
 
     return () => {
@@ -280,6 +298,13 @@ export default function AviatorGame() {
     if (panel === 1) setBet1(prev => ({ ...prev, cashedOut: true, won: winAmount }));
     else setBet2(prev => ({ ...prev, cashedOut: true, won: winAmount }));
     
+    setCelebration({
+      status: 'WON',
+      amount: winAmount,
+      multiplier: currentMulti,
+      message: `CASHED OUT AT ${currentMulti.toFixed(2)}x`
+    });
+
     toast.success(`Cashed Out! You won ₹${winAmount.toFixed(2)}`);
   };
 
@@ -383,6 +408,15 @@ export default function AviatorGame() {
           />
         </div>
       </div>
+
+      {/* Universal Win & Loss Presentation */}
+      <WinLossCelebration 
+        status={celebration.status}
+        amount={celebration.amount}
+        multiplier={celebration.multiplier}
+        message={celebration.message}
+        onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
+      />
     </div>
   );
 }

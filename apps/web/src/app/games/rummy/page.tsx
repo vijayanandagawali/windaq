@@ -7,6 +7,7 @@ import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { io, Socket } from '@/lib/gameSocket';
+import { audioEngine, haptic } from '@/lib/audioEngine';
 
 export default function RummyGame() {
   const { balance, fetchBalance } = useWalletStore();
@@ -61,8 +62,15 @@ export default function RummyGame() {
       setGameState((prev: any) => ({ ...prev, state: 'SHOWDOWN' }));
       
       const amIWinner = data.winnerId === 'guest';
-      if (amIWinner) toast.success("You Won!", { icon: '🏆' });
-      else toast.error("You Lost!");
+      if (amIWinner) {
+        audioEngine.play('win');
+        haptic.win();
+        toast.success("You Won!", { icon: '🏆' });
+      } else {
+        audioEngine.play('loss');
+        haptic.error();
+        toast.error("You Lost!");
+      }
       
       setTimeout(() => fetchBalance(), 3000);
     });
@@ -84,6 +92,8 @@ export default function RummyGame() {
 
   // Actions
   const draw = (source: 'OPEN' | 'CLOSED') => {
+    audioEngine.play('cardSlide');
+    haptic.card();
     if (socket) socket.emit('rm:draw', { userId: 'guest', source });
   };
 
@@ -91,18 +101,21 @@ export default function RummyGame() {
     if (selectedCards.length !== 1) {
       return toast.error("Select exactly 1 card to discard");
     }
+    audioEngine.play('cardFlip');
+    haptic.deal();
     if (socket) socket.emit('rm:discard', { userId: 'guest', card: selectedCards[0] });
     setSelectedCards([]);
   };
 
   const declare = () => {
-    // If they have exactly 14 cards (13 + 1 drawn), they can declare using 13 and discarding the 14th 
-    // Wait, the rule engine assumes they discard via the UI, then the remaining 14th card is assumed as the finish card.
-    // Our implementation assumes all 14 cards are sent as melds, and the engine validates.
+    audioEngine.play('chipDrop');
+    haptic.bet();
     if (socket) socket.emit('rm:declare', { userId: 'guest', melds });
   };
 
   const drop = () => {
+    audioEngine.play('cardSlide');
+    haptic.card();
     if (socket) socket.emit('rm:drop', { userId: 'guest' });
   };
 

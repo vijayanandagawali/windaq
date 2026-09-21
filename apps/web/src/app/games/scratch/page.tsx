@@ -9,6 +9,7 @@ import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
 import { io, Socket } from '@/lib/gameSocket';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
+import { audioEngine, haptic } from '@/lib/audioEngine';
 
 const TIERS = [
   { id: 'Silver', name: 'Silver Ticket', price: 50, color: 'from-gray-300 to-gray-500', maxWin: '5,000' },
@@ -76,10 +77,14 @@ export default function ScratchGame() {
 
     setBuying(true);
     deductBalance(tier.price);
+    audioEngine.play('cardSlide');
+    haptic.bet();
 
     socket.emit('scratch:buy', { userId: 'guest', tierId }, (res: any) => {
       setBuying(false);
       if (res.success) {
+        audioEngine.play('cardFlip');
+        haptic.deal();
         setTicketId(res.data.ticketId);
         setGrid(res.data.grid);
         setPayout(res.data.payout);
@@ -97,6 +102,9 @@ export default function ScratchGame() {
   const handleRevealAll = () => {
     if (isRevealed || !ticketId || !socket) return;
     
+    audioEngine.play('cardFlip');
+    haptic.deal();
+
     // Clear canvas visually
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext('2d');
@@ -122,6 +130,8 @@ export default function ScratchGame() {
         const currentTierObj = TIERS.find(t => t.id === activeTier);
         const tierCost = currentTierObj ? currentTierObj.price : 50;
         if (res.data.payout > 0) {
+          audioEngine.play('win');
+          haptic.win();
           triggerWin(res.data.payout);
           setCelebration({
             type: 'win',
@@ -129,6 +139,8 @@ export default function ScratchGame() {
             multiplier: `${(res.data.payout / tierCost).toFixed(1)}x`
           });
         } else {
+          audioEngine.play('loss');
+          haptic.error();
           setCelebration({
             type: 'loss',
             amount: tierCost

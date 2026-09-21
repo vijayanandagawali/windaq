@@ -11,6 +11,8 @@ import { audioEngine } from '@/lib/audioEngine';
 import { useAudioStore } from '@/store/audioStore';
 import WinLossCelebration from './WinLossCelebration';
 import ResultHistoryDrawer from './ResultHistoryDrawer';
+import AnimatedCard from './animation/AnimatedCard';
+import AnimatedChipFlight from './animation/AnimatedChipFlight';
 
 // Types
 export interface TableCard {
@@ -95,6 +97,7 @@ export default function SimulatedLiveTable({
     multiplier?: number;
     message?: string;
   }>({ status: 'IDLE', amount: 0 });
+  const [chipFlights, setChipFlights] = useState<any[]>([]);
 
   // Sync active bets from server snapshot (for refresh state recovery)
   useEffect(() => {
@@ -113,12 +116,14 @@ export default function SimulatedLiveTable({
   }, [state.phaseTimeLeft, state.phase]);
 
   useEffect(() => {
-    if (state.phase === 'BETTING_CLOSED') {
+    if (state.phase === 'BETTING_CLOSED' || state.phase === 'BETTING_LOCKED') {
       audioEngine.play('roundStart');
-    } else if (state.phase === 'DEALING') {
-      audioEngine.play('card');
-    } else if (state.phase === 'RESULT' || state.phase === 'SETTLEMENT') {
-      audioEngine.play('win');
+    } else if (state.phase === 'DEALING' || state.phase === 'PLAYING') {
+      audioEngine.play('cardSlide');
+    } else if (state.phase === 'RESULT' || state.phase === 'SETTLEMENT' || state.phase === 'RESULT_REVEAL') {
+      audioEngine.play('cardFlip');
+      setTimeout(() => audioEngine.play('win'), 400);
+
       // Trigger winning / losing animation based on user's active bets
       const winner = state.result?.winner;
       if (winner) {
@@ -133,6 +138,22 @@ export default function SimulatedLiveTable({
             multiplier: mult,
             message: `${winner} WINS!`
           });
+
+          // Fly winning chips from table center to player wallet
+          setChipFlights(prev => [
+            ...prev,
+            {
+              id: `dt-win-${Date.now()}`,
+              amount: payout,
+              type: 'WIN',
+              startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+              startY: 320,
+              endX: 80,
+              endY: typeof window !== 'undefined' ? window.innerHeight - 60 : 600,
+              color: 'from-amber-400 to-yellow-600',
+              borderColor: 'border-yellow-200'
+            }
+          ]);
         } else if (totalBet > 0) {
           setCelebration({
             status: 'LOST',
@@ -191,6 +212,22 @@ export default function SimulatedLiveTable({
         ...prev,
         [market]: (prev[market] || 0) + selectedChip
       }));
+
+      // Fly chip from bottom tray to market box
+      setChipFlights(prev => [
+        ...prev,
+        {
+          id: `dt-bet-${Date.now()}-${Math.random()}`,
+          amount: selectedChip,
+          type: 'BET',
+          startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+          startY: typeof window !== 'undefined' ? window.innerHeight - 80 : 600,
+          endX: market === 'DRAGON' ? (typeof window !== 'undefined' ? window.innerWidth * 0.35 : 150) : market === 'TIGER' ? (typeof window !== 'undefined' ? window.innerWidth * 0.65 : 250) : (typeof window !== 'undefined' ? window.innerWidth * 0.5 : 200),
+          endY: 420,
+          color: selectedChip >= 500 ? 'from-purple-600 to-indigo-800' : 'from-amber-500 to-amber-700',
+          borderColor: 'border-yellow-200'
+        }
+      ]);
     }
   };
 
@@ -613,9 +650,17 @@ export default function SimulatedLiveTable({
                 <span className="text-[9px] sm:text-[10px] text-red-300/70 font-semibold bg-red-900/40 px-1 sm:px-1.5 py-0.5 rounded">1:1</span>
               </div>
               
-              {/* Dragon Card Slot */}
+              {/* Dragon Card Slot with 3D Reveal */}
               <div className="relative">
-                {renderCard(state.result?.dragon, state.phase === 'PLAYING' || state.phase === 'DEALING' || state.phase === 'RESULT' || state.phase === 'SETTLEMENT' || state.phase === 'COMPLETED')}
+                <AnimatedCard 
+                  card={state.result?.dragon}
+                  isRevealed={state.phase === 'RESULT' || state.phase === 'SETTLEMENT' || state.phase === 'COMPLETED' || state.phase === 'RESULT_REVEAL'}
+                  isWinner={state.result?.winner === 'DRAGON' && state.phase !== 'BETTING_OPEN'}
+                  isLoser={state.result?.winner === 'TIGER' && state.phase !== 'BETTING_OPEN'}
+                  dealFrom={{ x: 120, y: -160 }}
+                  dealDelay={0.1}
+                  size="lg"
+                />
               </div>
             </div>
 
@@ -624,6 +669,17 @@ export default function SimulatedLiveTable({
               <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-b from-amber-400 to-amber-700 border-2 border-amber-200 shadow-xl flex items-center justify-center text-black font-black text-xs sm:text-base tracking-tighter">
                 VS
               </div>
+
+              {/* Rank comparison pill on reveal */}
+              {state.result && (state.phase === 'RESULT' || state.phase === 'SETTLEMENT' || state.phase === 'COMPLETED' || state.phase === 'RESULT_REVEAL') && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="mt-1 bg-black/80 border border-white/20 px-2 py-0.5 rounded-full text-[10px] font-mono text-amber-300 font-bold whitespace-nowrap shadow"
+                >
+                  {state.result.dragon?.rank} vs {state.result.tiger?.rank}
+                </motion.div>
+              )}
 
               {/* TIE Market Banner */}
               <div className={`mt-2 sm:mt-3 px-2 sm:px-3 py-0.5 sm:py-1 rounded-xl text-center border transition-all ${
@@ -649,9 +705,17 @@ export default function SimulatedLiveTable({
                 <span className="text-[9px] sm:text-[10px] text-yellow-300/70 font-semibold bg-yellow-900/40 px-1 sm:px-1.5 py-0.5 rounded">1:1</span>
               </div>
               
-              {/* Tiger Card Slot */}
+              {/* Tiger Card Slot with 3D Reveal */}
               <div className="relative">
-                {renderCard(state.result?.tiger, ((state.phase === 'PLAYING' || state.phase === 'DEALING') && state.dealingStep?.step === 2) || state.phase === 'RESULT' || state.phase === 'SETTLEMENT' || state.phase === 'COMPLETED')}
+                <AnimatedCard 
+                  card={state.result?.tiger}
+                  isRevealed={state.phase === 'RESULT' || state.phase === 'SETTLEMENT' || state.phase === 'COMPLETED' || state.phase === 'RESULT_REVEAL'}
+                  isWinner={state.result?.winner === 'TIGER' && state.phase !== 'BETTING_OPEN'}
+                  isLoser={state.result?.winner === 'DRAGON' && state.phase !== 'BETTING_OPEN'}
+                  dealFrom={{ x: 0, y: -160 }}
+                  dealDelay={0.4}
+                  size="lg"
+                />
               </div>
             </div>
 
@@ -939,6 +1003,12 @@ export default function SimulatedLiveTable({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Reusable Chip Flights */}
+      <AnimatedChipFlight 
+        flights={chipFlights} 
+        onFlightComplete={(id) => setChipFlights(prev => prev.filter(f => f.id !== id))} 
+      />
 
       {/* Universal Win & Loss Animation Overlay */}
       <WinLossCelebration

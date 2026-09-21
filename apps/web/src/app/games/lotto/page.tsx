@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
 import { io, Socket } from '@/lib/gameSocket';
+import { audioEngine } from '@/lib/audioEngine';
+import WinLossCelebration from '@/components/games/WinLossCelebration';
 
 const TICKET_PRICE = 100;
 
@@ -23,9 +25,16 @@ export default function LottoGame() {
   const [lockTime, setLockTime] = useState<number>(Date.now() + 60000);
   const [timeRemaining, setTimeRemaining] = useState<number>(60);
   const [winningNumbers, setWinningNumbers] = useState<number[]>([]);
+  const [revealedBalls, setRevealedBalls] = useState<number[]>([]);
   
   const [buying, setBuying] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [celebration, setCelebration] = useState<{
+    status: 'IDLE' | 'WON' | 'LOST';
+    amount: number;
+    multiplier?: number;
+    message?: string;
+  }>({ status: 'IDLE', amount: 0 });
 
   // Init Socket
   useEffect(() => {
@@ -46,30 +55,45 @@ export default function LottoGame() {
       // Clear previous winning numbers if we are starting a new round
       if (data.status === 'OPEN' && winningNumbers.length > 0) {
         setWinningNumbers([]);
+        setRevealedBalls([]);
         setMyTickets([]);
+        setCelebration({ status: 'IDLE', amount: 0 });
       }
     });
 
     s.on('lotto:locked', () => {
       setStatus('LOCKED');
+      audioEngine.play('roundStart');
       toast("Draw is locked! Numbers will be drawn soon.", { icon: '🔒' });
     });
 
     s.on('lotto:result', (data: any) => {
       setStatus('RESULT');
-      setWinningNumbers(data.winningNumbers);
+      const allNums = data.winningNumbers || [];
+      setWinningNumbers(allNums);
+      setRevealedBalls([]);
+
+      // One-by-one sequential ball extraction
+      allNums.forEach((num: number, idx: number) => {
+        setTimeout(() => {
+          audioEngine.play('lottoPop');
+          setRevealedBalls(prev => [...prev, num]);
+
+          if (idx === allNums.length - 1) {
+            setTimeout(() => {
+              audioEngine.play('win');
+              checkWin(allNums);
+            }, 600);
+          }
+        }, 600 * (idx + 1));
+      });
       
-      // Fetch new balance after a slight delay to allow settlement to finish
+      // Refresh history
       setTimeout(() => {
-        // We could emit a balance refresh here or assume the next socket tick has it if we tracked user state,
-        // but for this UI we'll just check if any of our tickets won.
-        checkWin(data.winningNumbers);
-        
-        // Refresh history
         s.emit('lotto:history', { room: '5min' }, (res: any) => {
           if (res.success) setHistory(res.data);
         });
-      }, 1000);
+      }, 600 * (allNums.length + 1));
     });
 
     return () => { 
@@ -96,10 +120,22 @@ export default function LottoGame() {
     });
 
     if (maxMatch >= 3) {
+      const payout = maxMatch === 6 ? 500000 : maxMatch === 5 ? 50000 : maxMatch === 4 ? 5000 : 500;
+      setCelebration({
+        status: 'WON',
+        amount: payout,
+        multiplier: Math.round(payout / (TICKET_PRICE * Math.max(1, myTickets.length))),
+        message: `MATCHED ${maxMatch} NUMBERS!`
+      });
       toast.success(`You matched ${maxMatch} numbers!`, { icon: '🎉', duration: 5000 });
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     } else if (myTickets.length > 0) {
-      toast.error('No matching tickets this round. Better luck next time!', { duration: 3000 });
+      setCelebration({
+        status: 'LOST',
+        amount: TICKET_PRICE * myTickets.length,
+        message: 'No Winning Match'
+      });
+      toast.error('No matching tickets this round.', { duration: 3000 });
     }
   }, [myTickets]);
 
@@ -206,35 +242,43 @@ export default function LottoGame() {
            </div>
 
            {/* Drawn Numbers Display Chute */}
-           <div className="mt-5 flex gap-2 h-16 items-center justify-center">
-             <AnimatePresence>
-               {winningNumbers.map((num, idx) => {
-                 // Color bands
-                 const colorClass = 
-                   num <= 10 ? 'from-amber-300 to-yellow-500 text-black border-yellow-200' :
-                   num <= 20 ? 'from-blue-400 to-blue-600 text-white border-blue-200' :
-                   num <= 30 ? 'from-red-400 to-red-600 text-white border-red-200' :
-                   num <= 40 ? 'from-emerald-400 to-emerald-600 text-white border-emerald-200' :
-                   'from-purple-400 to-purple-600 text-white border-purple-200';
+           <div className="mt-5 flex flex-col items-center justify-center">
+             {status === 'RESULT' && (
+               <div className="mb-2 text-[11px] font-mono uppercase tracking-widest text-amber-300 font-bold bg-black/60 px-3 py-0.5 rounded-full border border-amber-500/30">
+                 {revealedBalls.length < 6 
+                   ? `Extracting Ball ${revealedBalls.length + 1} of 6...` 
+                   : 'Draw Complete • Official Winning Numbers'}
+               </div>
+             )}
+             <div className="flex gap-2 h-16 items-center justify-center">
+               <AnimatePresence>
+                 {revealedBalls.map((num, idx) => {
+                   const colorClass = 
+                     num <= 10 ? 'from-amber-300 to-yellow-500 text-black border-yellow-200' :
+                     num <= 20 ? 'from-blue-400 to-blue-600 text-white border-blue-200' :
+                     num <= 30 ? 'from-red-400 to-red-600 text-white border-red-200' :
+                     num <= 40 ? 'from-emerald-400 to-emerald-600 text-white border-emerald-200' :
+                     'from-purple-400 to-purple-600 text-white border-purple-200';
 
-                 return (
-                   <motion.div 
-                     key={`${num}-${idx}`}
-                     initial={{ scale: 0, opacity: 0, y: -40 }}
-                     animate={{ scale: 1, opacity: 1, y: 0 }}
-                     transition={{ delay: idx * 0.3, type: 'spring', stiffness: 260, damping: 16 }}
-                     className={`w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br ${colorClass} flex items-center justify-center shadow-[0_0_25px_rgba(250,204,21,0.6)] border-2`}
-                   >
-                     <span className="font-black text-xl md:text-2xl drop-shadow">{num}</span>
-                   </motion.div>
-                 );
-               })}
-               {winningNumbers.length === 0 && status === 'RESULT' && (
-                 <span className="text-cyan-400 font-bold uppercase tracking-widest text-xs animate-pulse">
-                   Extracting winning balls from blower...
-                 </span>
-               )}
-             </AnimatePresence>
+                   return (
+                     <motion.div 
+                       key={`${num}-${idx}`}
+                       initial={{ scale: 0, opacity: 0, y: -40 }}
+                       animate={{ scale: 1, opacity: 1, y: 0 }}
+                       transition={{ type: 'spring', stiffness: 280, damping: 16 }}
+                       className={`w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br ${colorClass} flex items-center justify-center shadow-[0_0_25px_rgba(250,204,21,0.6)] border-2`}
+                     >
+                       <span className="font-black text-xl md:text-2xl drop-shadow">{num}</span>
+                     </motion.div>
+                   );
+                 })}
+                 {revealedBalls.length === 0 && status === 'RESULT' && (
+                   <span className="text-cyan-400 font-bold uppercase tracking-widest text-xs animate-pulse">
+                     Pneumatic chamber extracting balls...
+                   </span>
+                 )}
+               </AnimatePresence>
+             </div>
            </div>
         </div>
 
@@ -351,6 +395,15 @@ export default function LottoGame() {
 
         </div>
       </div>
+
+      {/* Win / Loss Presentation */}
+      <WinLossCelebration
+        status={celebration.status}
+        amount={celebration.amount}
+        multiplier={celebration.multiplier}
+        message={celebration.message}
+        onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
+      />
     </div>
   );
 }

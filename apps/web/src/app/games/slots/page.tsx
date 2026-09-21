@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
 import { io, Socket } from '@/lib/gameSocket';
-import { audioEngine } from '@/lib/audioEngine';
+import { audioEngine, haptic } from '@/lib/audioEngine';
 import { useAudioStore } from '@/store/audioStore';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
 
@@ -69,7 +69,8 @@ export default function SlotsGame() {
     }
     if (!socket || spinning) return;
 
-    audioEngine.play('roundStart');
+    audioEngine.play('reelSpin');
+    haptic.deal();
     setSpinning(true);
     setSpinningReels([true, true, true, true, true]);
     setWinAmount(0);
@@ -97,7 +98,8 @@ export default function SlotsGame() {
         // Staggered reel stops (reel 0 -> reel 4)
         [0, 1, 2, 3, 4].forEach((reelIdx) => {
           setTimeout(() => {
-            audioEngine.play('bet');
+            audioEngine.play('reelStop');
+            haptic.bet();
             setGrid(prev => {
               const next = [...prev];
               next[reelIdx] = finalGrid[reelIdx];

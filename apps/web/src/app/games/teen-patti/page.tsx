@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { io, Socket } from '@/lib/gameSocket';
 
 import confetti from 'canvas-confetti';
+import { audioEngine, haptic } from '@/lib/audioEngine';
 
 const BOOT_AMOUNT = 10; // Fixed for MVP display
 
@@ -50,6 +51,13 @@ export default function TeenPattiGame() {
 
     s.on('tp:showdown', (data: any) => {
       setShowdownResult(data);
+      if (data.winnerId === activeId) {
+        audioEngine.play('win');
+        haptic.win();
+      } else {
+        audioEngine.play('loss');
+        haptic.error();
+      }
       toast(`Winner: ${data.winningHandDesc}`, { icon: '🏆' });
       confetti({ particleCount: 70, spread: 60, origin: { y: 0.5 } });
       fetchBalance();
@@ -62,6 +70,17 @@ export default function TeenPattiGame() {
   }, [userId, fetchBalance]);
 
   const sendAction = (action: string) => {
+    if (action === 'chaal' || action === 'blind') {
+      audioEngine.play('chipDrop');
+      haptic.bet();
+    } else if (action === 'pack') {
+      audioEngine.play('cardSlide');
+      haptic.card();
+    } else if (action === 'see') {
+      audioEngine.play('cardFlip');
+      haptic.deal();
+    }
+
     if (socket) {
       socket.emit('tp:action', { action, userId: myId }, (res: any) => {
         if (!res.success) toast.error(res.message);

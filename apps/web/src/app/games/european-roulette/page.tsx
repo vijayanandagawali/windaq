@@ -11,6 +11,7 @@ import RouletteWheel from '@/components/games/RouletteWheel';
 import { audioEngine } from '@/lib/audioEngine';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
 import ResultHistoryDrawer from '@/components/games/ResultHistoryDrawer';
+import AnimatedChipFlight from '@/components/games/animation/AnimatedChipFlight';
 
 const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 const isRed = (n: number) => RED_NUMBERS.includes(n);
@@ -40,6 +41,9 @@ export default function RouletteGame() {
   // Realtime Live Bets
   const [liveBets, setLiveBets] = useState<any[]>([]);
 
+  // Chip Flights
+  const [chipFlights, setChipFlights] = useState<any[]>([]);
+
   // Win / Loss Celebration
   const [celebration, setCelebration] = useState<{
     status: 'IDLE' | 'WON' | 'LOST';
@@ -47,6 +51,72 @@ export default function RouletteGame() {
     multiplier?: number;
     message?: string;
   }>({ status: 'IDLE', amount: 0 });
+
+  // Handle wheel settle completion (triggered only after deceleration into server pocket)
+  const handleSettleComplete = (settledWinNumber: number) => {
+    // 1. Calculate win/loss across player bets
+    const totalBet = Object.values(myBets).reduce((a, b) => a + b, 0);
+    let wonAmount = 0;
+    let winningMultiplier = 1;
+
+    if (myBets[`STRAIGHT_${settledWinNumber}`] || myBets[settledWinNumber.toString()]) {
+      const straightBet = myBets[`STRAIGHT_${settledWinNumber}`] || myBets[settledWinNumber.toString()];
+      wonAmount += straightBet * 36;
+      winningMultiplier = 36;
+    }
+    const isResultRed = RED_NUMBERS.includes(settledWinNumber);
+    if (isResultRed && myBets['RED']) {
+      wonAmount += myBets['RED'] * 2;
+      winningMultiplier = Math.max(winningMultiplier, 2);
+    } else if (!isResultRed && settledWinNumber !== 0 && myBets['BLACK']) {
+      wonAmount += myBets['BLACK'] * 2;
+      winningMultiplier = Math.max(winningMultiplier, 2);
+    }
+    if (settledWinNumber !== 0) {
+      if (settledWinNumber % 2 === 0 && myBets['EVEN']) {
+        wonAmount += myBets['EVEN'] * 2;
+        winningMultiplier = Math.max(winningMultiplier, 2);
+      } else if (settledWinNumber % 2 !== 0 && myBets['ODD']) {
+        wonAmount += myBets['ODD'] * 2;
+        winningMultiplier = Math.max(winningMultiplier, 2);
+      }
+    }
+
+    if (wonAmount > 0) {
+      audioEngine.play('win');
+      setCelebration({
+        status: 'WON',
+        amount: wonAmount,
+        multiplier: winningMultiplier,
+        message: `Number ${settledWinNumber} Hit!`
+      });
+
+      // Fly winning chips from center table to player wallet
+      setChipFlights(prev => [
+        ...prev,
+        {
+          id: `win-${Date.now()}`,
+          amount: wonAmount,
+          type: 'WIN',
+          startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+          startY: 220,
+          endX: 60,
+          endY: typeof window !== 'undefined' ? window.innerHeight - 50 : 600,
+          color: 'from-amber-400 to-yellow-600',
+          borderColor: 'border-yellow-200'
+        }
+      ]);
+    } else if (totalBet > 0) {
+      audioEngine.play('loss');
+      setCelebration({
+        status: 'LOST',
+        amount: totalBet,
+        message: `Ball Landed on ${settledWinNumber}`
+      });
+    }
+
+    setTimeout(() => fetchBalance(), 1500);
+  };
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? (localStorage.getItem('windaq_token') || localStorage.getItem('windaq_auth_token')) : null;
@@ -74,61 +144,17 @@ export default function RouletteGame() {
 
     s.on('roulette:locked', () => {
       audioEngine.play('roundStart');
+      audioEngine.play('rouletteWheel');
       setGameState((p: any) => ({ ...p, status: 'LOCKED' }));
       setTimeLeft(0);
-      toast('Bets Locked! Spinning...', { icon: '🎡' });
+      toast('Bets Locked! Wheel spinning...', { icon: '🎡' });
     });
 
     s.on('roulette:result', (data: any) => {
-      audioEngine.play('win');
+      // Server-authoritative result arrives -> Wheel targets and decelerates into this exact pocket
       setGameState((p: any) => ({ ...p, status: 'RESULT' }));
       setResultNumber(data.resultNumber);
-      
       setHistory(prev => [{ resultNumber: data.resultNumber, resultTime: new Date() }, ...prev].slice(0, 15));
-      
-      // Calculate win/loss across player bets
-      const totalBet = Object.values(myBets).reduce((a, b) => a + b, 0);
-      let wonAmount = 0;
-      let winningMultiplier = 1;
-
-      if (myBets[data.resultNumber.toString()]) {
-        wonAmount += myBets[data.resultNumber.toString()] * 36;
-        winningMultiplier = 36;
-      }
-      const isResultRed = RED_NUMBERS.includes(data.resultNumber);
-      if (isResultRed && myBets['RED']) {
-        wonAmount += myBets['RED'] * 2;
-        winningMultiplier = 2;
-      } else if (!isResultRed && data.resultNumber !== 0 && myBets['BLACK']) {
-        wonAmount += myBets['BLACK'] * 2;
-        winningMultiplier = 2;
-      }
-      if (data.resultNumber !== 0) {
-        if (data.resultNumber % 2 === 0 && myBets['EVEN']) {
-          wonAmount += myBets['EVEN'] * 2;
-          winningMultiplier = 2;
-        } else if (data.resultNumber % 2 !== 0 && myBets['ODD']) {
-          wonAmount += myBets['ODD'] * 2;
-          winningMultiplier = 2;
-        }
-      }
-
-      if (wonAmount > 0) {
-        setCelebration({
-          status: 'WON',
-          amount: wonAmount,
-          multiplier: winningMultiplier,
-          message: `Number ${data.resultNumber} Hit!`
-        });
-      } else if (totalBet > 0) {
-        setCelebration({
-          status: 'LOST',
-          amount: totalBet,
-          message: `Ball Landed on ${data.resultNumber}`
-        });
-      }
-
-      setTimeout(() => fetchBalance(), 2000); // Check for winnings
     });
     
     s.on('roulette:live_bet', (data: any) => {
@@ -169,6 +195,22 @@ export default function RouletteGame() {
           ...prev,
           [betKey]: (prev[betKey] || 0) + selectedChips
         }));
+
+        setChipFlights(prev => [
+          ...prev,
+          {
+            id: `bet-${Date.now()}-${Math.random()}`,
+            amount: selectedChips,
+            type: 'BET',
+            startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+            startY: typeof window !== 'undefined' ? window.innerHeight - 80 : 600,
+            endX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+            endY: 340,
+            color: selectedChips >= 500 ? 'from-purple-600 to-indigo-800' : 'from-amber-500 to-amber-700',
+            borderColor: 'border-yellow-200'
+          }
+        ]);
+
         toast.success(`Placed ₹${selectedChips} on ${market}`);
         fetchBalance(); 
       } else {
@@ -271,7 +313,8 @@ export default function RouletteGame() {
           <RouletteWheel 
             isSpinning={gameState.status === 'LOCKED'} 
             winningNumber={resultNumber} 
-            size={190} 
+            size={190}
+            onSettleComplete={handleSettleComplete}
           />
           {resultNumber !== null && (
             <motion.div
@@ -280,11 +323,19 @@ export default function RouletteGame() {
               className="mt-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black px-4 py-1 rounded-full font-black text-sm tracking-widest shadow-[0_0_20px_rgba(234,179,8,0.7)] flex items-center gap-2"
             >
               <span>WINNER:</span>
-              <span className="text-base font-black bg-black text-white px-2 py-0.5 rounded-md">{resultNumber}</span>
+              <span className={`text-base font-black px-2 py-0.5 rounded-md ${isRed(resultNumber) ? 'bg-red-600 text-white' : resultNumber === 0 ? 'bg-emerald-600 text-white' : 'bg-black text-white'}`}>
+                {resultNumber} {resultNumber === 0 ? '(GREEN)' : isRed(resultNumber) ? '(RED)' : '(BLACK)'}
+              </span>
             </motion.div>
           )}
         </div>
       </div>
+
+      {/* Reusable Chip Flights */}
+      <AnimatedChipFlight 
+        flights={chipFlights} 
+        onFlightComplete={(id) => setChipFlights(prev => prev.filter(f => f.id !== id))} 
+      />
 
       {/* History Ribbon */}
       <div className="bg-black/50 border-b border-white/5 py-2 px-4 flex gap-2 overflow-x-auto scrollbar-hide items-center h-12 justify-between">

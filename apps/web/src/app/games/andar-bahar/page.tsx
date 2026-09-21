@@ -7,6 +7,10 @@ import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { io, Socket } from '@/lib/gameSocket';
+import { audioEngine } from '@/lib/audioEngine';
+import WinLossCelebration from '@/components/games/WinLossCelebration';
+import AnimatedCard from '@/components/games/animation/AnimatedCard';
+import AnimatedChipFlight from '@/components/games/animation/AnimatedChipFlight';
 
 export default function AndarBaharGame() {
   const { balance, fetchBalance } = useWalletStore();
@@ -35,6 +39,13 @@ export default function AndarBaharGame() {
   // Animation State
   const [displayedCards, setDisplayedCards] = useState<any[]>([]);
   const [isDealing, setIsDealing] = useState(false);
+  const [chipFlights, setChipFlights] = useState<any[]>([]);
+  const [celebration, setCelebration] = useState<{
+    status: 'IDLE' | 'WON' | 'LOST';
+    amount: number;
+    multiplier?: number;
+    message?: string;
+  }>({ status: 'IDLE', amount: 0 });
 
   useEffect(() => {
     const s = io('http://localhost:4000', { auth: { token: null } });
@@ -58,24 +69,29 @@ export default function AndarBaharGame() {
         setLiveBets([]);
         setDisplayedCards([]);
         setIsDealing(false);
+        setCelebration({ status: 'IDLE', amount: 0 });
       }
     });
 
     s.on('tg:locked', () => {
+      audioEngine.play('roundStart');
       setGameState((p: any) => ({ ...p, status: 'LOCKED' }));
       setTimeLeft(0);
-      toast('Bets Locked! Dealing Joker...', { icon: '🃏' });
+      toast('Bets Locked! Revealing Joker Card...', { icon: '🃏' });
     });
 
     s.on('tg:result', (data: any) => {
       setGameState((p: any) => ({ ...p, status: 'RESULT' }));
       setResult(data.result);
       
-      // Start dealing animation
-      startDealingAnimation(data.result.dealtCards);
+      // Play joker reveal sound
+      audioEngine.play('cardFlip');
+
+      // Start realistic dealing animation
+      startDealingAnimation(data.result.dealtCards, data.result.winner);
       
       setHistory(prev => [{ result: data.result, resultTime: new Date() }, ...prev].slice(0, 15));
-      setTimeout(() => fetchBalance(), 2000); 
+      setTimeout(() => fetchBalance(), 2500); 
     });
     
     s.on('tg:live_bet', (data: any) => {
@@ -97,18 +113,59 @@ export default function AndarBaharGame() {
     return () => clearInterval(interval);
   }, [gameState]);
 
-  const startDealingAnimation = (cards: any[]) => {
+  const startDealingAnimation = (cards: any[], winner: string) => {
     setIsDealing(true);
     setDisplayedCards([]);
     
-    // Animate cards dealing one by one rapidly
+    // Animate cards dealing one by one rapidly with sound
     cards.forEach((cardObj, index) => {
       setTimeout(() => {
+        audioEngine.play('cardSlide');
+        audioEngine.play('cardFlip');
         setDisplayedCards(prev => [...prev, cardObj]);
+
         if (index === cards.length - 1) {
           setIsDealing(false);
+
+          // Evaluate player bet for celebration
+          const totalBet = Object.values(myBets).reduce((a, b) => a + b, 0);
+          const wonBet = myBets[winner] || 0;
+          if (wonBet > 0) {
+            const mult = winner === 'ANDAR' ? 1.9 : 2.0;
+            const payout = wonBet * mult;
+            audioEngine.play('win');
+            setCelebration({
+              status: 'WON',
+              amount: payout,
+              multiplier: mult,
+              message: `${winner} WINS!`
+            });
+
+            // Fly winning chips
+            setChipFlights(prev => [
+              ...prev,
+              {
+                id: `ab-win-${Date.now()}`,
+                amount: payout,
+                type: 'WIN',
+                startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+                startY: 280,
+                endX: 80,
+                endY: typeof window !== 'undefined' ? window.innerHeight - 60 : 600,
+                color: 'from-amber-400 to-yellow-600',
+                borderColor: 'border-yellow-200'
+              }
+            ]);
+          } else if (totalBet > 0) {
+            audioEngine.play('loss');
+            setCelebration({
+              status: 'LOST',
+              amount: totalBet,
+              message: `${winner} Won • Bet Lost`
+            });
+          }
         }
-      }, 500 * (index + 1)); // 500ms per card deal
+      }, 450 * (index + 1));
     });
   };
 
@@ -120,6 +177,7 @@ export default function AndarBaharGame() {
     
     if (!socket) return;
     
+    audioEngine.play('bet');
     const userId = "guest"; 
     socket.emit('tg:bet', { userId, gameId: 'andar-bahar', room: 'Auto', market, amount: selectedChips }, (res: any) => {
       if (res.success) {
@@ -127,6 +185,22 @@ export default function AndarBaharGame() {
           ...prev,
           [market]: (prev[market] || 0) + selectedChips
         }));
+
+        setChipFlights(prev => [
+          ...prev,
+          {
+            id: `ab-bet-${Date.now()}-${Math.random()}`,
+            amount: selectedChips,
+            type: 'BET',
+            startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+            startY: typeof window !== 'undefined' ? window.innerHeight - 80 : 600,
+            endX: market === 'ANDAR' ? (typeof window !== 'undefined' ? window.innerWidth * 0.3 : 100) : (typeof window !== 'undefined' ? window.innerWidth * 0.7 : 300),
+            endY: 420,
+            color: selectedChips >= 500 ? 'from-purple-600 to-indigo-800' : 'from-amber-500 to-amber-700',
+            borderColor: 'border-yellow-200'
+          }
+        ]);
+
         toast.success(`Placed ₹${selectedChips} on ${market}`);
         fetchBalance(); 
       } else {
@@ -194,10 +268,21 @@ export default function AndarBaharGame() {
         </div>
 
         {/* Central Joker Area */}
-        <div className="mt-12 mb-8 relative">
-           <div className="text-center mb-2 font-bold tracking-widest text-yellow-400 text-xs uppercase opacity-70">Joker Card</div>
-           <div className="w-16 h-24 sm:w-20 sm:h-28 rounded-lg border-2 border-dashed border-white/30 flex items-center justify-center bg-black/20">
-             {result && renderCardUI(result.joker, 'joker', true)}
+        <div className="mt-12 mb-8 relative flex flex-col items-center">
+           <div className="text-center mb-2 font-black tracking-widest text-amber-300 text-xs uppercase bg-black/60 px-3 py-1 rounded-full border border-amber-500/30">
+             🃏 Center Reference Joker Card
+           </div>
+           <div className="w-20 h-28 sm:w-24 sm:h-36 rounded-2xl border-2 border-dashed border-amber-400/50 flex items-center justify-center bg-black/40 shadow-[0_0_25px_rgba(245,158,11,0.25)] p-1">
+             {result?.joker ? (
+               <AnimatedCard 
+                 card={result.joker} 
+                 isRevealed={true} 
+                 isWinner={true}
+                 size="lg"
+               />
+             ) : (
+               <span className="text-white/30 text-xs font-mono">Awaiting Deal...</span>
+             )}
            </div>
         </div>
 
@@ -205,48 +290,83 @@ export default function AndarBaharGame() {
         <div className="w-full max-w-4xl flex justify-between gap-4 sm:gap-8 px-2">
            
            {/* Andar Area (Left) */}
-           <div className="flex-1 bg-blue-900/40 border border-blue-500/30 rounded-2xl p-4 flex flex-col items-center relative min-h-[160px]">
+           <div className={`flex-1 bg-blue-900/40 border-2 rounded-2xl p-4 flex flex-col items-center relative min-h-[180px] transition-all duration-300 ${
+             result?.winner === 'ANDAR' && !isDealing ? 'border-amber-400 shadow-[0_0_35px_rgba(245,158,11,0.5)] bg-blue-900/60' : 'border-blue-500/30'
+           }`}>
               <div className="absolute top-2 left-4 font-black text-2xl sm:text-4xl text-white/10 uppercase tracking-tighter pointer-events-none">Andar</div>
-              <div className="flex flex-wrap justify-center gap-[-40px] z-10 mt-6">
-                {displayedCards.filter(c => c.side === 'ANDAR').map((c, i) => (
-                  <div key={i} className="-ml-8 first:ml-0">
-                    {renderCardUI(c.card, `andar-${i}`)}
-                  </div>
-                ))}
+              <div className="flex flex-wrap justify-center z-10 mt-6 min-h-[80px]">
+                {displayedCards.filter(c => c.side === 'ANDAR').map((c, i) => {
+                  const isMatch = result?.joker && c.card.rank === result.joker.rank;
+                  return (
+                    <div key={i} className="-ml-6 first:ml-0 transition-transform hover:-translate-y-2">
+                      <AnimatedCard 
+                        card={c.card}
+                        isRevealed={true}
+                        isWinner={isMatch}
+                        size="sm"
+                      />
+                    </div>
+                  );
+                })}
               </div>
               {result && result.winner === 'ANDAR' && !isDealing && (
                 <motion.div 
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="absolute inset-0 border-4 border-yellow-400 rounded-2xl bg-yellow-400/10 pointer-events-none flex items-center justify-center"
+                  className="mt-3 bg-amber-500 text-black font-black uppercase px-4 py-1 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.8)]"
                 >
-                  <span className="bg-yellow-500 text-black font-black uppercase px-4 py-1 rounded shadow-lg rotate-12">Winner!</span>
+                  🏆 Andar Wins! (1.9x)
                 </motion.div>
               )}
            </div>
 
            {/* Bahar Area (Right) */}
-           <div className="flex-1 bg-red-900/40 border border-red-500/30 rounded-2xl p-4 flex flex-col items-center relative min-h-[160px]">
+           <div className={`flex-1 bg-red-900/40 border-2 rounded-2xl p-4 flex flex-col items-center relative min-h-[180px] transition-all duration-300 ${
+             result?.winner === 'BAHAR' && !isDealing ? 'border-amber-400 shadow-[0_0_35px_rgba(245,158,11,0.5)] bg-red-900/60' : 'border-red-500/30'
+           }`}>
               <div className="absolute top-2 right-4 font-black text-2xl sm:text-4xl text-white/10 uppercase tracking-tighter pointer-events-none">Bahar</div>
-              <div className="flex flex-wrap justify-center gap-[-40px] z-10 mt-6">
-                {displayedCards.filter(c => c.side === 'BAHAR').map((c, i) => (
-                  <div key={i} className="-ml-8 first:ml-0">
-                    {renderCardUI(c.card, `bahar-${i}`)}
-                  </div>
-                ))}
+              <div className="flex flex-wrap justify-center z-10 mt-6 min-h-[80px]">
+                {displayedCards.filter(c => c.side === 'BAHAR').map((c, i) => {
+                  const isMatch = result?.joker && c.card.rank === result.joker.rank;
+                  return (
+                    <div key={i} className="-ml-6 first:ml-0 transition-transform hover:-translate-y-2">
+                      <AnimatedCard 
+                        card={c.card}
+                        isRevealed={true}
+                        isWinner={isMatch}
+                        size="sm"
+                      />
+                    </div>
+                  );
+                })}
               </div>
               {result && result.winner === 'BAHAR' && !isDealing && (
                 <motion.div 
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="absolute inset-0 border-4 border-yellow-400 rounded-2xl bg-yellow-400/10 pointer-events-none flex items-center justify-center"
+                  className="mt-3 bg-amber-500 text-black font-black uppercase px-4 py-1 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.8)]"
                 >
-                  <span className="bg-yellow-500 text-black font-black uppercase px-4 py-1 rounded shadow-lg -rotate-12">Winner!</span>
+                  🏆 Bahar Wins! (2.0x)
                 </motion.div>
               )}
            </div>
 
         </div>
+
+      {/* Reusable Chip Flights */}
+      <AnimatedChipFlight 
+        flights={chipFlights} 
+        onFlightComplete={(id) => setChipFlights(prev => prev.filter(f => f.id !== id))} 
+      />
+
+      {/* Win / Loss Presentation */}
+      <WinLossCelebration
+        status={celebration.status}
+        amount={celebration.amount}
+        multiplier={celebration.multiplier}
+        message={celebration.message}
+        onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
+      />
 
       </div>
 

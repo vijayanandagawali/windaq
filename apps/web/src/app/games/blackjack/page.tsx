@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { io, Socket } from '@/lib/gameSocket';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
+import { audioEngine, haptic } from '@/lib/audioEngine';
 
 export default function BlackjackGame() {
   const { balance, fetchBalance } = useWalletStore();
@@ -51,6 +52,8 @@ export default function BlackjackGame() {
         const hasLoss = state.hands.some((h: any) => h.status === 'BUST' || h.status === 'LOST');
 
         if (hasWin && totalPayout > 0) {
+          audioEngine.play('win');
+          haptic.win();
           const isBj = state.hands.some((h: any) => h.status === 'BLACKJACK');
           setCelebration({
             status: 'WON',
@@ -59,6 +62,8 @@ export default function BlackjackGame() {
             message: isBj ? 'NATURAL BLACKJACK!' : 'YOU WON THE HAND!'
           });
         } else if (hasLoss) {
+          audioEngine.play('loss');
+          haptic.error();
           setCelebration({
             status: 'LOST',
             amount: state.hands[0]?.bet || 0,
@@ -78,8 +83,12 @@ export default function BlackjackGame() {
       return;
     }
 
+    audioEngine.play('chipDrop');
+    haptic.bet();
+
     socket.emit('bj:bet', { gameId, amount: selectedChips }, (res: any) => {
       if (res.success) {
+        audioEngine.play('cardSlide');
         setGameState(res.state);
         toast.success(`Bet ₹${selectedChips} placed!`);
         fetchBalance();
@@ -93,6 +102,17 @@ export default function BlackjackGame() {
     if (!socket || !gameId || !gameState) return;
     const activeHand = gameState.hands[gameState.activeHandIndex];
     if (!activeHand) return;
+
+    if (actionType === 'HIT') {
+      audioEngine.play('cardSlide');
+      haptic.card();
+    } else if (actionType === 'STAND') {
+      audioEngine.play('cardFlip');
+      haptic.deal();
+    } else if (actionType === 'DOUBLE') {
+      audioEngine.play('chipDrop');
+      haptic.bet();
+    }
 
     socket.emit('bj:action', { gameId, handId: activeHand.id, actionType }, (res: any) => {
       if (res.success) {

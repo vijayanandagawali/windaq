@@ -10,6 +10,8 @@ import { io, Socket } from '@/lib/gameSocket';
 
 import UniversalBetPanel from '@/components/games/UniversalBetPanel';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
+import { audioEngine, haptic } from '@/lib/audioEngine';
+import AnimatedChipFlight, { ChipFlightData } from '@/components/games/animation/AnimatedChipFlight';
 
 export default function DiceGame() {
   const { balance, fetchBalance, userId } = useWalletStore();
@@ -40,6 +42,22 @@ export default function DiceGame() {
     message?: string;
   }>({ status: 'IDLE', amount: 0 });
 
+  const [flyingChips, setFlyingChips] = useState<ChipFlightData[]>([]);
+
+  const addChipFlight = (start: { x: number; y: number }, end: { x: number; y: number }, value: number = 100, type: 'BET' | 'WIN' = 'BET') => {
+    const id = `chip-${Date.now()}-${Math.random()}`;
+    setFlyingChips(prev => [...prev, {
+      id,
+      amount: value,
+      type,
+      startX: start.x,
+      startY: start.y,
+      endX: end.x,
+      endY: end.y,
+      color: '#eab308'
+    }]);
+  };
+
   useEffect(() => {
     const s = io('http://localhost:4000', { auth: { token: null } });
     setSocket(s);
@@ -65,12 +83,16 @@ export default function DiceGame() {
     s.on('dice:locked', () => {
       setGameState((p: any) => ({ ...p, status: 'LOCKED' }));
       setTimeLeft(0);
-      toast('Bets Locked!', { icon: '🔒' });
+      audioEngine.play('diceShake');
+      haptic.deal();
+      toast('Bets Locked! Rolling...', { icon: '🎲' });
     });
 
     s.on('dice:result', (data: any) => {
       setGameState((p: any) => ({ ...p, status: 'RESULT' }));
       setDiceResult(data.diceResult);
+      audioEngine.play('diceBounce');
+      haptic.card();
       
       const sum = data.diceResult.reduce((a: number, b: number) => a + b, 0);
       const isTriple = data.diceResult[0] === data.diceResult[1] && data.diceResult[1] === data.diceResult[2];
@@ -101,6 +123,15 @@ export default function DiceGame() {
       }
 
       if (wonAmount > 0) {
+        audioEngine.play('win');
+        haptic.win();
+        if (typeof window !== 'undefined') {
+          addChipFlight(
+            { x: window.innerWidth / 2, y: window.innerHeight * 0.3 },
+            { x: window.innerWidth - 60, y: 30 },
+            wonAmount
+          );
+        }
         setCelebration({
           status: 'WON',
           amount: wonAmount,
@@ -108,6 +139,8 @@ export default function DiceGame() {
           message: `Dice Total: ${sum} • YOU WON!`
         });
       } else if (totalBet > 0) {
+        audioEngine.play('loss');
+        haptic.error();
         setCelebration({
           status: 'LOST',
           amount: totalBet,
@@ -146,6 +179,15 @@ export default function DiceGame() {
     const userId = "guest"; // Replace with real auth id
     socket.emit('dice:bet', { userId, room: '1min', market, amount: chipAmount }, (res: any) => {
       if (res.success) {
+        audioEngine.play('chipDrop');
+        haptic.bet();
+        if (typeof window !== 'undefined') {
+          addChipFlight(
+            { x: window.innerWidth / 2, y: window.innerHeight - 80 },
+            { x: window.innerWidth / 2, y: window.innerHeight * 0.45 },
+            chipAmount
+          );
+        }
         setMyBets(prev => ({
           ...prev,
           [market]: (prev[market] || 0) + chipAmount
@@ -362,6 +404,15 @@ export default function DiceGame() {
                   const uid = userId || 'guest';
                   socket?.emit('dice:bet', { userId: uid, room: '1min', market: selectedMarket, amount }, (res: any) => {
                     if (res && res.success) {
+                      audioEngine.play('chipDrop');
+                      haptic.bet();
+                      if (typeof window !== 'undefined') {
+                        addChipFlight(
+                          { x: window.innerWidth / 2, y: window.innerHeight - 80 },
+                          { x: window.innerWidth / 2, y: window.innerHeight * 0.45 },
+                          amount
+                        );
+                      }
                       setMyBets(prev => ({
                         ...prev,
                         [selectedMarket]: (prev[selectedMarket] || 0) + amount
@@ -385,6 +436,12 @@ export default function DiceGame() {
         multiplier={celebration.multiplier}
         message={celebration.message}
         onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
+      />
+
+      {/* Flying Chips Layer */}
+      <AnimatedChipFlight
+        flights={flyingChips}
+        onFlightComplete={(id: string) => setFlyingChips((prev) => prev.filter((c) => c.id !== id))}
       />
 
     </div>

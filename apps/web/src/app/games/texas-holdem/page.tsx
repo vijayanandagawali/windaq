@@ -10,6 +10,7 @@ import { createGameSocket } from '@/lib/config';
 import type { Socket } from 'socket.io-client';
 
 import confetti from 'canvas-confetti';
+import { audioEngine, haptic } from '@/lib/audioEngine';
 
 export default function PokerTable() {
   const { balance } = useWalletStore();
@@ -35,6 +36,14 @@ export default function PokerTable() {
 
       if (state.phase === 'SHOWDOWN' && state.winner) {
         setWinnerInfo(state.winner);
+        const didIWin = state.winner.seatIndex === mySeat;
+        if (didIWin) {
+          audioEngine.play('win');
+          haptic.win();
+        } else {
+          audioEngine.play('loss');
+          haptic.error();
+        }
         confetti({ particleCount: 80, spread: 60, origin: { y: 0.5 } });
       } else {
         setWinnerInfo(null);
@@ -45,9 +54,20 @@ export default function PokerTable() {
       s.off('poker_state');
       s.disconnect();
     };
-  }, [user?.id]);
+  }, [user?.id, mySeat]);
 
   const handleAction = (action: string) => {
+    if (action === 'call' || action === 'raise' || action === 'bet') {
+      audioEngine.play('chipDrop');
+      haptic.bet();
+    } else if (action === 'fold') {
+      audioEngine.play('cardSlide');
+      haptic.card();
+    } else if (action === 'check') {
+      audioEngine.play('cardFlip');
+      haptic.deal();
+    }
+
     if (socket) {
       socket.emit('poker_action', { tableId: 'high-roller-1', action, amount: action === 'raise' ? actionAmount : 0 });
     }

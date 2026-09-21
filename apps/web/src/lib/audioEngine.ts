@@ -16,6 +16,16 @@ export type SoundEvent =
   | 'accepted'
   | 'countdown'
   | 'card'
+  | 'cardSlide'
+  | 'cardFlip'
+  | 'rouletteWheel'
+  | 'rouletteBall'
+  | 'diceShake'
+  | 'diceBounce'
+  | 'lottoPop'
+  | 'chipDrop'
+  | 'reelSpin'
+  | 'reelStop'
   | 'win'
   | 'loss'
   | 'jackpot'
@@ -520,6 +530,248 @@ class AudioEngine {
     });
   }
 
+  /**
+   * Card Slide: Smooth felt friction swoosh (70ms).
+   */
+  private synthCardSlide(ctx: AudioContext, destination: AudioNode): void {
+    const now = ctx.currentTime;
+    const bufferSize = ctx.sampleRate * 0.07;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(2200, now);
+    filter.frequency.exponentialRampToValueAtTime(1400, now + 0.07);
+    filter.Q.setValueAtTime(2.5, now);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(destination);
+
+    noise.start(now);
+    noise.stop(now + 0.075);
+  }
+
+  /**
+   * Card Flip: Crisp mechanical paper turn snap (50ms).
+   */
+  private synthCardFlip(ctx: AudioContext, destination: AudioNode): void {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(450, now);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 0.045);
+
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+    osc.connect(gain);
+    gain.connect(destination);
+
+    osc.start(now);
+    osc.stop(now + 0.055);
+  }
+
+  /**
+   * Roulette Wheel: Ambient spinning whir (300ms).
+   */
+  private synthRouletteWheel(ctx: AudioContext, destination: AudioNode): void {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(90, now);
+    osc.frequency.linearRampToValueAtTime(130, now + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(70, now + 0.3);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+    osc.connect(gain);
+    gain.connect(destination);
+
+    osc.start(now);
+    osc.stop(now + 0.31);
+  }
+
+  /**
+   * Roulette Ball: Sharp ivory ball pocket clatter / tick (35ms).
+   */
+  private synthRouletteBall(ctx: AudioContext, destination: AudioNode): void {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(2600, now);
+    osc.frequency.exponentialRampToValueAtTime(1800, now + 0.03);
+
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+
+    osc.connect(gain);
+    gain.connect(destination);
+
+    osc.start(now);
+    osc.stop(now + 0.04);
+  }
+
+  /**
+   * Dice Shake: Leather cup rattle with multiple micro-ticks (180ms).
+   */
+  private synthDiceShake(ctx: AudioContext, destination: AudioNode): void {
+    const now = ctx.currentTime;
+    for (let i = 0; i < 4; i++) {
+      const clickTime = now + i * 0.045 + Math.random() * 0.01;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(750 + i * 150, clickTime);
+      osc.frequency.exponentialRampToValueAtTime(250, clickTime + 0.025);
+
+      gain.gain.setValueAtTime(0.25, clickTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, clickTime + 0.025);
+
+      osc.connect(gain);
+      gain.connect(destination);
+
+      osc.start(clickTime);
+      osc.stop(clickTime + 0.03);
+    }
+  }
+
+  /**
+   * Dice Bounce: Wood / felt impact thump (60ms).
+   */
+  private synthDiceBounce(ctx: AudioContext, destination: AudioNode): void {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.exponentialRampToValueAtTime(90, now + 0.06);
+
+    gain.gain.setValueAtTime(0.45, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+    osc.connect(gain);
+    gain.connect(destination);
+
+    osc.start(now);
+    osc.stop(now + 0.065);
+  }
+
+  /**
+   * Lotto Pop: Pneumatic ball pop into extraction tube (90ms).
+   */
+  private synthLottoPop(ctx: AudioContext, destination: AudioNode): void {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(380, now);
+    osc.frequency.exponentialRampToValueAtTime(1100, now + 0.04);
+    osc.frequency.exponentialRampToValueAtTime(800, now + 0.09);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.4, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+    osc.connect(gain);
+    gain.connect(destination);
+
+    osc.start(now);
+    osc.stop(now + 0.095);
+  }
+
+  /**
+   * Chip Drop: Multi-chip ceramic clatter (120ms).
+   */
+  private synthChipDrop(ctx: AudioContext, destination: AudioNode): void {
+    const now = ctx.currentTime;
+    const freqs = [1800, 2400, 2100];
+    freqs.forEach((freq, idx) => {
+      const clickTime = now + idx * 0.035;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, clickTime);
+      osc.frequency.exponentialRampToValueAtTime(800, clickTime + 0.03);
+
+      gain.gain.setValueAtTime(0.3, clickTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, clickTime + 0.035);
+
+      osc.connect(gain);
+      gain.connect(destination);
+
+      osc.start(clickTime);
+      osc.stop(clickTime + 0.04);
+    });
+  }
+
+  /**
+   * Reel Stop: Mechanical slot reel snap lock (70ms).
+   */
+  private synthReelStop(ctx: AudioContext, destination: AudioNode): void {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(420, now);
+    osc.frequency.exponentialRampToValueAtTime(110, now + 0.06);
+
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+
+    osc.connect(gain);
+    gain.connect(destination);
+
+    osc.start(now);
+    osc.stop(now + 0.07);
+  }
+
+  /**
+   * Reel Spin: Upward mechanical motor whir (200ms).
+   */
+  private synthReelSpin(ctx: AudioContext, destination: AudioNode): void {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(360, now + 0.18);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.15, now + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+    osc.connect(gain);
+    gain.connect(destination);
+
+    osc.start(now);
+    osc.stop(now + 0.21);
+  }
+
   // --- Main Play Dispatcher ---
 
   /**
@@ -532,6 +784,7 @@ class AudioEngine {
         this.vibrate(10);
         break;
       case 'bet':
+      case 'chipDrop':
         this.vibrate(25);
         break;
       case 'accepted':
@@ -541,7 +794,32 @@ class AudioEngine {
         this.vibrate(extraParams?.urgent ? 45 : 25);
         break;
       case 'card':
+      case 'cardSlide':
         this.vibrate(15);
+        break;
+      case 'cardFlip':
+        this.vibrate([10, 20]);
+        break;
+      case 'rouletteWheel':
+        this.vibrate(12);
+        break;
+      case 'rouletteBall':
+        this.vibrate(18);
+        break;
+      case 'diceShake':
+        this.vibrate([15, 20, 15]);
+        break;
+      case 'diceBounce':
+        this.vibrate(30);
+        break;
+      case 'lottoPop':
+        this.vibrate(22);
+        break;
+      case 'reelSpin':
+        this.vibrate(20);
+        break;
+      case 'reelStop':
+        this.vibrate(28);
         break;
       case 'win':
         this.vibrate([40, 40, 60, 40, 100]);
@@ -574,6 +852,9 @@ class AudioEngine {
         case 'bet':
           this.synthBet(ctx, this.masterGain);
           break;
+        case 'chipDrop':
+          this.synthChipDrop(ctx, this.masterGain);
+          break;
         case 'accepted':
           this.synthAccepted(ctx, this.masterGain);
           break;
@@ -582,6 +863,33 @@ class AudioEngine {
           break;
         case 'card':
           this.synthCard(ctx, this.masterGain);
+          break;
+        case 'cardSlide':
+          this.synthCardSlide(ctx, this.masterGain);
+          break;
+        case 'cardFlip':
+          this.synthCardFlip(ctx, this.masterGain);
+          break;
+        case 'rouletteWheel':
+          this.synthRouletteWheel(ctx, this.masterGain);
+          break;
+        case 'rouletteBall':
+          this.synthRouletteBall(ctx, this.masterGain);
+          break;
+        case 'diceShake':
+          this.synthDiceShake(ctx, this.masterGain);
+          break;
+        case 'diceBounce':
+          this.synthDiceBounce(ctx, this.masterGain);
+          break;
+        case 'lottoPop':
+          this.synthLottoPop(ctx, this.masterGain);
+          break;
+        case 'reelSpin':
+          this.synthReelSpin(ctx, this.masterGain);
+          break;
+        case 'reelStop':
+          this.synthReelStop(ctx, this.masterGain);
           break;
         case 'win':
           this.synthWin(ctx, this.masterGain);
@@ -608,6 +916,42 @@ class AudioEngine {
 // Global Singleton Instance
 export const audioEngine = new AudioEngine();
 
+// Mobile Haptics Engine
+export const haptic = {
+  click: () => {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      try { navigator.vibrate(10); } catch {}
+    }
+  },
+  bet: () => {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      try { navigator.vibrate([15, 20, 15]); } catch {}
+    }
+  },
+  deal: () => {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      try { navigator.vibrate(20); } catch {}
+    }
+  },
+  card: () => {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      try { navigator.vibrate(25); } catch {}
+    }
+  },
+  win: () => {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      try { navigator.vibrate([40, 50, 40, 50, 80]); } catch {}
+    }
+  },
+  error: () => {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      try { navigator.vibrate([60, 40, 60]); } catch {}
+    }
+  }
+};
+
 if (typeof window !== 'undefined') {
   (window as any).audioEngine = audioEngine;
+  (window as any).haptic = haptic;
 }
+

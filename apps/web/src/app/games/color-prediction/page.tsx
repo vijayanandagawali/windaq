@@ -9,6 +9,8 @@ import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
 import { io, Socket } from '@/lib/gameSocket';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
+import { audioEngine } from '@/lib/audioEngine';
+import AnimatedChipFlight from '@/components/games/animation/AnimatedChipFlight';
 
 const COLORS = [
   { id: 'green', label: 'Join Green', multiplier: 2, bg: 'bg-green-500', shadow: 'shadow-[0_0_20px_rgba(34,197,94,0.5)]' },
@@ -27,6 +29,8 @@ export default function ColorPrediction() {
   const [period, setPeriod] = useState("Loading...");
   const [gameState, setGameState] = useState("UPCOMING");
   const [history, setHistory] = useState<any[]>([]);
+  const [lastResult, setLastResult] = useState<{ color: string; number: number; period: string } | null>(null);
+  const [chipFlights, setChipFlights] = useState<any[]>([]);
   
   // Betting state
   const [betModalOpen, setBetModalOpen] = useState(false);
@@ -63,7 +67,16 @@ export default function ColorPrediction() {
       setPeriod(data.period);
       setGameState(data.state);
       setCountdown(data.remainingSeconds);
+      if (data.remainingSeconds <= 3 && data.remainingSeconds > 0) {
+        audioEngine.play('countdown', { urgent: true });
+      } else if (data.remainingSeconds <= 10 && data.remainingSeconds > 0) {
+        audioEngine.play('countdown');
+      }
       if (data.state === 'LOCKED') setBetModalOpen(false);
+      if (data.state === 'OPEN' && lastResult) {
+        // Reset chamber on new round
+        setLastResult(null);
+      }
     };
     
     const onState = (data: any) => {
@@ -76,6 +89,9 @@ export default function ColorPrediction() {
     };
     
     const onResult = (data: any) => {
+      setLastResult(data);
+      audioEngine.play('win');
+
       // Evaluate active user bets for win/loss celebration
       if (activeBets.length > 0) {
         let totalWin = 0;
@@ -100,6 +116,22 @@ export default function ColorPrediction() {
             amount: totalWin,
             multiplier: `${(totalWin / totalStake).toFixed(1)}x`
           });
+
+          // Fly winning chips to user
+          setChipFlights(prev => [
+            ...prev,
+            {
+              id: `cp-win-${Date.now()}`,
+              amount: totalWin,
+              type: 'WIN',
+              startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+              startY: 260,
+              endX: 60,
+              endY: typeof window !== 'undefined' ? window.innerHeight - 50 : 600,
+              color: 'from-amber-400 to-yellow-600',
+              borderColor: 'border-yellow-200'
+            }
+          ]);
         } else {
           setCelebration({
             type: 'loss',
@@ -198,7 +230,7 @@ export default function ColorPrediction() {
       </div>
 
       {/* Timer Section */}
-      <div className="mx-4 mb-6 glass-card p-4 rounded-2xl flex items-center justify-between">
+      <div className="mx-4 mb-4 glass-card p-4 rounded-2xl flex items-center justify-between">
          <div>
            <p className="text-gray-400 text-xs font-bold uppercase mb-1 flex items-center gap-1"><Clock size={12}/> Period</p>
            <h3 className="text-white font-black text-xl">{period}</h3>
@@ -212,6 +244,94 @@ export default function ColorPrediction() {
            </div>
          </div>
       </div>
+
+      {/* 3D Mystery Result Chamber / Oracle Orb */}
+      <div className="mx-4 mb-6 relative flex flex-col items-center justify-center p-5 rounded-2xl bg-gradient-to-b from-ocean-card/90 to-black/80 border border-white/10 shadow-[0_10px_35px_rgba(0,0,0,0.8)] overflow-hidden">
+        {/* Ambient glow behind orb */}
+        <div className={`absolute w-44 h-44 rounded-full blur-3xl opacity-40 transition-colors duration-500 pointer-events-none ${
+          lastResult?.color === 'red' ? 'bg-red-500' :
+          lastResult?.color === 'green' ? 'bg-emerald-500' :
+          lastResult?.color === 'violet' ? 'bg-purple-500' : 'bg-cyan-500'
+        }`} />
+
+        <div className="relative flex flex-col items-center">
+          {/* Chamber Header Tag */}
+          <div className="mb-3 px-3 py-0.5 rounded-full bg-black/60 border border-white/15 text-[11px] font-mono tracking-widest uppercase text-white/70 flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${
+              gameState === 'LOCKED' ? 'bg-red-500 animate-ping' :
+              gameState === 'RESULT' ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'
+            }`} />
+            {gameState === 'LOCKED' ? 'CHAMBER LOCKED • ANTICIPATION' :
+             gameState === 'RESULT' ? 'OUTCOME REVEALED' : 'MYSTERY RESULT CHAMBER'}
+          </div>
+
+          {/* Glowing Multi-Ring Orb */}
+          <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full flex items-center justify-center">
+            {/* Outer Orbiting Ring */}
+            <motion.div 
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: gameState === 'LOCKED' ? 2 : 8, ease: "linear" }}
+              className="absolute inset-0 rounded-full border-2 border-dashed border-cyan-400/50"
+            />
+            {/* Inner Counter-Orbiting Ring */}
+            <motion.div 
+              animate={{ rotate: -360 }}
+              transition={{ repeat: Infinity, duration: gameState === 'LOCKED' ? 3 : 12, ease: "linear" }}
+              className="absolute inset-2 rounded-full border-2 border-dashed border-amber-400/40"
+            />
+
+            {/* Central Crystal Sphere */}
+            <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center transition-all duration-700 shadow-[0_0_30px_rgba(0,0,0,0.8)_inset] ${
+              lastResult?.color === 'red' ? 'bg-gradient-to-br from-red-500 to-red-950 border-2 border-red-400 shadow-[0_0_35px_rgba(239,68,68,0.8)]' :
+              lastResult?.color === 'green' ? 'bg-gradient-to-br from-emerald-500 to-emerald-950 border-2 border-emerald-400 shadow-[0_0_35px_rgba(34,197,94,0.8)]' :
+              lastResult?.color === 'violet' ? 'bg-gradient-to-br from-purple-500 to-purple-950 border-2 border-purple-400 shadow-[0_0_35px_rgba(168,85,247,0.8)]' :
+              'bg-gradient-to-br from-cyan-600/40 via-blue-950 to-black border-2 border-cyan-400/40'
+            }`}>
+              {lastResult ? (
+                <motion.div
+                  initial={{ scale: 0, rotate: 180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  className="flex flex-col items-center justify-center"
+                >
+                  <span className="text-3xl sm:text-4xl font-black text-white drop-shadow-md">
+                    {lastResult.number}
+                  </span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-white/90">
+                    {lastResult.color}
+                  </span>
+                </motion.div>
+              ) : gameState === 'LOCKED' ? (
+                <motion.div 
+                  animate={{ scale: [0.9, 1.15, 0.9] }}
+                  transition={{ repeat: Infinity, duration: 0.8 }}
+                  className="text-amber-400 font-black text-xl tracking-tighter"
+                >
+                  ???
+                </motion.div>
+              ) : (
+                <span className="text-white/40 font-mono font-bold text-lg">?</span>
+              )}
+            </div>
+          </div>
+
+          {/* Reveal Callout Banner */}
+          {lastResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-3 px-4 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-black uppercase tracking-wider text-amber-300"
+            >
+              Winner: {lastResult.color} • Number {lastResult.number}
+            </motion.div>
+          )}
+        </div>
+      </div>
+
+      {/* Reusable Chip Flights */}
+      <AnimatedChipFlight 
+        flights={chipFlights} 
+        onFlightComplete={(id) => setChipFlights(prev => prev.filter(f => f.id !== id))} 
+      />
 
       {/* Betting Area */}
       <div className="mx-4 mb-6 relative">
