@@ -28,7 +28,12 @@ function handleRouletteSockets(socket, io, engines) {
   });
 
   socket.on('roulette:bet', async (data, callback) => {
-    const { userId, room = 'Auto', market, targets, amount } = data;
+    const resolvedUserId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
+    if (!resolvedUserId) {
+      return callback({ success: false, code: 'AUTH_REQUIRED', message: 'You must be logged in to place bets.' });
+    }
+    const userId = resolvedUserId;
+    const { room = 'Auto', market, targets, amount } = data;
     const betAmount = BigInt(amount * 100); // convert INR to paise
 
     if (betAmount < 1000n) { // Minimum 10 INR

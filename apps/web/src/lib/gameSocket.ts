@@ -634,10 +634,10 @@ class VirtualGameSocket {
  * so every game runs with 100% responsiveness and no failed localhost:4000 connection errors!
  */
 export function getGameSocket(url?: string, options?: any): any {
-  // If in browser and not localhost or url points to localhost:4000
+  // If in browser and not localhost and url points to localhost:4000 (e.g. on serverless Vercel)
   if (typeof window !== 'undefined') {
-    const isLocalhost = window.location.hostname === 'localhost';
-    if (!isLocalhost || (url && url.includes('localhost:4000'))) {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isLocalhost && url && url.includes('localhost:4000')) {
       return new VirtualGameSocket();
     }
   }

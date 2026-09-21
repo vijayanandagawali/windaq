@@ -21,6 +21,7 @@ import {
   Save,
   Check
 } from 'lucide-react';
+import { getApiUrl } from '@/lib/config';
 
 interface Variant {
   id: string;
@@ -97,11 +98,18 @@ export default function AdminGameControlPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  const getAdminHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+  };
+
   const fetchGames = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:4000/api/admin/games', {
-        headers: { 'x-admin-user-id': 'mock-super-admin-id' }
+      const res = await fetch(getApiUrl('/api/admin/games'), {
+        headers: getAdminHeaders()
       });
       const json = await res.json();
       if (json.success) {
@@ -123,8 +131,8 @@ export default function AdminGameControlPage() {
     setDetailsLoading(true);
     setActiveTab('general');
     try {
-      const res = await fetch(`http://localhost:4000/api/admin/games/${slug}`, {
-        headers: { 'x-admin-user-id': 'mock-super-admin-id' }
+      const res = await fetch(getApiUrl(`/api/admin/games/${slug}`), {
+        headers: getAdminHeaders()
       });
       const json = await res.json();
       if (json.success) {
@@ -156,12 +164,9 @@ export default function AdminGameControlPage() {
     e.stopPropagation();
     try {
       const newStatus = !game.isEnabled;
-      const res = await fetch(`http://localhost:4000/api/admin/games/${game.gameSlug}/config`, {
+      const res = await fetch(getApiUrl(`/api/admin/games/${game.gameSlug}/config`), {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-user-id': 'mock-super-admin-id'
-        },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ isEnabled: newStatus })
       });
       const json = await res.json();
@@ -178,12 +183,9 @@ export default function AdminGameControlPage() {
     e.stopPropagation();
     try {
       const newMaintenance = !game.isMaintenance;
-      const res = await fetch(`http://localhost:4000/api/admin/games/${game.gameSlug}/config`, {
+      const res = await fetch(getApiUrl(`/api/admin/games/${game.gameSlug}/config`), {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-user-id': 'mock-super-admin-id'
-        },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ isMaintenance: newMaintenance })
       });
       const json = await res.json();
@@ -201,12 +203,9 @@ export default function AdminGameControlPage() {
     if (!selectedSlug) return;
     setIsSavingConfig(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/admin/games/${selectedSlug}/config`, {
+      const res = await fetch(getApiUrl(`/api/admin/games/${selectedSlug}/config`), {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-user-id': 'mock-super-admin-id'
-        },
+        headers: getAdminHeaders(),
         body: JSON.stringify(editConfig)
       });
       const json = await res.json();
@@ -237,12 +236,9 @@ export default function AdminGameControlPage() {
 
     setIsDeployingPayout(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/admin/games/${selectedSlug}/payout-rules`, {
+      const res = await fetch(getApiUrl(`/api/admin/games/${selectedSlug}/payout-rules`), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-user-id': 'mock-super-admin-id'
-        },
+        headers: getAdminHeaders(),
         body: JSON.stringify({
           rules: editablePayouts,
           reason: payoutReason

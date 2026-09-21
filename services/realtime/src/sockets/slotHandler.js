@@ -19,7 +19,12 @@ function handleSlotSockets(socket, io) {
 
   // Handle spin request
   socket.on('slot:spin', async (data, callback) => {
-    const { userId, stake } = data;
+    const resolvedUserId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
+    if (!resolvedUserId) {
+      return callback({ success: false, code: 'AUTH_REQUIRED', message: 'You must be logged in to play slots.' });
+    }
+    const userId = resolvedUserId;
+    const { stake } = data;
     
     // Prevent tiny negative stakes
     if (stake <= 0) return callback({ success: false, message: 'Invalid stake amount.' });

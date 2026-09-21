@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { getApiUrl } from '@/lib/config';
 import { useWalletStore } from '@/store/walletStore';
 
+import { useAuthStore } from '@/store/authStore';
+
 export default function PromotionsPage() {
-  const userId = useWalletStore(s => s.userId) || 'sbx-usr-normal-001';
+  const { user, token, isAuthenticated, openAuthModal } = useAuthStore();
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,10 +22,20 @@ export default function PromotionsPage() {
   }, []);
 
   const activateCampaign = async (id: string) => {
+    if (!isAuthenticated || !token || !user) {
+      openAuthModal('LOGIN');
+      alert('Please log in to claim promotions.');
+      return;
+    }
+
     try {
       const res = await fetch(getApiUrl('/api/bonus/activate'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'x-user-id': user.id,
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ campaignId: id })
       });
       const data = await res.json();

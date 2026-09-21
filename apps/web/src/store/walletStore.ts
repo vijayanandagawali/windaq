@@ -257,9 +257,13 @@ export const useWalletStore = create<WalletState>((set, get) => ({
           }
         }
       }
-      if (!uid) uid = 'sbx-usr-normal-001';
+      if (!uid && !token) {
+        set({ balance: 0 });
+        return;
+      }
 
-      const headers: Record<string, string> = { 'x-user-id': uid };
+      const headers: Record<string, string> = {};
+      if (uid) headers['x-user-id'] = uid;
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const res = await fetch(getApiUrl('/api/ledger/balance'), { headers });

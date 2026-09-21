@@ -8,7 +8,12 @@ const engine = new ScratchEngine();
 function handleScratchSockets(socket, io) {
   
   socket.on('scratch:buy', async (data, callback) => {
-    const { userId, tierId } = data;
+    const resolvedUserId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
+    if (!resolvedUserId) {
+      return callback({ success: false, code: 'AUTH_REQUIRED', message: 'You must be logged in to buy scratch cards.' });
+    }
+    const userId = resolvedUserId;
+    const { tierId } = data;
     const tier = TIERS[tierId];
     
     if (!tier) return callback({ success: false, message: 'Invalid ticket tier.' });

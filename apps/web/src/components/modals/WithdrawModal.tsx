@@ -4,17 +4,27 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowUpRight, ShieldCheck, Zap } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
+import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/config';
 
 export default function WithdrawModal() {
   const { balance, isWithdrawing, setWithdrawing, withdraw, userId } = useWalletStore();
-  const activeUserId = userId || 'sbx-usr-normal-001';
+  const { user, token, isAuthenticated, openAuthModal } = useAuthStore();
+  const activeUserId = user?.id || userId || '';
   const [amount, setAmount] = useState(1000);
   const [upiId, setUpiId] = useState('');
   const [loading, setLoading] = useState(false);
 
-  if (!isWithdrawing) return null;
+  React.useEffect(() => {
+    if (isWithdrawing && !isAuthenticated) {
+      setWithdrawing(false);
+      openAuthModal('LOGIN');
+      toast.error('Please login to withdraw funds');
+    }
+  }, [isWithdrawing, isAuthenticated, setWithdrawing, openAuthModal]);
+
+  if (!isWithdrawing || !isAuthenticated) return null;
 
   const handleWithdraw = async () => {
     if (amount < 200) {
@@ -36,7 +46,8 @@ export default function WithdrawModal() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': activeUserId
+          'x-user-id': activeUserId,
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           amount,

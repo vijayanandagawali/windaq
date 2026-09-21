@@ -8,22 +8,43 @@ const prisma = new PrismaClient();
 const requireRole = (allowedRoles) => {
   return async (req, res, next) => {
     try {
-      let adminId = req.headers['x-admin-user-id'] || req.user?.userId;
-      if (adminId === 'mock-super-admin-id' || adminId === 'SUPER_ADMIN_DEMO_001') {
-        adminId = 'sbx-usr-admin-004';
+      // Prioritize verified JWT session
+      let adminId = req.user?.userId;
+
+      // Sandbox header fallback ONLY if explicit sandbox flag is on and not in production
+      const isSandboxDemo = process.env.NODE_ENV !== 'production' && (process.env.ENABLE_SANDBOX_DEMO === 'true' || process.env.NODE_ENV === 'test');
+      if (!adminId && isSandboxDemo) {
+        const headerAdminId = req.headers['x-admin-user-id'];
+        if (headerAdminId) {
+          adminId = (headerAdminId === 'mock-super-admin-id' || headerAdminId === 'SUPER_ADMIN_DEMO_001')
+            ? 'TEST_ADMIN'
+            : headerAdminId;
+        }
       }
       
       if (!adminId) {
-        return res.status(401).json({ success: false, message: 'Unauthorized. Admin ID missing.' });
+        return res.status(401).json({ 
+          success: false, 
+          code: 'AUTH_REQUIRED', 
+          message: 'Unauthorized. Privileged administrator session required.' 
+        });
       }
 
       const admin = await prisma.user.findUnique({ where: { id: adminId } });
       if (!admin) {
-        return res.status(401).json({ success: false, message: 'Unauthorized. Admin not found.' });
+        return res.status(401).json({ 
+          success: false, 
+          code: 'ADMIN_NOT_FOUND', 
+          message: 'Unauthorized. Administrator account not found.' 
+        });
       }
 
       if (!allowedRoles.includes(admin.role)) {
-        return res.status(403).json({ success: false, message: `Forbidden. Requires one of: ${allowedRoles.join(', ')}` });
+        return res.status(403).json({ 
+          success: false, 
+          code: 'FORBIDDEN', 
+          message: `Forbidden. Requires one of privileged roles: ${allowedRoles.join(', ')}` 
+        });
       }
 
       // Check MFA for sensitive actions (e.g. POST/PUT/DELETE)

@@ -2,18 +2,17 @@
 import React, { useEffect, useState } from 'react';
 import { ShieldCheck, AlertCircle, TrendingUp, Users } from 'lucide-react';
 
+import { getApiUrl } from '@/lib/config';
+
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<any>(null);
   
   useEffect(() => {
-    // We fetch from our new API. For local testing, we hardcode to 4000
-    // In production, configure next.config rewrites or env variables.
-    // Also mock the admin ID headers.
-    fetch('http://localhost:4000/api/admin/dashboard', {
-      headers: {
-        'x-admin-user-id': 'mock-super-admin-id'
-      }
-    })
+    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    fetch(getApiUrl('/api/admin/dashboard'), { headers })
       .then(res => res.json())
       .then(data => {
         if (data.success) {

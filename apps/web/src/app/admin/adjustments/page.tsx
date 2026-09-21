@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { ShieldAlert, CheckCircle2, Clock } from 'lucide-react';
+import { getApiUrl } from '@/lib/config';
 
 export default function WalletAdjustmentsPage() {
   const [adjustments, setAdjustments] = useState<any[]>([]);
@@ -8,10 +9,17 @@ export default function WalletAdjustmentsPage() {
   const [mfaToken, setMfaToken] = useState('');
   const [error, setError] = useState('');
 
+  const getHeaders = (extra: Record<string, string> = {}) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
+    const headers: Record<string, string> = { ...extra };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+  };
+
   const fetchAdjustments = () => {
     setLoading(true);
-    fetch('http://localhost:4000/api/admin/adjustments', {
-      headers: { 'x-admin-user-id': 'mock-super-admin-id' }
+    fetch(getApiUrl('/api/admin/adjustments'), {
+      headers: getHeaders()
     })
       .then(res => res.json())
       .then(data => {
@@ -34,12 +42,9 @@ export default function WalletAdjustmentsPage() {
     setError('');
     
     try {
-      const res = await fetch(`http://localhost:4000/api/admin/adjustments/${id}/approve`, {
+      const res = await fetch(getApiUrl(`/api/admin/adjustments/${id}/approve`), {
         method: 'POST',
-        headers: { 
-          'x-admin-user-id': 'mock-super-admin-id',
-          'x-mfa-token': mfaToken
-        }
+        headers: getHeaders({ 'x-mfa-token': mfaToken })
       });
       const data = await res.json();
       

@@ -1,16 +1,24 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, Shield, AlertOctagon, UserX, CheckCircle } from 'lucide-react';
+import { getApiUrl } from '@/lib/config';
 
 export default function RiskQueuePage() {
   const [flags, setFlags] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState('');
 
+  const getHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+  };
+
   const fetchFlags = () => {
     setLoading(true);
-    fetch('http://localhost:4000/api/admin/risk/flags', {
-      headers: { 'x-admin-user-id': 'mock-super-admin-id' }
+    fetch(getApiUrl('/api/admin/risk/flags'), {
+      headers: getHeaders()
     })
       .then(res => res.json())
       .then(data => {
@@ -27,12 +35,9 @@ export default function RiskQueuePage() {
 
   const handleResolve = async (id: string, status: string, suspendUser: boolean) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/admin/risk/flags/${id}/resolve`, {
+      const res = await fetch(getApiUrl(`/api/admin/risk/flags/${id}/resolve`), {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-admin-user-id': 'mock-super-admin-id'
-        },
+        headers: getHeaders(),
         body: JSON.stringify({ status, suspendUser, notes })
       });
       const data = await res.json();

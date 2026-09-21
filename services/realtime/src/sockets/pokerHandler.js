@@ -24,8 +24,8 @@ function initPokerSockets(io, socket) {
     const requestedSeat = typeof data?.seatIndex === 'number' ? data.seatIndex : 0;
     
     const table = getOrCreateTable(tableId);
-    const userId = data?.userId || socket.user?.id || 'sbx-usr-normal-001';
-    const userName = data?.userName || socket.user?.name || 'Player';
+    const userId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : 'guest');
+    const userName = data?.userName || socket.user?.name || (userId === 'guest' ? 'Guest Player' : 'Player');
 
     try {
       // Ensure wallet exists in DB
@@ -81,7 +81,8 @@ function initPokerSockets(io, socket) {
     const table = tables[tableId];
     if (!table) return;
 
-    const userId = socket.user?.id || data?.userId || 'sbx-usr-normal-001';
+    const userId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
+    if (!userId) return socket.emit('error', 'Authentication required to bet in poker');
     const betAmount = action === 'raise' && amount > 0 ? amount : (action === 'call' ? 20 : 0);
 
     // If real wager involved, deduct from wallet

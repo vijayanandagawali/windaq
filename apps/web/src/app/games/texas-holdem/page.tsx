@@ -5,27 +5,33 @@ import Link from 'next/link';
 import { ChevronLeft, Info, Settings, MessageSquare, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWalletStore } from '@/store/walletStore';
-import { io } from '@/lib/gameSocket';
+import { useAuthStore } from '@/store/authStore';
+import { createGameSocket } from '@/lib/config';
+import type { Socket } from 'socket.io-client';
 
 import confetti from 'canvas-confetti';
 
-const socket = io('http://localhost:4000');
-
 export default function PokerTable() {
   const { balance } = useWalletStore();
+  const { user } = useAuthStore();
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [tableState, setTableState] = useState<any>(null);
   const [mySeat, setMySeat] = useState(-1);
   const [actionAmount, setActionAmount] = useState(20); // big blind
   const [winnerInfo, setWinnerInfo] = useState<any>(null);
 
   useEffect(() => {
-    socket.emit('poker_join', { tableId: 'high-roller-1', seatIndex: 0 });
+    const s = createGameSocket();
+    setSocket(s);
 
-    socket.on('poker_state', (state: any) => {
+    s.emit('poker_join', { tableId: 'high-roller-1', seatIndex: 0 });
+
+    s.on('poker_state', (state: any) => {
       setTableState(state);
       // find my seat
-      const idx = state.seats.findIndex((s: any) => s && (s.name === 'Player' || s.id === 'guest' || s.id === 'sbx-usr-normal-001'));
-      setMySeat(idx >= 0 ? idx : 0);
+      const currentUid = user?.id;
+      const idx = state.seats?.findIndex((seat: any) => seat && (seat.name === 'Player' || (currentUid && seat.id === currentUid) || seat.id === 'guest'));
+      setMySeat(idx !== undefined && idx >= 0 ? idx : 0);
 
       if (state.phase === 'SHOWDOWN' && state.winner) {
         setWinnerInfo(state.winner);
@@ -36,12 +42,15 @@ export default function PokerTable() {
     });
 
     return () => {
-      socket.off('poker_state');
+      s.off('poker_state');
+      s.disconnect();
     };
-  }, []);
+  }, [user?.id]);
 
   const handleAction = (action: string) => {
-    socket.emit('poker_action', { tableId: 'high-roller-1', action, amount: action === 'raise' ? actionAmount : 0 });
+    if (socket) {
+      socket.emit('poker_action', { tableId: 'high-roller-1', action, amount: action === 'raise' ? actionAmount : 0 });
+    }
   };
 
   const formatCard = (card: string) => {

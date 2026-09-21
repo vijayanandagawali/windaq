@@ -18,7 +18,26 @@ router.post('/place', async (req, res) => {
 
     const userId = bodyUserId && (req.user?.role === 'ADMIN' || req.user?.role === 'SUPER_ADMIN') 
       ? bodyUserId 
-      : (authUserId || bodyUserId || 'sbx-usr-normal-001');
+      : (authUserId || (process.env.NODE_ENV === 'test' ? (bodyUserId || 'TEST_PLAYER_01') : null));
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        code: 'AUTH_REQUIRED',
+        message: 'Authentication required. Please log in to place wagers.'
+      });
+    }
+
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+    const risk = await prisma.userRiskProfile.findUnique({ where: { userId } }).catch(() => null);
+    if (risk && risk.isSuspended) {
+      return res.status(403).json({
+        success: false,
+        code: 'ACCOUNT_RESTRICTED',
+        message: 'Account is restricted: Betting suspended.'
+      });
+    }
 
     const { gameType, referenceId, market, selection, type, stake, odds } = req.body;
     

@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useWalletStore } from '@/store/walletStore';
+import { useAuthStore } from '@/store/authStore';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { getApiUrl } from '@/lib/config';
 import toast from 'react-hot-toast';
 
@@ -73,18 +75,30 @@ export default function WalletHub() {
   const [withdrawUpi, setWithdrawUpi] = useState<string>('');
   const [isSubmittingWithdraw, setIsSubmittingWithdraw] = useState<boolean>(false);
 
+  const { user, token } = useAuthStore();
+
   // Effective user ID
   const getEffectiveUserId = useCallback(() => {
     if (userId) return userId;
+    if (user?.id) return user.id;
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('windaq_user_data');
       if (cached) {
         try { return JSON.parse(cached).id; } catch {}
       }
-      return localStorage.getItem('windaq_user_id') || 'sbx-usr-normal-001';
+      return localStorage.getItem('windaq_user_id') || null;
     }
-    return 'sbx-usr-normal-001';
-  }, [userId]);
+    return null;
+  }, [userId, user]);
+
+  const getAuthHeaders = useCallback(() => {
+    const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null);
+    const uid = getEffectiveUserId();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (uid) headers['x-user-id'] = uid;
+    if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+    return headers;
+  }, [token, getEffectiveUserId]);
 
   // Fetch Transactions
   const fetchTransactions = useCallback(async () => {
@@ -99,7 +113,7 @@ export default function WalletHub() {
       }
 
       const res = await fetch(url, {
-        headers: { 'x-user-id': uid }
+        headers: getAuthHeaders()
       });
 
       if (!res.ok) throw new Error(`Server returned status ${res.status}`);
@@ -124,7 +138,7 @@ export default function WalletHub() {
     try {
       const uid = getEffectiveUserId();
       const res = await fetch(getApiUrl('/api/ledger/wagers'), {
-        headers: { 'x-user-id': uid }
+        headers: getAuthHeaders()
       });
       if (res.ok) {
         const data = await res.json();
@@ -162,13 +176,9 @@ export default function WalletHub() {
       const uid = getEffectiveUserId();
       const res = await fetch(getApiUrl('/api/ledger/deposit/instant'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': uid
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           amount: depositAmount,
-          utr: depositUtr || undefined,
           method: 'UPI'
         })
       });
@@ -210,10 +220,7 @@ export default function WalletHub() {
       const uid = getEffectiveUserId();
       const res = await fetch(getApiUrl('/api/ledger/withdraw/instant'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': uid
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           amount: withdrawAmount,
           upiId: withdrawUpi,
@@ -241,8 +248,9 @@ export default function WalletHub() {
   const pendingTransactions = transactions.filter(t => t.status === 'PENDING' || t.status === 'FAILED');
 
   return (
-    <div className="min-h-screen bg-[#070b12] text-white flex flex-col">
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6">
+    <ProtectedRoute title="MY GAMING WALLET">
+      <div className="min-h-screen bg-[#070b12] text-white flex flex-col">
+        <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6">
         
         {/* Page Title & Breadcrumbs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -936,6 +944,7 @@ export default function WalletHub() {
         </div>
       )}
 
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

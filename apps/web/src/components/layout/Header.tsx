@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { ShieldCheck, Plus, Bell, Crown, User, LogOut, ChevronLeft, Flame, Rocket, Video, Dices, Trophy, Gift, Volume2, VolumeX } from 'lucide-react';
+import { ShieldCheck, Plus, Bell, Crown, User, LogOut, ChevronLeft, Flame, Rocket, Video, Dices, Trophy, Gift, Volume2, VolumeX, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useWalletStore } from '@/store/walletStore';
@@ -12,7 +12,7 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { balance, vipTier, setDepositing, setVipOpen, setNotifOpen, fetchBalance } = useWalletStore();
-  const { isAuthenticated, user, isGuest, logout, openAuthModal } = useAuthStore();
+  const { isAuthenticated, user, isGuest, logout, openAuthModal, loginAsGuest } = useAuthStore();
   const { soundEnabled, volume, setControlsOpen } = useAudioStore();
 
   const isHome = pathname === '/';
@@ -138,8 +138,18 @@ export default function Header() {
         </button>
 
         {!isAuthenticated ? (
-          /* Visitor State: Login / Register */
+          /* Visitor State: Login / Register / Guest */
           <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              data-testid="header-guest-btn"
+              onClick={() => loginAsGuest()}
+              className="px-2 sm:px-2.5 py-1 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-[10px] sm:text-xs font-bold rounded-xl hover:bg-yellow-400/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+              title="Play as Sandbox Guest"
+            >
+              <Sparkles size={11} />
+              <span>GUEST</span>
+            </button>
+
             <button
               data-testid="header-login-btn"
               onClick={() => openAuthModal('LOGIN')}

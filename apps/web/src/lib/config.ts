@@ -27,9 +27,14 @@ export function getApiUrl(endpoint: string): string {
   return API_BASE_URL ? `${API_BASE_URL}${cleanEndpoint}` : cleanEndpoint;
 }
 
-export function createGameSocket(path = '', options = {}): Socket {
+export function createGameSocket(path = '', options: any = {}): Socket {
+  let token: string | null = null;
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('windaq_auth_token');
+  }
   return getGameSocket(WS_BASE_URL, {
     transports: ['websocket', 'polling'],
+    auth: { token, ...(options.auth || {}) },
     ...options
   });
 }

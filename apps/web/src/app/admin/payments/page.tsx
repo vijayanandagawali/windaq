@@ -1,15 +1,23 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { CreditCard, CheckCircle2, XCircle, ArrowRightLeft, Search } from 'lucide-react';
+import { getApiUrl } from '@/lib/config';
 
 export default function PaymentsReconciliationPage() {
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const getHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+  };
+
   const fetchWithdrawals = () => {
     setLoading(true);
-    fetch('http://localhost:4000/api/payments/admin/withdrawals/pending', {
-      headers: { 'x-admin-user-id': 'mock-super-admin-id' }
+    fetch(getApiUrl('/api/payments/admin/withdrawals/pending'), {
+      headers: getHeaders()
     })
       .then(res => res.json())
       .then(data => {
@@ -26,12 +34,9 @@ export default function PaymentsReconciliationPage() {
 
   const handleApprove = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/payments/admin/withdrawals/${id}/approve`, {
+      const res = await fetch(getApiUrl(`/api/payments/admin/withdrawals/${id}/approve`), {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-admin-user-id': 'mock-super-admin-id'
-        }
+        headers: getHeaders()
       });
       const data = await res.json();
       

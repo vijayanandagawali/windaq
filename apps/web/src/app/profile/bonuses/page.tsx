@@ -3,26 +3,32 @@ import React, { useEffect, useState } from 'react';
 import { Target, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { getApiUrl } from '@/lib/config';
-import { useWalletStore } from '@/store/walletStore';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { useAuthStore } from '@/store/authStore';
 
 export default function MyBonusesPage() {
-  const userId = useWalletStore(s => s.userId) || 'sbx-usr-normal-001';
+  const { user, token } = useAuthStore();
   const [bonuses, setBonuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user || !token) return;
     fetch(getApiUrl('/api/bonus/active'), {
-      headers: { 'x-user-id': userId }
+      headers: { 
+        'x-user-id': user.id,
+        'Authorization': `Bearer ${token}`
+      }
     })
       .then(res => res.json())
       .then(data => {
         if (data.success) setBonuses(data.data);
       })
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, [user, token]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 py-8 px-4">
+    <ProtectedRoute title="MY BONUSES">
+      <div className="max-w-4xl mx-auto space-y-8 py-8 px-4">
       <div className="flex items-center justify-between border-b border-slate-800 pb-4">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -103,5 +109,6 @@ export default function MyBonusesPage() {
         </div>
       )}
     </div>
+    </ProtectedRoute>
   );
 }

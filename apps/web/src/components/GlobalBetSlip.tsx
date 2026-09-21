@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useBetSlipStore } from '@/store/betSlipStore';
 import { useWalletStore } from '@/store/walletStore';
+import { useAuthStore } from '@/store/authStore';
 import { X, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getApiUrl } from '@/lib/config';
@@ -14,10 +15,17 @@ export default function GlobalBetSlip() {
   } = useBetSlipStore();
   
   const { balance, fetchBalance, userId } = useWalletStore();
+  const { user, token, isAuthenticated, openAuthModal } = useAuthStore();
 
   if (!isOpen || !selection) return null;
 
   const handlePlaceBet = async () => {
+    if (!isAuthenticated || !token || !user) {
+      setStatus('ERROR', 'Please login to place bets');
+      openAuthModal('LOGIN');
+      return;
+    }
+
     if (balance < stake * 100) {
       setStatus('ERROR', 'Insufficient balance');
       return;
@@ -26,14 +34,13 @@ export default function GlobalBetSlip() {
     setStatus('LOADING');
     
     try {
-      const activeUserId = userId || (typeof window !== 'undefined' ? (localStorage.getItem('windaq_user_id') || 'sbx-usr-normal-001') : 'sbx-usr-normal-001');
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const activeUserId = user.id;
 
       const res = await fetch(getApiUrl('/api/wager/place'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          'Authorization': `Bearer ${token}`,
           'x-user-id': activeUserId
         },
         body: JSON.stringify({

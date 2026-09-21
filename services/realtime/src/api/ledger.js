@@ -11,7 +11,10 @@ const { getWallet, ensureUserAndWallet } = require('../services/walletService');
  */
 router.get('/balance', async (req, res) => {
   try {
-    const userId = req.user?.userId || req.headers['x-user-id'] || 'sbx-usr-normal-001';
+    const userId = req.user?.userId || req.headers['x-user-id'] || (process.env.NODE_ENV === 'test' ? 'TEST_PLAYER_01' : null);
+    if (!userId) {
+      return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', message: 'Authentication required' });
+    }
     const wallet = await getWallet(prisma, userId);
 
     const totalPaise = BigInt(wallet.balance);
@@ -45,7 +48,10 @@ router.get('/balance', async (req, res) => {
  */
 router.get('/transactions', async (req, res) => {
   try {
-    const userId = req.user?.userId || req.headers['x-user-id'] || 'sbx-usr-normal-001';
+    const userId = req.user?.userId || req.headers['x-user-id'] || (process.env.NODE_ENV === 'test' ? 'TEST_PLAYER_01' : null);
+    if (!userId) {
+      return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', message: 'Authentication required' });
+    }
     const { type, status, dateRange, limit = 50, offset = 0 } = req.query;
 
     const wallet = await getWallet(prisma, userId);
@@ -183,7 +189,10 @@ router.get('/transactions', async (req, res) => {
  */
 router.get('/wagers', async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || req.user?.userId || 'sbx-usr-normal-001';
+    const userId = req.user?.userId || req.headers['x-user-id'] || (process.env.NODE_ENV === 'test' ? 'TEST_PLAYER_01' : null);
+    if (!userId) {
+      return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', message: 'Authentication required' });
+    }
     
     // 1. Fetch Sports / Universal Wagers
     const wagers = await prisma.wager.findMany({
@@ -245,7 +254,10 @@ router.get('/wagers', async (req, res) => {
  */
 router.post('/deposit/instant', async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || req.user?.userId || 'sbx-usr-normal-001';
+    const userId = req.user?.userId || req.headers['x-user-id'] || (process.env.NODE_ENV === 'test' ? 'TEST_PLAYER_01' : null);
+    if (!userId) {
+      return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', message: 'Authentication required' });
+    }
     const { amount, utr, method = 'UPI' } = req.body;
 
     const numAmount = parseFloat(amount);
@@ -333,7 +345,11 @@ router.post('/deposit/instant', async (req, res) => {
  */
 router.post('/withdraw/instant', async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || req.user?.userId || 'sbx-usr-normal-001';
+    const userId = req.user?.userId || req.headers['x-user-id'] || (process.env.NODE_ENV === 'test' ? 'TEST_PLAYER_01' : null);
+    if (!userId) {
+      return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', message: 'Authentication required' });
+    }
+
     const { amount, upiId, method = 'UPI' } = req.body;
 
     const numAmount = parseFloat(amount);
@@ -349,6 +365,12 @@ router.post('/withdraw/instant', async (req, res) => {
     const refId = `WDR${Date.now()}${Math.floor(100 + Math.random() * 900)}`;
 
     const result = await prisma.$transaction(async (tx) => {
+      // Check user restriction status
+      const risk = await tx.userRiskProfile.findUnique({ where: { userId } }).catch(() => null);
+      if (risk && risk.isSuspended) {
+        throw new Error('Account is restricted: Financial actions and withdrawals are suspended.');
+      }
+
       const { wallet } = await ensureUserAndWallet(tx, userId);
 
       if (BigInt(wallet.balance) < amountPaise) {

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bonusService = require('../services/bonusService');
+const { requireAuth } = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -8,7 +9,7 @@ BigInt.prototype.toJSON = function () {
   return this.toString();
 };
 
-// 1. List Available Campaigns
+// 1. List Available Campaigns (public)
 router.get('/campaigns', async (req, res) => {
   try {
     const campaigns = await prisma.campaign.findMany({
@@ -20,10 +21,10 @@ router.get('/campaigns', async (req, res) => {
   }
 });
 
-// 2. Activate Campaign
-router.post('/activate', async (req, res) => {
+// 2. Activate Campaign (requires auth)
+router.post('/activate', requireAuth, async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || 'mock-user-id';
+    const userId = req.user?.userId || req.headers['x-user-id'];
     const { campaignId } = req.body;
     
     if (!campaignId) {
@@ -37,10 +38,10 @@ router.post('/activate', async (req, res) => {
   }
 });
 
-// 3. View Active Bonuses for User
-router.get('/active', async (req, res) => {
+// 3. View Active Bonuses for User (requires auth)
+router.get('/active', requireAuth, async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || 'mock-user-id';
+    const userId = req.user?.userId || req.headers['x-user-id'];
     
     const bonuses = await prisma.bonusBalance.findMany({
       where: { userId, status: 'ACTIVE' },

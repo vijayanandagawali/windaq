@@ -66,6 +66,53 @@ const SYNTHETIC_USERS = [
     balancePaise: 2000000n, // ₹20,000.00
     kycStatus: 'APPROVED',
     isSuspended: false,
+  },
+  // --- Prompt #61 Synthetic Sandbox Users for Automated Testing ---
+  {
+    id: 'TEST_PLAYER_01',
+    phone: '+919999910001',
+    role: 'USER',
+    name: 'Test Player 01',
+    balancePaise: 5000000n, // ₹50,000.00
+    kycStatus: 'APPROVED',
+    isSuspended: false,
+  },
+  {
+    id: 'TEST_PLAYER_02',
+    phone: '+919999910002',
+    role: 'USER',
+    name: 'Test Player 02',
+    balancePaise: 2500000n, // ₹25,000.00
+    kycStatus: 'APPROVED',
+    isSuspended: false,
+  },
+  {
+    id: 'TEST_KYC_PENDING',
+    phone: '+919999910003',
+    role: 'USER',
+    name: 'Test KYC Pending',
+    balancePaise: 1000000n, // ₹10,000.00
+    kycStatus: 'PENDING',
+    isSuspended: false,
+  },
+  {
+    id: 'TEST_RESTRICTED',
+    phone: '+919999910004',
+    role: 'USER',
+    name: 'Test Restricted User',
+    balancePaise: 0n,
+    kycStatus: 'REJECTED',
+    isSuspended: true,
+    suspensionReason: 'ACCOUNT_RESTRICTED_FOR_TESTING'
+  },
+  {
+    id: 'TEST_ADMIN',
+    phone: '+919999910005',
+    role: 'SUPER_ADMIN',
+    name: 'Test Admin',
+    balancePaise: 10000000n, // ₹100,000.00
+    kycStatus: 'APPROVED',
+    isSuspended: false,
   }
 ];
 

@@ -7,7 +7,11 @@ const handleBlackjackSockets = (io, socket) => {
   
   socket.on('bj:join', async (data, callback) => {
     try {
-      const userId = data?.userId || socket.user?.id || 'sbx-usr-normal-001';
+      const userId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
+      if (!userId) {
+        if (typeof callback === 'function') callback({ success: false, code: 'AUTH_REQUIRED', message: 'Please log in to play blackjack.' });
+        return;
+      }
       // Create a fresh game for the user or fetch existing if we supported resume
       const game = await BlackjackEngine.createGame(userId);
       socket.join(`bj_${game.id}`);
@@ -24,7 +28,11 @@ const handleBlackjackSockets = (io, socket) => {
 
   socket.on('bj:bet', async (data, callback) => {
     try {
-      const userId = data?.userId || socket.user?.id || 'sbx-usr-normal-001';
+      const userId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
+      if (!userId) {
+        if (typeof callback === 'function') callback({ success: false, code: 'AUTH_REQUIRED', message: 'Authentication required to bet in blackjack.' });
+        return;
+      }
       const betAmount = Number(data?.amount || 50);
       const betPaise = BigInt(Math.floor(betAmount * 100));
 

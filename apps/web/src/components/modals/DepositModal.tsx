@@ -7,11 +7,14 @@ import { useWalletStore } from '@/store/walletStore';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/config';
 
+import { useAuthStore } from '@/store/authStore';
+
 const PRESETS = [500, 1000, 2000, 5000, 10000];
 
 export default function DepositModal() {
   const { isDepositing, setDepositing, deposit, userId } = useWalletStore();
-  const activeUserId = userId || 'sbx-usr-normal-001';
+  const { user, token, isAuthenticated, openAuthModal } = useAuthStore();
+  const activeUserId = user?.id || userId || '';
   const [amount, setAmount] = useState(1000);
   const [utr, setUtr] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,12 +25,20 @@ export default function DepositModal() {
   const [customUpiLink, setCustomUpiLink] = useState('');
 
   React.useEffect(() => {
-    if (isDepositing) {
+    if (isDepositing && !isAuthenticated) {
+      setDepositing(false);
+      openAuthModal('LOGIN');
+      toast.error('Please login to deposit funds');
+      return;
+    }
+
+    if (isDepositing && activeUserId) {
       fetch(getApiUrl('/api/payments/deposit'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': activeUserId
+          'x-user-id': activeUserId,
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ amount, provider: 'MOCK_UPI' })
       })
@@ -40,9 +51,9 @@ export default function DepositModal() {
       })
       .catch(() => {});
     }
-  }, [isDepositing, amount]);
+  }, [isDepositing, amount, isAuthenticated, activeUserId, token, setDepositing, openAuthModal]);
 
-  if (!isDepositing) return null;
+  if (!isDepositing || !isAuthenticated) return null;
 
   // Real mobile UPI intent deep link
   const upiDeepLink = customUpiLink || `upi://pay?pa=${encodeURIComponent(merchantUpi)}&pn=${encodeURIComponent(merchantName)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent('WinDaq_Deposit')}`;
@@ -75,7 +86,8 @@ export default function DepositModal() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': activeUserId
+          'x-user-id': activeUserId,
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ amount, utr: mockUtr, method: app })
       }).catch(() => {});
@@ -102,7 +114,8 @@ export default function DepositModal() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-user-id': activeUserId
+            'x-user-id': activeUserId,
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
           },
           body: JSON.stringify({ amount, utr: cleanUtr, method: 'UPI' })
         }).catch(() => {});

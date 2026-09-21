@@ -4,13 +4,14 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const complianceService = require('../services/complianceService');
 const { requireRole, logAudit } = require('../middleware/AdminRBAC');
+const { requireAuth } = require('../middleware/auth');
 
 // --- USER ROUTES ---
 
 // Submit KYC
-router.post('/kyc', async (req, res) => {
+router.post('/kyc', requireAuth, async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || 'mock-user-id'; // Auth placeholder
+    const userId = req.user?.userId || req.headers['x-user-id'];
     const { jurisdiction, dob, documentData } = req.body;
     
     if (!jurisdiction || !dob || !documentData) {
@@ -25,9 +26,9 @@ router.post('/kyc', async (req, res) => {
 });
 
 // Get or Update RG Limits
-router.post('/rg-limits', async (req, res) => {
+router.post('/rg-limits', requireAuth, async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || 'mock-user-id';
+    const userId = req.user?.userId || req.headers['x-user-id'];
     const { dailyWagerLimit, selfExcludeDays } = req.body;
     
     // Update Wager Limits

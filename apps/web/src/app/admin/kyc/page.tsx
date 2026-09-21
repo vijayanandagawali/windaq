@@ -1,15 +1,23 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { ShieldCheck, CheckCircle2, XCircle, Search, FileText } from 'lucide-react';
+import { getApiUrl } from '@/lib/config';
 
 export default function KYCReviewPage() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const getHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+  };
+
   const fetchProfiles = () => {
     setLoading(true);
-    fetch('http://localhost:4000/api/compliance/admin/kyc', {
-      headers: { 'x-admin-user-id': 'mock-super-admin-id' }
+    fetch(getApiUrl('/api/compliance/admin/kyc'), {
+      headers: getHeaders()
     })
       .then(res => res.json())
       .then(data => {
@@ -26,12 +34,9 @@ export default function KYCReviewPage() {
 
   const handleReview = async (id: string, status: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/compliance/admin/kyc/${id}/review`, {
+      const res = await fetch(getApiUrl(`/api/compliance/admin/kyc/${id}/review`), {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-admin-user-id': 'mock-super-admin-id'
-        },
+        headers: getHeaders(),
         body: JSON.stringify({ status })
       });
       const data = await res.json();

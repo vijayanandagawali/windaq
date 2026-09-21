@@ -70,11 +70,12 @@ export default function GameHubPage() {
   const [loading, setLoading] = useState(false);
 
   const { userId } = useWalletStore();
-  const activeUserId = userId || 'sbx-usr-normal-001';
 
   // Load catalog and recently played from localStorage
   useEffect(() => {
-    fetch(getApiUrl('/api/catalog'), { headers: { 'x-user-id': activeUserId } })
+    const headers: Record<string, string> = {};
+    if (userId) headers['x-user-id'] = userId;
+    fetch(getApiUrl('/api/catalog'), { headers })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -96,7 +97,7 @@ export default function GameHubPage() {
     } catch (e) {
       setRecentSlugs(['aviator', 'colour-prediction', 'slots']);
     }
-  }, [activeUserId]);
+  }, [userId]);
 
   const toggleFavorite = async (e: React.MouseEvent, gameId: string) => {
     e.preventDefault();
@@ -111,11 +112,20 @@ export default function GameHubPage() {
     // Optimistic UI update
     setCatalog({ ...catalog, favorites: newFavs });
 
+    if (!userId) {
+      if (!isCurrentlyFav) {
+        toast.success("Added to Favorites!");
+      } else {
+        toast("Removed from Favorites", { icon: '⭐' });
+      }
+      return;
+    }
+
     try {
       await fetch(getApiUrl('/api/catalog/favorite'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': activeUserId },
-        body: JSON.stringify({ userId: activeUserId, gameId, isFavorite: !isCurrentlyFav })
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
+        body: JSON.stringify({ userId, gameId, isFavorite: !isCurrentlyFav })
       });
       if (!isCurrentlyFav) {
         toast.success("Added to Favorites!");

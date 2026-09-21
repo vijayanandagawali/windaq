@@ -147,6 +147,12 @@ async function getWallet(client, userId, currency = 'INR') {
  * Auto-provisions wallet if missing, preventing "Wallet not found".
  */
 async function placeBet(tx, userId, amountPaise, referenceType, referenceId) {
+  // Check user restriction status
+  const riskProfile = await tx.userRiskProfile.findUnique({ where: { userId } }).catch(() => null);
+  if (riskProfile && riskProfile.isSuspended) {
+    throw new Error("Account is restricted: Betting and financial actions are suspended.");
+  }
+
   const userAccountId = `USER:${userId}`;
   await ensureAccount(tx, userAccountId, 'USER');
 

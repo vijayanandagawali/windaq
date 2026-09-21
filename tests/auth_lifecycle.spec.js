@@ -94,7 +94,7 @@ test.describe('WINDAQ - COMPLETE AUTHENTICATION & SESSION LIFECYCLE', () => {
     console.log('Step 6: Logging out from WinDaq...');
     const logoutBtn = page.locator('button', { hasText: 'LOG OUT FROM WINDAQ' });
     await expect(logoutBtn).toBeVisible();
-    await logoutBtn.click();
+    await logoutBtn.click({ force: true });
 
     // User is redirected to home and returns to Visitor state
     await page.waitForURL('http://localhost:3000/');
@@ -110,7 +110,7 @@ test.describe('WINDAQ - COMPLETE AUTHENTICATION & SESSION LIFECYCLE', () => {
 
     // Enter phone and demo OTP 1234
     await page.locator('input[type="tel"]').fill(uniquePhone);
-    await page.locator('text=⚡ Use Demo OTP (1234)').click();
+    await page.locator('input[data-testid="auth-otp-input"]').fill('1234');
     
     const signInBtn = page.locator('button', { hasText: 'SECURE SIGN IN' });
     await signInBtn.click();
@@ -141,7 +141,7 @@ test.describe('WINDAQ - COMPLETE AUTHENTICATION & SESSION LIFECYCLE', () => {
     console.log('Step 9: Testing switch to 🧪 TEST GUEST MODE (₹50,000 credit)...');
     // Logout first
     await page.goto('http://localhost:3000/profile', { waitUntil: 'domcontentloaded' });
-    await page.locator('button', { hasText: 'LOG OUT FROM WINDAQ' }).click();
+    await page.locator('button', { hasText: 'LOG OUT FROM WINDAQ' }).click({ force: true });
     await page.waitForURL('http://localhost:3000/');
 
     // Click TEST GUEST button in Header

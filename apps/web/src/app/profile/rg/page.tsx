@@ -2,21 +2,24 @@
 import React, { useState } from 'react';
 import { ShieldAlert, TrendingDown, Clock, ShieldBan } from 'lucide-react';
 import { getApiUrl } from '@/lib/config';
-import { useWalletStore } from '@/store/walletStore';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { useAuthStore } from '@/store/authStore';
 
 export default function ResponsibleGamingPage() {
-  const userId = useWalletStore(s => s.userId) || 'sbx-usr-normal-001';
+  const { user, token } = useAuthStore();
   const [dailyWagerLimit, setDailyWagerLimit] = useState('');
   const [selfExcludeDays, setSelfExcludeDays] = useState('');
   const [message, setMessage] = useState('');
 
   const handleUpdate = async () => {
+    if (!user || !token) return;
     try {
       const res = await fetch(getApiUrl('/api/compliance/rg-limits'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': userId
+          'x-user-id': user.id,
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ 
           dailyWagerLimit: dailyWagerLimit ? parseInt(dailyWagerLimit) * 100 : undefined,
@@ -38,7 +41,8 @@ export default function ResponsibleGamingPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 py-8 px-4">
+    <ProtectedRoute title="RESPONSIBLE GAMING">
+      <div className="max-w-4xl mx-auto space-y-8 py-8 px-4">
       <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
         <ShieldAlert className="w-8 h-8 text-emerald-500" />
         <div>
@@ -116,5 +120,6 @@ export default function ResponsibleGamingPage() {
         </div>
       </div>
     </div>
+  </ProtectedRoute>
   );
 }

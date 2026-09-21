@@ -2,15 +2,16 @@ const express = require('express');
 const router = express.Router();
 const paymentService = require('../services/paymentService');
 const { requireRole, logAudit } = require('../middleware/AdminRBAC');
+const { requireAuth } = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // --- CLIENT ROUTES ---
 
 // 1. Create Deposit
-router.post('/deposit', async (req, res) => {
+router.post('/deposit', requireAuth, async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || 'mock-user-id';
+    const userId = req.user?.userId || req.headers['x-user-id'];
     const { amount, provider } = req.body;
     
     if (!amount || !provider) {
@@ -27,9 +28,9 @@ router.post('/deposit', async (req, res) => {
 });
 
 // 2. Request Withdrawal
-router.post('/withdraw', async (req, res) => {
+router.post('/withdraw', requireAuth, async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || 'mock-user-id';
+    const userId = req.user?.userId || req.headers['x-user-id'];
     const { amount, provider, destination } = req.body; // e.g. destination = "user@upi"
     
     if (!amount || !provider || !destination) {

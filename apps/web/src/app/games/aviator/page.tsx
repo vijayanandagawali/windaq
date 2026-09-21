@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { createGameSocket } from '@/lib/config';
 import { audioEngine } from '@/lib/audioEngine';
+import { useAuthStore } from '@/store/authStore';
 
 export default function AviatorGame() {
   const { balance, deductBalance, addWinnings, userId } = useWalletStore();
@@ -227,6 +228,13 @@ export default function AviatorGame() {
 
   // Actions
   const handlePlaceBet = (panel: 1 | 2, amount: number) => {
+    const authState = useAuthStore.getState();
+    if (!authState.isAuthenticated || !authState.user) {
+      toast.error("Please login to place bets!");
+      authState.openAuthModal('LOGIN');
+      return;
+    }
+
     if (balance < amount) {
       toast.error("Insufficient balance!");
       return;
@@ -236,7 +244,7 @@ export default function AviatorGame() {
     
     deductBalance(amount);
     if (socket) {
-      socket.emit('place_bet', { amount, userId: userId || 'sbx-usr-normal-001' });
+      socket.emit('place_bet', { amount, userId: authState.user.id });
     }
     toast.success(`Bet placed: ₹${amount}`);
     
@@ -245,6 +253,7 @@ export default function AviatorGame() {
   };
 
   const handleCashout = (panel: 1 | 2, currentMulti: number) => {
+    const authUser = useAuthStore.getState().user;
     audioEngine.play('win');
     
     // Confetti
@@ -259,12 +268,12 @@ export default function AviatorGame() {
     const winAmount = targetBet.amount * currentMulti;
     addWinnings(winAmount);
 
-    if (socket) {
+    if (socket && authUser) {
       socket.emit('aviator:cashout', { 
         amount: targetBet.amount, 
         multiplier: currentMulti, 
         winAmount, 
-        userId: userId || 'sbx-usr-normal-001' 
+        userId: authUser.id 
       });
     }
 

@@ -278,7 +278,12 @@ async function seedUsersAndWallets() {
     { id: 'sbx-usr-finance-005', phone: '+919999900005', role: 'FINANCE', balancePaise: 10000000n, kyc: 'APPROVED', suspended: false },
     { id: 'sbx-usr-risk-006', phone: '+919999900006', role: 'RISK', balancePaise: 2000000n, kyc: 'APPROVED', suspended: false },
     { id: 'sbx-usr-gameops-007', phone: '+919999900007', role: 'SUPPORT', balancePaise: 2000000n, kyc: 'APPROVED', suspended: false },
-    { id: 'guest-demo-id', phone: '+919999900099', role: 'USER', balancePaise: 1000000n, kyc: 'APPROVED', suspended: false }
+    { id: 'guest-demo-id', phone: '+919999900099', role: 'USER', balancePaise: 1000000n, kyc: 'APPROVED', suspended: false },
+    { id: 'TEST_PLAYER_01', phone: '+919999910001', role: 'USER', balancePaise: 5000000n, kyc: 'APPROVED', suspended: false },
+    { id: 'TEST_PLAYER_02', phone: '+919999910002', role: 'USER', balancePaise: 2500000n, kyc: 'APPROVED', suspended: false },
+    { id: 'TEST_KYC_PENDING', phone: '+919999910003', role: 'USER', balancePaise: 1000000n, kyc: 'PENDING', suspended: false },
+    { id: 'TEST_RESTRICTED', phone: '+919999910004', role: 'USER', balancePaise: 0n, kyc: 'REJECTED', suspended: true },
+    { id: 'TEST_ADMIN', phone: '+919999910005', role: 'SUPER_ADMIN', balancePaise: 10000000n, kyc: 'APPROVED', suspended: false }
   ];
 
   for (const u of USERS) {

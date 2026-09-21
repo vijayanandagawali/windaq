@@ -38,10 +38,12 @@ router.post('/admin/retry/:logId', async (req, res) => {
   }
 });
 
+const { requireAuth } = require('../middleware/auth');
+
 // User: Update Preferences
-router.post('/preferences', async (req, res) => {
+router.post('/preferences', requireAuth, async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || 'mock-user-id';
+    const userId = req.user?.userId || req.headers['x-user-id'];
     const { marketingEmail, marketingSms, transactionalInApp } = req.body;
 
     await ensureUserAndWallet(prisma, userId);

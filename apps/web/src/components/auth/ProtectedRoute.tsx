@@ -64,7 +64,8 @@ export default function ProtectedRoute({ children, requiredRole = 'USER', title 
     );
   }
 
-  if (requiredRole === 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+  const isPrivilegedAdmin = user && ['SUPER_ADMIN', 'FINANCE', 'RISK', 'SUPPORT'].includes(user.role as string);
+  if (requiredRole === 'ADMIN' && !isPrivilegedAdmin) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center max-w-sm mx-auto">
         <div className="w-16 h-16 rounded-3xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-4 shadow-[0_0_25px_rgba(239,68,68,0.2)]">

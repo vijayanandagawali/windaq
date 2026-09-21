@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
+import { getApiUrl } from '@/lib/config';
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -8,9 +9,11 @@ export default function AuditLogsPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/admin/audit', {
-      headers: { 'x-admin-user-id': 'mock-super-admin-id' }
-    })
+    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    fetch(getApiUrl('/api/admin/audit'), { headers })
       .then(res => res.json())
       .then(data => {
         if (data.success) {

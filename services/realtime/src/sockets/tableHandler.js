@@ -61,7 +61,12 @@ function handleTableSockets(socket, io, engines) {
 
   // Handle Bet placement
   socket.on('tg:bet', async (data, callback) => {
-    const { userId = socket.user?.id || 'guest', gameId, room = 'Standard', market, amount, idempotencyKey } = data;
+    const resolvedUserId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
+    if (!resolvedUserId) {
+      return callback({ success: false, code: 'AUTH_REQUIRED', message: 'You must be logged in to place bets.' });
+    }
+    const userId = resolvedUserId;
+    const { gameId, room = 'Standard', market, amount, idempotencyKey } = data;
     const betAmount = BigInt(Math.floor(amount * 100)); // converting to paise
 
     // Check if game or variant is operational (admin controls)

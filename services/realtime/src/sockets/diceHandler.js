@@ -27,7 +27,12 @@ function handleDiceSockets(socket, io, engines) {
   });
 
   socket.on('dice:bet', async (data, callback) => {
-    const { userId, room, market, amount } = data;
+    const resolvedUserId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
+    if (!resolvedUserId) {
+      return callback({ success: false, code: 'AUTH_REQUIRED', message: 'You must be logged in to place dice bets.' });
+    }
+    const userId = resolvedUserId;
+    const { room, market, amount } = data;
     const betAmount = BigInt(amount * 100); // converting to paise
 
     if (betAmount < 1000n) { // Minimum 10 INR

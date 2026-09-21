@@ -5,13 +5,19 @@ import Link from 'next/link';
 import { ArrowRightLeft, ShieldCheck, AlertTriangle, FileText, Download, CheckCircle, XCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { getApiUrl } from '@/lib/config';
+
 export default function LedgerDashboard() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [invariants, setInvariants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/ledger?limit=100')
+    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    fetch(getApiUrl('/api/ledger?limit=100'), { headers })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
