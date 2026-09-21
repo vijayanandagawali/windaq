@@ -39,6 +39,7 @@ const notificationsRouter = require('./src/api/notifications');
 const historyRouter = require('./src/api/history');
 const adminRealtimeRouter = require('./src/api/adminRealtime');
 const adminTablesRouter = require('./src/api/adminTables');
+const resultHistoryRouter = require('./src/api/resultHistoryApi');
 const { tableManager } = require('./src/services/tableGames/VirtualTableManager');
 const RoundRegistry = require('./src/services/engine/RoundRegistry');
 
@@ -110,6 +111,7 @@ app.use('/api/ledger', requireAuth, ledgerRouter);
 app.use('/api/wager', requireAuth, wagerRouter);
 app.use('/api/sports/admin', requireAuth, sportsAdminRouter);
 app.use('/api/fairness', fairnessRouter);
+app.use('/api', resultHistoryRouter);
 app.use('/api/admin/games', requireAuth, adminGamesRouter);
 app.use('/api/admin', requireAuth, adminRouter);
 app.use('/api/compliance', complianceRouter);

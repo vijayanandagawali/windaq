@@ -200,6 +200,40 @@ export default function DragonTigerGamePage() {
       }));
     });
 
+    // Prompt #65: Authoritative Result History Update Listener
+    const handleHistoryUpdated = (item: any) => {
+      if (!item || !item.roundId) return;
+      setTableState(prev => {
+        // Prevent duplicate insertion
+        const exists = prev.history.some(h => h.roundId === item.roundId || (h as any).resultId === item.resultId);
+        if (exists) return prev;
+
+        const winner = item.resultValue || (item.resultMetadata?.winner) || (item.result?.winner) || 'DRAGON';
+        const newEntry: any = {
+          roundId: item.roundId,
+          resultId: item.resultId,
+          result: {
+            winner,
+            dragon: item.resultMetadata?.dragonCard || null,
+            tiger: item.resultMetadata?.tigerCard || null
+          },
+          resultTime: item.resultTimestamp || new Date().toISOString(),
+          serverSeedHash: item.commitmentHash,
+          serverSeed: item.serverSeed,
+          clientSeed: item.clientSeed,
+          verificationStatus: item.verificationStatus || 'VERIFIED'
+        };
+        return {
+          ...prev,
+          history: [newEntry, ...prev.history].slice(0, 50)
+        };
+      });
+    };
+
+    s.on('RESULT_HISTORY_UPDATED', handleHistoryUpdated);
+    s.on('round:history_updated', handleHistoryUpdated);
+    s.on('tg:history_updated', handleHistoryUpdated);
+
     // Mobile background/foreground and network restoration sync
     const handleSync = () => {
       console.log('[DragonTiger] Resuming state after background or reconnect');

@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const adminGameConfigService = require('../adminGameConfigService');
+const { resultHistoryService } = require('../history/ResultHistoryService');
 
 /**
  * Universal Game Round Engine Canonical Lifecycle Phases (Prompt #62)
@@ -365,6 +366,15 @@ class UniversalRoundEngine {
     this.emitEvent('ROUND_CREATED', createPayload);
     this.emitEvent('round:created', createPayload);
 
+    if (resultHistoryService && typeof resultHistoryService.logTimelineEvent === 'function') {
+      resultHistoryService.logTimelineEvent(this.roundId, 'ROUND_CREATED', {
+        gameId: this.gameId,
+        variantId: this.room,
+        sequenceNumber: this.sequenceNumber.toString(),
+        serverSeedHash: this.serverSeedHash
+      });
+    }
+
     this.setPhase(UNIVERSAL_PHASES.BETTING_OPEN);
   }
 
@@ -378,6 +388,14 @@ class UniversalRoundEngine {
     this.phaseTimeLeft = duration;
     this.phaseStartedAt = Date.now();
     this.phaseEndsAt = this.phaseStartedAt + (duration * 1000);
+
+    if (this.roundId && resultHistoryService && typeof resultHistoryService.logTimelineEvent === 'function') {
+      resultHistoryService.logTimelineEvent(this.roundId, phase, {
+        phaseEndsAt: this.phaseEndsAt,
+        totalPhaseDuration: this.totalPhaseDuration,
+        serverTime: Date.now()
+      });
+    }
 
     const isRevealed = [
       UNIVERSAL_PHASES.RESULT_REVEAL,
@@ -604,6 +622,55 @@ class UniversalRoundEngine {
             settlementStatus: 'SETTLED'
           });
           if (this.history.length > 50) this.history.pop();
+
+          // Prompt #65: Authoritative Universal Result Record & Realtime Event
+          try {
+            if (resultHistoryService && typeof resultHistoryService.recordResult === 'function') {
+              const historyRecord = await resultHistoryService.recordResult({
+                roundId: this.roundId,
+                gameId: this.gameId,
+                variantId: this.room,
+                tableId: this.tableId || `${this.gameId}-${this.room}`,
+                result: this.currentResult,
+                resultSummary: this.resultSummary,
+                serverSeed: this.serverSeed,
+                serverSeedHash: this.serverSeedHash,
+                clientSeed: this.clientSeed,
+                nonce: this.nonce !== undefined ? this.nonce : 0,
+                roundSequence: this.sequenceNumber,
+                configurationVersion: 1,
+                settlementStatus: 'SETTLED',
+                totalStakePaise: this.totalStakePaise,
+                totalPayoutPaise: this.totalPayoutPaise,
+                playerCount: (this.playerCount || 0) + (this.simulatedPlayerCount || 0)
+              });
+
+              // Safe realtime event: RESULT_HISTORY_UPDATED
+              // Contains only public, non-secret result and verification reference
+              const publicHistoryPayload = {
+                resultId: historyRecord.id || historyRecord.resultId,
+                roundId: this.roundId,
+                gameId: this.gameId,
+                variantId: this.room,
+                tableId: this.tableId || `${this.gameId}-${this.room}`,
+                resultType: historyRecord.resultType,
+                resultValue: historyRecord.resultValue,
+                resultSummary: historyRecord.resultSummary,
+                resultMetadata: historyRecord.resultMetadata,
+                resultTimestamp: historyRecord.resultTimestamp,
+                roundSequence: historyRecord.roundSequence ? historyRecord.roundSequence.toString() : '1',
+                verificationStatus: historyRecord.verificationStatus || 'VERIFIED',
+                commitmentHash: historyRecord.commitmentHash,
+                settlementStatus: historyRecord.settlementStatus
+              };
+
+              this.emitEvent('RESULT_HISTORY_UPDATED', publicHistoryPayload);
+              this.emitEvent('round:history_updated', publicHistoryPayload);
+              this.emitEvent('tg:history_updated', publicHistoryPayload);
+            }
+          } catch (histErr) {
+            console.error(`[UniversalRoundEngine] Error recording result history for ${this.roundId}:`, histErr.message);
+          }
         }
 
         // Finalize DB GameRound record

@@ -11,6 +11,7 @@ import {
   Coins,
   Gamepad2,
   Layers,
+  History,
   LogOut
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -56,6 +57,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
             <Link href="/admin/games" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
               <Gamepad2 className="w-4 h-4 text-emerald-400" /> Game Control
+            </Link>
+            <Link href="/admin/history" className="flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300 group">
+              <div className="flex items-center gap-3">
+                <History className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" /> Result History & Audits
+              </div>
+              <span className="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">AUDIT</span>
             </Link>
             
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6 px-2">Finance</div>

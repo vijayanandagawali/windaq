@@ -953,12 +953,63 @@ model GameRound {
   currentLiabilityPaise BigInt    @default(0)
   isSandbox             Boolean   @default(false)
   
+  resultHistory         ResultHistory?
+
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
   @@index([gameId, variantId, status])
   @@index([gameId, completedAt])
   @@index([serverSeedHash])
+}
+
+// --- UNIVERSAL IMMUTABLE RESULT HISTORY & VERIFICATION ENGINE (Prompt #65) ---
+
+model ResultHistory {
+  id                    String            @id @default(uuid())
+  roundId               String            @unique
+  gameId                String
+  variantId             String            @default("default")
+  tableId               String?
+  resultType            String            // 'ROULETTE', 'CARD', 'MULTIPLIER', 'COLOUR', 'DICE', 'LOTTO', 'SLOT', 'CUSTOM'
+  resultValue           String            // Clean display value, e.g. "17 RED", "DRAGON", "ANDAR", "4.82x", "6,12,18,27,33,41"
+  resultSummary         String?
+  resultMetadata        Json              // Full structured payload e.g. { winningNumber, winningColor, cards, multiplier, dice, ... }
+  resultTimestamp       DateTime          @default(now())
+  roundSequence         BigInt            @default(1)
+  configurationVersion  Int               @default(1)
+  commitmentHash        String            // SHA-256 pre-commitment hash
+  serverSeed            String?
+  clientSeed            String?
+  nonce                 Int               @default(1)
+  verificationReference String?           // e.g. /api/results/{id}/verify
+  settlementStatus      String            @default("SETTLED") // 'PENDING', 'SETTLED', 'VOID', 'CORRECTED'
+  isCorrected           Boolean           @default(false)
+  createdAt             DateTime          @default(now())
+
+  round                 GameRound?        @relation(fields: [roundId], references: [id])
+  corrections           ResultCorrection[]
+
+  @@index([gameId, variantId, resultTimestamp])
+  @@index([gameId, resultTimestamp])
+  @@index([commitmentHash])
+}
+
+model ResultCorrection {
+  id                    String            @id @default(uuid())
+  resultHistoryId       String
+  resultHistory         ResultHistory     @relation(fields: [resultHistoryId], references: [id], onDelete: Cascade)
+  roundId               String
+  originalResult        Json
+  newResult             Json
+  correctionReason      String
+  authorizedActor       String            // Admin username or ID
+  ipAddress             String?
+  auditEventId          String?
+  createdAt             DateTime          @default(now())
+
+  @@index([roundId])
+  @@index([resultHistoryId])
 }
 
 

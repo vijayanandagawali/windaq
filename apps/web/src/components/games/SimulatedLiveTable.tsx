@@ -11,6 +11,8 @@ import { audioEngine } from '@/lib/audioEngine';
 import { useAudioStore } from '@/store/audioStore';
 import WinLossCelebration from './WinLossCelebration';
 import ResultHistoryDrawer from './ResultHistoryDrawer';
+import RoundDetailModal from './history/RoundDetailModal';
+import type { HistoryItem } from './history/GameRoadmapStrip';
 import AnimatedCard from './animation/AnimatedCard';
 import AnimatedChipFlight from './animation/AnimatedChipFlight';
 import { VirtualDealerStage } from './VirtualDealerStage';
@@ -23,9 +25,10 @@ export interface TableCard {
 }
 
 export interface DragonTigerResult {
-  dragon: TableCard;
-  tiger: TableCard;
-  winner: 'DRAGON' | 'TIGER' | 'TIE';
+  dragon?: TableCard | any;
+  tiger?: TableCard | any;
+  winner: 'DRAGON' | 'TIGER' | 'TIE' | string;
+  [key: string]: any;
 }
 
 export interface VirtualDealer {
@@ -39,7 +42,7 @@ export interface VirtualDealer {
 }
 
 export interface SimulatedLiveState {
-  roundId?: string;
+  roundId: string;
   phase: 'CREATED' | 'BETTING_OPEN' | 'BETTING_CLOSED' | 'PLAYING' | 'DEALING' | 'RESULT' | 'SETTLEMENT' | 'COMPLETED' | 'NEXT_ROUND' | string;
   phaseTimeLeft: number;
   totalPhaseDuration: number;
@@ -50,7 +53,7 @@ export interface SimulatedLiveState {
   serverSeedHash?: string;
   serverSeed?: string | null;
   clientSeed?: string | null;
-  history: Array<{ roundId: string; result: DragonTigerResult; resultTime: string | Date }>;
+  history: Array<{ roundId: string; result: DragonTigerResult; resultTime: string | Date; [key: string]: any }>;
   myBets?: Record<string, number>;
   isMaintenance?: boolean;
   maintenanceMessage?: string;
@@ -94,6 +97,7 @@ export default function SimulatedLiveTable({
   const [showProvablyFair, setShowProvablyFair] = useState<boolean>(false);
   const [showRoadmap, setShowRoadmap] = useState<boolean>(true);
   const [showResultHistory, setShowResultHistory] = useState<boolean>(false);
+  const [selectedRoundDetail, setSelectedRoundDetail] = useState<HistoryItem | null>(null);
   const [celebration, setCelebration] = useState<{
     status: 'IDLE' | 'WON' | 'LOST';
     amount: number;
@@ -724,21 +728,45 @@ export default function SimulatedLiveTable({
               state.history.slice(0, 18).map((h, i) => {
                 const w = h.result?.winner;
                 return (
-                  <div 
+                  <button 
                     key={h.roundId || i}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shadow-sm shrink-0 border ${
-                      w === 'DRAGON' ? 'bg-red-600 border-red-400 text-white' :
-                      w === 'TIGER' ? 'bg-yellow-500 border-yellow-300 text-black' :
-                      'bg-emerald-600 border-emerald-400 text-white'
+                    data-testid="roadmap-bead-bubble"
+                    onClick={() => {
+                      setSelectedRoundDetail({
+                        resultId: (h as any).resultId || `RES-${h.roundId}`,
+                        roundId: h.roundId,
+                        gameId: 'dragon-tiger',
+                        variantId: 'Standard',
+                        tableId: 'DT-01',
+                        resultType: 'CARD',
+                        resultValue: w || 'DRAGON',
+                        resultSummary: w,
+                        resultTimestamp: h.resultTime,
+                        commitmentHash: (h as any).serverSeedHash || state.serverSeedHash,
+                        serverSeed: (h as any).serverSeed || state.serverSeed,
+                        clientSeed: (h as any).clientSeed || state.clientSeed,
+                        settlementStatus: 'SETTLED'
+                      });
+                    }}
+                    className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shadow-sm shrink-0 border transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer ${
+                      w === 'DRAGON' ? 'bg-red-600 border-red-400 text-white hover:bg-red-500' :
+                      w === 'TIGER' ? 'bg-yellow-500 border-yellow-300 text-black hover:bg-yellow-400' :
+                      'bg-emerald-600 border-emerald-400 text-white hover:bg-emerald-500'
                     }`}
-                    title={`${w} (${new Date(h.resultTime).toLocaleTimeString()})`}
+                    title={`Round ${h.roundId}: ${w} — Click for Provably Fair Verification`}
                   >
                     {w ? w[0] : '-'}
-                  </div>
+                  </button>
                 );
               })
             )}
           </div>
+        </div>
+
+        {/* Regulatory & Non-Predictive Disclaimer (Prompt #65 Section 9) */}
+        <div className="relative z-10 px-4 py-1.5 bg-black/90 border-b border-white/10 flex items-center justify-between text-[10px] text-white/50">
+          <span>Historical outcomes only • Independent random trials • Not a predictive system</span>
+          <span className="hidden sm:inline font-mono text-[10px] text-amber-400/80">Click any bead to verify cryptographic proof</span>
         </div>
 
         {/* Interactive Betting Layout Grid */}
@@ -984,6 +1012,13 @@ export default function SimulatedLiveTable({
         variantId="Standard"
         isOpen={showResultHistory}
         onClose={() => setShowResultHistory(false)}
+      />
+
+      {/* Provably Fair Round Verification Modal (Prompt #65) */}
+      <RoundDetailModal
+        round={selectedRoundDetail}
+        isOpen={!!selectedRoundDetail}
+        onClose={() => setSelectedRoundDetail(null)}
       />
     </div>
   );

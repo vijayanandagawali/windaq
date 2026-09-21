@@ -11,6 +11,8 @@ import RouletteWheel from '@/components/games/RouletteWheel';
 import { audioEngine } from '@/lib/audioEngine';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
 import ResultHistoryDrawer from '@/components/games/ResultHistoryDrawer';
+import RoundDetailModal from '@/components/games/history/RoundDetailModal';
+import type { HistoryItem } from '@/components/games/history/GameRoadmapStrip';
 import AnimatedChipFlight from '@/components/games/animation/AnimatedChipFlight';
 
 const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
@@ -32,6 +34,7 @@ export default function RouletteGame() {
   const [resultNumber, setResultNumber] = useState<number | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [showHistoryDrawer, setShowHistoryDrawer] = useState<boolean>(false);
+  const [selectedRoundDetail, setSelectedRoundDetail] = useState<HistoryItem | null>(null);
 
   // Betting State
   const [selectedChips, setSelectedChips] = useState<number>(10);
@@ -154,7 +157,27 @@ export default function RouletteGame() {
       // Server-authoritative result arrives -> Wheel targets and decelerates into this exact pocket
       setGameState((p: any) => ({ ...p, status: 'RESULT' }));
       setResultNumber(data.resultNumber);
-      setHistory(prev => [{ resultNumber: data.resultNumber, resultTime: new Date() }, ...prev].slice(0, 15));
+      setHistory(prev => [{ resultNumber: data.resultNumber, resultTime: new Date() }, ...prev].slice(0, 25));
+    });
+
+    s.on('RESULT_HISTORY_UPDATED', (data: any) => {
+      if (!data || !data.roundId) return;
+      const num = data.resultMetadata?.winningNumber !== undefined ? data.resultMetadata.winningNumber : parseInt(data.resultValue.match(/\d+/)?.[0] || '0');
+      setHistory(prev => {
+        const exists = prev.some(h => h.roundId === data.roundId || (h.resultId && h.resultId === data.resultId));
+        if (exists) return prev;
+        return [{
+          resultId: data.resultId,
+          roundId: data.roundId,
+          resultNumber: num,
+          resultValue: data.resultValue,
+          color: data.resultMetadata?.winningColor || (num === 0 ? 'green' : (RED_NUMBERS.includes(num) ? 'red' : 'black')),
+          commitmentHash: data.commitmentHash,
+          serverSeed: data.serverSeed,
+          clientSeed: data.clientSeed,
+          resultTime: data.resultTimestamp || new Date()
+        }, ...prev].slice(0, 30);
+      });
     });
     
     s.on('roulette:live_bet', (data: any) => {
@@ -341,11 +364,38 @@ export default function RouletteGame() {
       <div className="bg-black/50 border-b border-white/5 py-2 px-4 flex gap-2 overflow-x-auto scrollbar-hide items-center h-12 justify-between">
         <div className="flex items-center gap-2 overflow-x-auto">
           <span className="text-xs text-gray-400 font-bold uppercase mr-1 whitespace-nowrap">History:</span>
-          {history.map((h, i) => (
-            <div key={i} className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${getNumberColorClass(h.resultNumber)}`}>
-              {h.resultNumber}
-            </div>
-          ))}
+          {history.length === 0 ? (
+            <span className="text-xs text-gray-500 italic">No completed spins yet...</span>
+          ) : (
+            history.map((h, i) => {
+              const num = h.resultNumber !== undefined ? h.resultNumber : (parseInt(h.resultValue?.match(/\d+/)?.[0] || '0'));
+              const col = h.color || (num === 0 ? 'green' : (RED_NUMBERS.includes(num) ? 'red' : 'black'));
+              return (
+                <button 
+                  key={h.resultId || i} 
+                  onClick={() => setSelectedRoundDetail({
+                    resultId: h.resultId || `RES-ROU-${i}`,
+                    roundId: h.roundId || `ROU-${Date.now()}-${i}`,
+                    gameId: 'roulette',
+                    variantId: 'Auto',
+                    tableId: 'roulette-Auto',
+                    resultType: 'ROULETTE',
+                    resultValue: `${num} ${col.toUpperCase()}`,
+                    resultSummary: `${num}`,
+                    resultTimestamp: h.resultTime || new Date(),
+                    commitmentHash: h.commitmentHash,
+                    serverSeed: h.serverSeed,
+                    clientSeed: h.clientSeed,
+                    settlementStatus: 'SETTLED'
+                  })}
+                  className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-transform hover:scale-110 active:scale-95 cursor-pointer ${getNumberColorClass(num)}`}
+                  title={`Result: ${num} ${col.toUpperCase()} — Click for Provably Fair Verification`}
+                >
+                  {num}
+                </button>
+              );
+            })
+          )}
         </div>
         <button
           onClick={() => setShowHistoryDrawer(true)}
@@ -354,6 +404,12 @@ export default function RouletteGame() {
           <History size={12} className="text-emerald-400" />
           Official History
         </button>
+      </div>
+
+      {/* Non-Predictive Disclaimer */}
+      <div className="bg-black/70 border-b border-white/5 px-4 py-1 flex items-center justify-between text-[10px] text-gray-500">
+        <span>Historical outcomes only • Independent random trials • Not a predictive system</span>
+        <span className="hidden sm:inline font-mono text-[10px] text-emerald-400/70">Click any spin for cryptographic proof</span>
       </div>
 
       {/* Betting Grid */}
@@ -466,6 +522,11 @@ export default function RouletteGame() {
         variantId="Auto"
         isOpen={showHistoryDrawer}
         onClose={() => setShowHistoryDrawer(false)}
+      />
+      <RoundDetailModal
+        round={selectedRoundDetail}
+        isOpen={!!selectedRoundDetail}
+        onClose={() => setSelectedRoundDetail(null)}
       />
     </div>
   );

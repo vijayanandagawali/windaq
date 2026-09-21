@@ -56,8 +56,12 @@ export default function ResultHistoryDrawer({
   const fetchHistory = async (count: number) => {
     setLoading(true);
     try {
-      const url = getApiUrl(`/api/history/${gameId}?limit=${count}&variantId=${variantId}`);
-      const res = await fetch(url);
+      let url = getApiUrl(`/api/games/${gameId}/history?limit=${count}&variantId=${variantId}`);
+      let res = await fetch(url);
+      if (!res.ok) {
+        url = getApiUrl(`/api/history/${gameId}?limit=${count}&variantId=${variantId}`);
+        res = await fetch(url);
+      }
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.history)) {
