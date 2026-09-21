@@ -241,18 +241,18 @@ export default function LottoGame() {
              <div className="absolute bottom-0 w-10 h-3 bg-gradient-to-t from-cyan-500 to-transparent rounded-t-full opacity-60" />
            </div>
 
-           {/* Drawn Numbers Display Chute */}
-           <div className="mt-5 flex flex-col items-center justify-center">
-             {status === 'RESULT' && (
-               <div className="mb-2 text-[11px] font-mono uppercase tracking-widest text-amber-300 font-bold bg-black/60 px-3 py-0.5 rounded-full border border-amber-500/30">
-                 {revealedBalls.length < 6 
-                   ? `Extracting Ball ${revealedBalls.length + 1} of 6...` 
-                   : 'Draw Complete • Official Winning Numbers'}
-               </div>
-             )}
-             <div className="flex gap-2 h-16 items-center justify-center">
-               <AnimatePresence>
-                 {revealedBalls.map((num, idx) => {
+            {/* Drawn Numbers Display Chute */}
+            <div className="mt-5 flex flex-col items-center justify-center">
+              {status === 'RESULT' && (
+                <div className="mb-2 text-[11px] font-mono uppercase tracking-widest text-amber-300 font-bold bg-black/60 px-3 py-0.5 rounded-full border border-amber-500/30">
+                  {(revealedBalls?.length || 0) < 6 
+                    ? `Extracting Ball ${(revealedBalls?.length || 0) + 1} of 6...` 
+                    : 'Draw Complete • Official Winning Numbers'}
+                </div>
+              )}
+              <div className="flex gap-2 h-16 items-center justify-center">
+                <AnimatePresence>
+                  {(revealedBalls || []).map((num, idx) => {
                    const colorClass = 
                      num <= 10 ? 'from-amber-300 to-yellow-500 text-black border-yellow-200' :
                      num <= 20 ? 'from-blue-400 to-blue-600 text-white border-blue-200' :
@@ -272,7 +272,7 @@ export default function LottoGame() {
                      </motion.div>
                    );
                  })}
-                 {revealedBalls.length === 0 && status === 'RESULT' && (
+                  {(revealedBalls?.length || 0) === 0 && status === 'RESULT' && (
                    <span className="text-cyan-400 font-bold uppercase tracking-widest text-xs animate-pulse">
                      Pneumatic chamber extracting balls...
                    </span>
@@ -345,51 +345,51 @@ export default function LottoGame() {
 
           {/* Sidebar: Tickets & History */}
           <div className="w-full lg:w-80 flex flex-col gap-4">
-             {/* My Tickets */}
-             <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-               <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                 <Ticket size={18} className="text-neon-mint" /> Active Tickets ({myTickets.length})
-               </h3>
-               <div className="space-y-2 max-h-48 overflow-y-auto">
-                 {myTickets.length === 0 ? (
-                   <p className="text-sm text-gray-500 text-center py-4">No tickets for this draw.</p>
-                 ) : (
-                   myTickets.map(t => (
-                     <div key={t.id} className="bg-black/50 rounded-lg p-3 border border-white/5 flex gap-1 justify-center">
-                       {t.numbers.map(n => (
-                         <div key={n} className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white">
-                           {n}
-                         </div>
-                       ))}
-                     </div>
-                   ))
-                 )}
-               </div>
-             </div>
+              {/* My Tickets */}
+              <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+                <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                  <Ticket size={18} className="text-neon-mint" /> Active Tickets ({myTickets?.length || 0})
+                </h3>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {(myTickets?.length || 0) === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-4">No tickets for this draw.</p>
+                  ) : (
+                    (myTickets || []).map(t => (
+                      <div key={t.id} className="bg-black/50 rounded-lg p-3 border border-white/5 flex gap-1 justify-center">
+                        {(t?.numbers || []).map(n => (
+                          <div key={n} className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white">
+                            {n}
+                          </div>
+                        ))}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
 
              {/* History */}
              <div className="bg-white/5 rounded-2xl p-4 border border-white/10 flex-1">
                <h3 className="text-white font-bold mb-4 flex items-center gap-2">
                  <Clock size={18} className="text-gray-400" /> Recent Results
                </h3>
-               <div className="space-y-3">
-                 {history.length === 0 ? (
-                   <p className="text-sm text-gray-500">Loading history...</p>
-                 ) : (
-                   history.map((draw: any) => (
-                     <div key={draw.id} className="flex flex-col gap-1 border-b border-white/5 pb-2">
-                       <span className="text-xs text-gray-400">{new Date(draw.resultTime).toLocaleTimeString()}</span>
-                       <div className="flex gap-1">
-                         {draw.winningNumbers.map((n: number) => (
-                           <div key={n} className="w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center text-xs font-bold border border-yellow-500/30">
-                             {n}
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                   ))
-                 )}
-               </div>
+                <div className="space-y-3">
+                  {(history?.length || 0) === 0 ? (
+                    <p className="text-sm text-gray-500">Loading history...</p>
+                  ) : (
+                    (history || []).map((draw: any, idx: number) => (
+                      <div key={draw?.id || idx} className="flex flex-col gap-1 border-b border-white/5 pb-2">
+                        <span className="text-xs text-gray-400">{draw?.resultTime ? new Date(draw.resultTime).toLocaleTimeString() : 'Recent Draw'}</span>
+                        <div className="flex gap-1">
+                          {(draw?.winningNumbers || []).map((n: number) => (
+                            <div key={n} className="w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center text-xs font-bold border border-yellow-500/30">
+                              {n}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
              </div>
           </div>
 

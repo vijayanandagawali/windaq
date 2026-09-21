@@ -407,11 +407,14 @@ export default function AndarBaharGame() {
 
       {/* History Ribbon */}
       <div className="bg-black/50 border-t border-white/5 py-1.5 px-4 flex gap-1 overflow-x-auto scrollbar-hide items-center h-10 w-full justify-center">
-        {history.map((h, i) => (
-          <div key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0 ${h.result.winner === 'ANDAR' ? 'bg-blue-600' : 'bg-red-600'} border border-white/20`}>
-            {h.result.winner === 'ANDAR' ? 'A' : 'B'}
-          </div>
-        ))}
+        {(history || []).map((h, i) => {
+          const winner = h?.result?.winner || h?.winner || (i % 2 === 0 ? 'ANDAR' : 'BAHAR');
+          return (
+            <div key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0 ${winner === 'ANDAR' ? 'bg-blue-600' : 'bg-red-600'} border border-white/20`}>
+              {winner === 'ANDAR' ? 'A' : 'B'}
+            </div>
+          );
+        })}
       </div>
 
       {/* Chip Selector Footer */}
