@@ -10,6 +10,7 @@ import {
   CreditCard,
   Coins,
   Gamepad2,
+  Layers,
   LogOut
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -46,6 +47,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <ActivitySquare className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" /> Realtime Control
               </div>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            </Link>
+            <Link href="/admin/tables" className="flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300 group">
+              <div className="flex items-center gap-3">
+                <Layers className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" /> Live Tables (Dealers)
+              </div>
+              <span className="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">AUTO</span>
             </Link>
             <Link href="/admin/games" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
               <Gamepad2 className="w-4 h-4 text-emerald-400" /> Game Control

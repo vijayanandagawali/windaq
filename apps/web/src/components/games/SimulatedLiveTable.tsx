@@ -13,6 +13,8 @@ import WinLossCelebration from './WinLossCelebration';
 import ResultHistoryDrawer from './ResultHistoryDrawer';
 import AnimatedCard from './animation/AnimatedCard';
 import AnimatedChipFlight from './animation/AnimatedChipFlight';
+import { VirtualDealerStage } from './VirtualDealerStage';
+import { SimulatedOpponentBadge } from './SimulatedOpponentBadge';
 
 // Types
 export interface TableCard {
@@ -27,12 +29,13 @@ export interface DragonTigerResult {
 }
 
 export interface VirtualDealer {
+  dealerId?: string;
   name: string;
-  title: string;
-  tableId: string;
-  avatar: string;
-  speech: string;
-  action: 'INVITING_BETS' | 'CLOSING_BETS' | 'DEALING' | 'ANNOUNCING_RESULT' | 'SETTLING' | 'PREPARING_NEXT';
+  title?: string;
+  tableId?: string;
+  avatar?: string;
+  speech?: string;
+  action?: string;
 }
 
 export interface SimulatedLiveState {
@@ -362,21 +365,21 @@ export default function SimulatedLiveTable({
   }, [state.history]);
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#070b12] text-white font-sans overflow-hidden select-none relative">
+    <div className="flex flex-col h-full w-full max-w-[100vw] bg-[#070b12] text-white font-sans overflow-hidden select-none relative">
       
       {/* Top HUD: Transparent Simulation Header + Camera & Sound Controls */}
-      <div className="bg-black/60 border-b border-white/10 px-4 py-2 flex items-center justify-between z-30 backdrop-blur-md">
+      <div className="bg-black/60 border-b border-white/10 px-2 sm:px-4 py-2 flex items-center justify-between z-30 backdrop-blur-md max-w-[100vw] overflow-x-hidden">
         
         {/* Left: Simulated Live Transparency Label */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 px-2 sm:px-2.5 py-1 rounded-full">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400">
+            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-400">
               SIMULATED LIVE TABLE
             </span>
           </div>
           {state.roundId && (
-            <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full text-[11px] font-mono text-amber-300">
+            <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-mono text-amber-300">
               <span className="text-white/40">ROUND:</span>
               <span className="font-bold">{state.roundId}</span>
             </div>
@@ -387,10 +390,10 @@ export default function SimulatedLiveTable({
         </div>
 
         {/* Right: Camera Switcher + Mute + Provably Fair */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           
-          {/* Camera Perspective Angle Selector */}
-          <div className="flex items-center bg-white/5 border border-white/10 rounded-lg p-0.5">
+          {/* Camera Perspective Angle Selector (Visible on tablet/desktop) */}
+          <div className="hidden sm:flex items-center bg-white/5 border border-white/10 rounded-lg p-0.5">
             <button
               onClick={() => setCameraAngle('studio')}
               className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1 ${
@@ -493,85 +496,41 @@ export default function SimulatedLiveTable({
         <div className="absolute inset-0 bg-gradient-to-b from-[#120810] via-[#0b1320] to-[#060a10] pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,_rgba(217,119,6,0.15),_transparent_70%)] pointer-events-none" />
 
-        {/* Dealer Stage & Avatar Area */}
+        {/* Virtual Dealer Stage */}
         <div className="relative pt-2 pb-1 flex flex-col items-center z-10">
-          
-          {/* Dealer Speech Bubble */}
-          <motion.div 
-            key={state.dealer?.speech}
-            initial={{ opacity: 0, y: 6, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="mb-2 max-w-md bg-black/80 border border-amber-500/40 shadow-[0_4px_20px_rgba(0,0,0,0.6)] px-4 py-1.5 rounded-2xl flex items-center gap-2 backdrop-blur-md"
-          >
-            <Sparkles size={14} className="text-amber-400 shrink-0 animate-pulse" />
-            <span className="text-xs sm:text-sm font-medium text-amber-100 text-center">
-              {state.dealer?.speech || "Welcome to Simulated Live Dragon Tiger."}
-            </span>
-          </motion.div>
+          <VirtualDealerStage
+            dealerId={state.dealer?.dealerId || 'dealer_maya'}
+            name={state.dealer?.name || 'Virtual Maya'}
+            title={state.dealer?.title || 'Virtual Live Dealer'}
+            avatar={state.dealer?.avatar || 'maya'}
+            action={state.dealer?.action || 'IDLE'}
+            speech={state.dealer?.speech || 'Welcome to Simulated Live Dragon Tiger.'}
+            phase={state.phase}
+            cameraAngle={cameraAngle}
+            voiceEnabled={soundEnabled}
+          />
+        </div>
 
-          {/* Virtual Dealer Podium */}
-          <div className="flex items-center gap-4">
-            
-            {/* Animated Virtual Dealer Avatar */}
-            <div className="relative flex flex-col items-center">
-              <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-b from-amber-500/20 to-black/60 border-2 border-amber-500/50 p-1 shadow-[0_0_25px_rgba(245,158,11,0.25)] flex items-center justify-center overflow-hidden">
-                {/* SVG Dealer Maya Illustration */}
-                <svg viewBox="0 0 100 100" className="w-full h-full">
-                  {/* Dealer Hair Back */}
-                  <path d="M 22 45 C 20 20, 80 20, 78 45 C 80 65, 75 75, 72 85 L 28 85 C 25 75, 20 65, 22 45 Z" fill="#1c1917" />
-                  
-                  {/* Torso / Tuxedo Vest */}
-                  <path d="M 25 80 L 75 80 L 80 100 L 20 100 Z" fill="#09090b" />
-                  <path d="M 38 80 L 50 95 L 62 80 Z" fill="#fafaf9" />
-                  {/* Golden Tie */}
-                  <polygon points="48,82 52,82 54,92 50,96 46,92" fill="#f59e0b" />
-                  
-                  {/* Face & Neck */}
-                  <rect x="44" y="68" width="12" height="14" rx="3" fill="#fcd34d" />
-                  <ellipse cx="50" cy="50" rx="20" ry="24" fill="#fef08a" />
-                  
-                  {/* Front Hair Bangs */}
-                  <path d="M 30 40 C 35 25, 65 25, 70 40 C 65 33, 35 33, 30 40 Z" fill="#1c1917" />
-                  
-                  {/* Eyes (blinking via motion/css) */}
-                  <ellipse cx="42" cy="48" rx="2.5" ry="3" fill="#1c1917" />
-                  <ellipse cx="58" cy="48" rx="2.5" ry="3" fill="#1c1917" />
-                  <circle cx="43" cy="47" r="1" fill="#ffffff" />
-                  <circle cx="59" cy="47" r="1" fill="#ffffff" />
-                  
-                  {/* Smile */}
-                  <path d="M 44 60 Q 50 65 56 60" stroke="#b45309" strokeWidth="2" strokeLinecap="round" fill="transparent" />
-                  {/* Blush */}
-                  <circle cx="37" cy="55" r="3" fill="#f87171" opacity="0.4" />
-                  <circle cx="63" cy="55" r="3" fill="#f87171" opacity="0.4" />
-                </svg>
-
-                {/* Live Status Ring */}
-                <div className="absolute inset-0 rounded-full border-2 border-dashed border-amber-400/40 animate-spin-slow pointer-events-none" />
-              </div>
-
-              {/* Dealer Nameplate */}
-              <div className="mt-1 bg-black/90 border border-amber-500/40 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-widest text-amber-300 uppercase shadow-md">
-                {state.dealer?.name || 'MAYA'} • VIRTUAL DEALER
-              </div>
-            </div>
-
-            {/* Virtual Card Shoe (Top Right of Felt) */}
-            <div className="hidden sm:flex flex-col items-center bg-black/70 border border-white/10 px-3 py-2 rounded-xl shadow-lg">
-              <div className="text-[10px] font-mono text-white/50 tracking-wider uppercase mb-1">8-Deck Shoe</div>
-              <div className="w-14 h-10 bg-gradient-to-br from-red-950 to-zinc-900 border border-red-500/40 rounded-lg flex items-center justify-center relative shadow-inner">
-                <span className="text-[10px] font-bold text-red-400">SHOE</span>
-                {state.phase === 'DEALING' && (
-                  <motion.div 
-                    initial={{ x: 0, opacity: 1 }}
-                    animate={{ x: -20, opacity: 0 }}
-                    transition={{ repeat: Infinity, duration: 1 }}
-                    className="absolute -left-2 w-4 h-6 bg-white rounded-sm border border-black shadow-md"
-                  />
-                )}
-              </div>
-            </div>
-          </div>
+        {/* Simulated Opponent Seats Row (AI test players in sandbox) */}
+        <div className="relative z-10 px-4 py-1 flex items-center justify-center gap-2 overflow-x-auto scrollbar-hide">
+          <SimulatedOpponentBadge
+            botId="BOT_01"
+            displayName="SimBot-Alpha"
+            seatIndex={1}
+            activeBet={state.phase === 'BETTING_OPEN' || state.phase === 'PLAYING' ? { market: 'DRAGON', amount: 50 } : null}
+          />
+          <SimulatedOpponentBadge
+            botId="BOT_02"
+            displayName="SimBot-Aggro"
+            seatIndex={2}
+            activeBet={state.phase === 'BETTING_OPEN' || state.phase === 'PLAYING' ? { market: 'TIE', amount: 25 } : null}
+          />
+          <SimulatedOpponentBadge
+            botId="BOT_03"
+            displayName="SimBot-Balanced"
+            seatIndex={3}
+            activeBet={state.phase === 'BETTING_OPEN' || state.phase === 'PLAYING' ? { market: 'TIGER', amount: 100 } : null}
+          />
         </div>
 
         {/* Central Card Battle Zone (Dragon vs Tiger) */}

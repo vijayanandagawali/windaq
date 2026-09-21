@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { UniversalRoundEngine, UNIVERSAL_PHASES } = require('../engine/UniversalRoundEngine');
+const { dealerRegistry } = require('../dealers/VirtualDealerRegistry');
+const { botFramework } = require('../simulation/SimulatedOpponentFramework');
 
 class BaseTableEngine extends UniversalRoundEngine {
   constructor(gameId, room = 'Standard', coreManager, customDurations = {}) {
@@ -27,15 +29,17 @@ class BaseTableEngine extends UniversalRoundEngine {
     this.dbRound = null;
     this.currentRound = null;
     this.dealingStep = null;
+    this.tableId = `${this.gameId}-01`;
 
     // Virtual Live Dealer Profile
     this.dealer = {
+      dealerId: 'dealer_maya',
       name: 'Maya',
       title: 'Virtual Live Dealer',
-      tableId: `${this.gameId}-01`,
+      tableId: this.tableId,
       avatar: 'maya',
       speech: 'Welcome! Place your bets on Dragon, Tiger, or Tie.',
-      action: 'INVITING_BETS'
+      action: 'IDLE'
     };
   }
 
@@ -67,40 +71,31 @@ class BaseTableEngine extends UniversalRoundEngine {
   }
 
   getDealerSpeech(phase, result) {
-    switch (phase) {
-      case UNIVERSAL_PHASES.BETTING_OPEN:
-        return 'Place your bets please! 15 seconds remaining.';
-      case UNIVERSAL_PHASES.BETTING_CLOSED:
-        return 'Bets are closed. No more bets, thank you!';
-      case UNIVERSAL_PHASES.PLAYING:
-        return 'Dealing the cards from the shoe...';
-      case UNIVERSAL_PHASES.RESULT:
-        return result?.winner ? `${result.winner} WINS!` : 'Round completed.';
-      case UNIVERSAL_PHASES.SETTLEMENT:
-        return 'Settling winning bets. Congratulations to all winners!';
-      case UNIVERSAL_PHASES.COMPLETED:
-        return 'Round complete.';
-      case UNIVERSAL_PHASES.NEXT_ROUND:
-        return 'Preparing the table for the next round...';
-      default:
-        return 'Welcome to the Simulated Live Table.';
-    }
+    const dealerId = this.dealer?.dealerId || 'dealer_maya';
+    return dealerRegistry.getDealerSpeech(dealerId, phase, this.gameId, result);
   }
 
   updateDealerState(phase) {
+    const dealerId = this.dealer?.dealerId || 'dealer_maya';
     switch (phase) {
       case UNIVERSAL_PHASES.BETTING_OPEN:
         this.dealer.action = 'INVITING_BETS';
         this.dealer.speech = this.getDealerSpeech(UNIVERSAL_PHASES.BETTING_OPEN, null);
         break;
-      case UNIVERSAL_PHASES.BETTING_CLOSED:
+      case UNIVERSAL_PHASES.BETTING_CLOSING:
         this.dealer.action = 'CLOSING_BETS';
+        this.dealer.speech = this.getDealerSpeech(UNIVERSAL_PHASES.BETTING_CLOSING, null);
+        break;
+      case UNIVERSAL_PHASES.BETTING_LOCKED:
+      case UNIVERSAL_PHASES.BETTING_CLOSED:
+        this.dealer.action = 'BETS_LOCKED';
         this.dealer.speech = this.getDealerSpeech(UNIVERSAL_PHASES.BETTING_CLOSED, null);
         break;
       case UNIVERSAL_PHASES.PLAYING:
         this.dealer.action = 'DEALING';
         this.dealer.speech = this.getDealerSpeech(UNIVERSAL_PHASES.PLAYING, this.currentResult);
         break;
+      case UNIVERSAL_PHASES.RESULT_REVEAL:
       case UNIVERSAL_PHASES.RESULT:
         this.dealer.action = 'ANNOUNCING_RESULT';
         this.dealer.speech = this.getDealerSpeech(UNIVERSAL_PHASES.RESULT, this.currentResult);
@@ -112,6 +107,10 @@ class BaseTableEngine extends UniversalRoundEngine {
       case UNIVERSAL_PHASES.NEXT_ROUND:
         this.dealer.action = 'PREPARING_NEXT';
         this.dealer.speech = this.getDealerSpeech(UNIVERSAL_PHASES.NEXT_ROUND, null);
+        break;
+      default:
+        this.dealer.action = 'IDLE';
+        this.dealer.speech = this.getDealerSpeech('DEFAULT', null);
         break;
     }
   }
@@ -148,6 +147,26 @@ class BaseTableEngine extends UniversalRoundEngine {
 
   async onBettingOpen(roundId) {
     this.updateDealerState(UNIVERSAL_PHASES.BETTING_OPEN);
+    
+    // Auto-schedule sandbox test bots for simulation and load validation
+    try {
+      const allowedMarkets = this.gameId === 'dragon-tiger' 
+        ? ['DRAGON', 'TIGER', 'TIE'] 
+        : this.gameId === 'andar-bahar' 
+        ? ['ANDAR', 'BAHAR'] 
+        : ['RED', 'BLACK'];
+
+      botFramework.scheduleBotActionsForRound(
+        this.tableId, 
+        this.gameId, 
+        allowedMarkets, 
+        (botBet) => {
+          this.emitEvent('tg:simulated_bet', { roundId, ...botBet });
+        }
+      );
+    } catch (err) {
+      console.error(`[BaseTableEngine:${this.gameId}] Error scheduling bot bets:`, err.message);
+    }
   }
 
   async onBettingClosing(roundId) {

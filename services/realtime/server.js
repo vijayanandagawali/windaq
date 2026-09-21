@@ -38,6 +38,8 @@ const bonusRouter = require('./src/api/bonus');
 const notificationsRouter = require('./src/api/notifications');
 const historyRouter = require('./src/api/history');
 const adminRealtimeRouter = require('./src/api/adminRealtime');
+const adminTablesRouter = require('./src/api/adminTables');
+const { tableManager } = require('./src/services/tableGames/VirtualTableManager');
 const RoundRegistry = require('./src/services/engine/RoundRegistry');
 
 const app = express();
@@ -116,6 +118,7 @@ app.use('/api/bonus', requireAuth, bonusRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/admin/realtime', requireAuth, adminRealtimeRouter);
+app.use('/api/admin/tables', requireAuth, adminTablesRouter);
 
 const PORT = process.env.PORT || 4000;
 
@@ -187,11 +190,19 @@ async function startServer() {
       RoundRegistry.register(rouletteEngine);
       RoundRegistry.register(andarBaharEngine);
 
+      // Initialize Multi-Table Virtual Dealer Manager
+      tableManager.setIO(io);
+      tableManager.bindEngine('table-01', rouletteEngine);
+      tableManager.bindEngine('table-02', dragontigerEngine);
+      tableManager.bindEngine('table-03', andarBaharEngine);
+
       // Periodically broadcast authoritative aggregates to Admin Realtime Control Center
       setInterval(() => {
         if (io) {
           const overview = RoundRegistry.getRealtimeOverview();
           io.to('admin:realtime').emit('admin:realtime_update', overview);
+          const tablesOverview = tableManager.getLiveAdminOverview();
+          io.to('admin:realtime').emit('admin:tables_overview', tablesOverview);
         }
       }, 1000);
 
