@@ -44,6 +44,7 @@ class AviatorEngine extends UniversalRoundEngine {
   }
 
   async onBettingClosed(roundId) {}
+  async onBettingLocked(roundId) { return this.onBettingClosed(roundId); }
 
   async onPlay(roundId) {
     this.io.to('aviator').emit('aviator:start', { roundId });

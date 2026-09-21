@@ -91,6 +91,10 @@ class DiceEngine extends UniversalRoundEngine {
     this.io.to(`dice:${this.room}`).emit('dice:locked', { rollId: roundId });
   }
 
+  async onBettingLocked(roundId) {
+    return this.onBettingClosed(roundId);
+  }
+
   async onPlay(roundId) {
     this.io.to(`dice:${this.room}`).emit('dice:rolling', { rollId: roundId });
   }

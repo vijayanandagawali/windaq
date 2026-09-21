@@ -69,6 +69,10 @@ class LottoEngine extends UniversalRoundEngine {
     this.io.to(`lotto:${this.room}`).emit('lotto:locked', { drawId: roundId });
   }
 
+  async onBettingLocked(roundId) {
+    return this.onBettingClosed(roundId);
+  }
+
   async onPlay(roundId) {
     this.io.to(`lotto:${this.room}`).emit('lotto:drawing', { drawId: roundId });
   }

@@ -37,9 +37,10 @@ export default function DragonTigerGamePage() {
     // Initial balance fetch
     fetchBalance();
 
+    const token = typeof window !== 'undefined' ? (localStorage.getItem('windaq_token') || localStorage.getItem('windaq_auth_token')) : null;
     const s = io('http://localhost:4000', { 
       transports: ['websocket', 'polling'],
-      auth: { token: null } 
+      auth: { token } 
     });
     setSocket(s);
 
@@ -127,18 +128,28 @@ export default function DragonTigerGamePage() {
       }));
     });
 
-    s.on('tg:phase_change', (data: any) => {
+    const handlePhaseChange = (data: any) => {
       setTableState(prev => ({
         ...prev,
         roundId: data.roundId || prev.roundId,
-        phase: data.phase,
-        totalPhaseDuration: data.duration,
-        phaseTimeLeft: data.duration,
+        phase: data.phase || prev.phase,
+        totalPhaseDuration: data.totalPhaseDuration || data.duration || prev.totalPhaseDuration,
+        phaseTimeLeft: data.phaseTimeLeft ?? data.duration ?? prev.phaseTimeLeft,
         dealer: data.dealer || prev.dealer,
         result: data.result !== undefined ? data.result : prev.result,
-        dealingStep: data.dealingStep
+        dealingStep: data.dealingStep !== undefined ? data.dealingStep : prev.dealingStep
       }));
-    });
+    };
+
+    s.on('tg:phase_change', handlePhaseChange);
+    s.on('round:phase_change', handlePhaseChange);
+    s.on('ROUND_CREATED', handlePhaseChange);
+    s.on('BETTING_OPEN', handlePhaseChange);
+    s.on('BETTING_CLOSING', handlePhaseChange);
+    s.on('BETTING_LOCKED', handlePhaseChange);
+    s.on('GAMEPLAY_STARTED', handlePhaseChange);
+    s.on('ROUND_COMPLETED', handlePhaseChange);
+    s.on('NEXT_ROUND', handlePhaseChange);
 
     s.on('tg:dealing_step', (data: any) => {
       setTableState(prev => ({
@@ -160,7 +171,24 @@ export default function DragonTigerGamePage() {
       }));
     });
 
+    s.on('RESULT_REVEAL', (data: any) => {
+      handlePhaseChange(data);
+      if (data.result) {
+        setTableState(prev => ({
+          ...prev,
+          phase: 'RESULT',
+          result: data.result,
+          dealer: data.dealer || prev.dealer
+        }));
+      }
+    });
+
     s.on('tg:settled', (data: any) => {
+      fetchBalance();
+    });
+
+    s.on('SETTLEMENT_STARTED', (data: any) => {
+      handlePhaseChange(data);
       fetchBalance();
     });
 
@@ -202,7 +230,7 @@ export default function DragonTigerGamePage() {
       return false;
     }
 
-    if (tableState.phase !== 'BETTING_OPEN') {
+    if (tableState.phase !== 'BETTING_OPEN' && tableState.phase !== 'BETTING_CLOSING') {
       toast.error('Betting is closed for this round!');
       return false;
     }

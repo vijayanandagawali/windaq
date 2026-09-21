@@ -81,6 +81,10 @@ class ColourEngine extends UniversalRoundEngine {
     this.io.to(`colour:${this.roomName}`).emit('colour:state', { state: 'LOCKED' });
   }
 
+  async onBettingLocked(roundId) {
+    return this.onBettingClosed(roundId);
+  }
+
   async onPlay(roundId) {
     this.io.to(`colour:${this.roomName}`).emit('colour:state', { state: 'PLAYING' });
   }

@@ -249,12 +249,9 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       let uid = get().userId;
       let token: string | null = null;
       if (typeof window !== 'undefined') {
-        token = localStorage.getItem('windaq_auth_token');
+        token = localStorage.getItem('windaq_auth_token') || localStorage.getItem('windaq_token');
         if (!uid) {
-          const cached = localStorage.getItem('windaq_user_data');
-          if (cached) {
-            try { uid = JSON.parse(cached).id; } catch {}
-          }
+          uid = localStorage.getItem('windaq_user_id') || (localStorage.getItem('windaq_user_data') ? JSON.parse(localStorage.getItem('windaq_user_data') || '{}').id : null);
         }
       }
       if (!uid && !token) {

@@ -10,6 +10,7 @@ import { io, Socket } from '@/lib/gameSocket';
 import RouletteWheel from '@/components/games/RouletteWheel';
 import { audioEngine } from '@/lib/audioEngine';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
+import ResultHistoryDrawer from '@/components/games/ResultHistoryDrawer';
 
 const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 const isRed = (n: number) => RED_NUMBERS.includes(n);
@@ -29,6 +30,7 @@ export default function RouletteGame() {
   const [timeLeft, setTimeLeft] = useState<number>(60);
   const [resultNumber, setResultNumber] = useState<number | null>(null);
   const [history, setHistory] = useState<any[]>([]);
+  const [showHistoryDrawer, setShowHistoryDrawer] = useState<boolean>(false);
 
   // Betting State
   const [selectedChips, setSelectedChips] = useState<number>(10);
@@ -47,7 +49,8 @@ export default function RouletteGame() {
   }>({ status: 'IDLE', amount: 0 });
 
   useEffect(() => {
-    const s = io('http://localhost:4000', { auth: { token: null } });
+    const token = typeof window !== 'undefined' ? (localStorage.getItem('windaq_token') || localStorage.getItem('windaq_auth_token')) : null;
+    const s = io('http://localhost:4000', { auth: { token } });
     setSocket(s);
     
     s.on('connect', () => {
@@ -211,7 +214,35 @@ export default function RouletteGame() {
 
   return (
     <div className="h-[calc(100dvh-58px)] w-full bg-[#0a0f1a] text-white font-sans selection:bg-neon-mint flex flex-col overflow-y-auto">
-
+      {/* Top HUD Bar */}
+      <div className="bg-black/60 border-b border-white/10 px-4 py-2 flex items-center justify-between z-30 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400">
+              EUROPEAN ROULETTE
+            </span>
+          </div>
+          {gameState.roundId && (
+            <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full text-[11px] font-mono text-amber-300">
+              <span className="text-white/40">ROUND:</span>
+              <span className="font-bold">{gameState.roundId}</span>
+            </div>
+          )}
+          <span className="hidden md:inline-block text-xs text-white/50 border-l border-white/10 pl-3">
+            Auto Wheel • Server-Authoritative 37 Pockets (0-36)
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowHistoryDrawer(true)}
+            className="text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold flex items-center gap-1.5 transition-colors"
+          >
+            <History size={14} className="text-emerald-400" />
+            <span>Official History</span>
+          </button>
+        </div>
+      </div>
 
       {/* Game Stage Area */}
       <div className="w-full min-h-[220px] py-4 bg-gradient-to-b from-[#1a2b1f] to-[#0a0f1a] relative flex flex-col items-center justify-center overflow-hidden border-b border-white/10">
@@ -256,13 +287,22 @@ export default function RouletteGame() {
       </div>
 
       {/* History Ribbon */}
-      <div className="bg-black/50 border-b border-white/5 py-2 px-4 flex gap-2 overflow-x-auto scrollbar-hide items-center h-12">
-        <span className="text-xs text-gray-500 font-bold uppercase mr-2 whitespace-nowrap">Last 15</span>
-        {history.map((h, i) => (
-          <div key={i} className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${getNumberColorClass(h.resultNumber)}`}>
-            {h.resultNumber}
-          </div>
-        ))}
+      <div className="bg-black/50 border-b border-white/5 py-2 px-4 flex gap-2 overflow-x-auto scrollbar-hide items-center h-12 justify-between">
+        <div className="flex items-center gap-2 overflow-x-auto">
+          <span className="text-xs text-gray-400 font-bold uppercase mr-1 whitespace-nowrap">History:</span>
+          {history.map((h, i) => (
+            <div key={i} className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${getNumberColorClass(h.resultNumber)}`}>
+              {h.resultNumber}
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => setShowHistoryDrawer(true)}
+          className="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold flex items-center gap-1 border border-slate-700 whitespace-nowrap"
+        >
+          <History size={12} className="text-emerald-400" />
+          Official History
+        </button>
       </div>
 
       {/* Betting Grid */}
@@ -369,6 +409,12 @@ export default function RouletteGame() {
         multiplier={celebration.multiplier}
         message={celebration.message}
         onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
+      />
+      <ResultHistoryDrawer
+        gameId="roulette"
+        variantId="Auto"
+        isOpen={showHistoryDrawer}
+        onClose={() => setShowHistoryDrawer(false)}
       />
     </div>
   );

@@ -4,12 +4,13 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Volume2, VolumeX, Camera, Info, ShieldCheck, 
-  RotateCcw, Sparkles, AlertCircle, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp
+  RotateCcw, Sparkles, AlertCircle, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, History
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { audioEngine } from '@/lib/audioEngine';
 import { useAudioStore } from '@/store/audioStore';
 import WinLossCelebration from './WinLossCelebration';
+import ResultHistoryDrawer from './ResultHistoryDrawer';
 
 // Types
 export interface TableCard {
@@ -87,6 +88,7 @@ export default function SimulatedLiveTable({
   const [previousBets, setPreviousBets] = useState<Record<string, number>>({});
   const [showProvablyFair, setShowProvablyFair] = useState<boolean>(false);
   const [showRoadmap, setShowRoadmap] = useState<boolean>(true);
+  const [showResultHistory, setShowResultHistory] = useState<boolean>(false);
   const [celebration, setCelebration] = useState<{
     status: 'IDLE' | 'WON' | 'LOST';
     amount: number;
@@ -336,6 +338,12 @@ export default function SimulatedLiveTable({
               SIMULATED LIVE TABLE
             </span>
           </div>
+          {state.roundId && (
+            <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full text-[11px] font-mono text-amber-300">
+              <span className="text-white/40">ROUND:</span>
+              <span className="font-bold">{state.roundId}</span>
+            </div>
+          )}
           <span className="hidden md:inline-block text-xs text-white/50 border-l border-white/10 pl-3">
             {roomName} • Provably Fair Virtual Live Dealer
           </span>
@@ -391,6 +399,16 @@ export default function SimulatedLiveTable({
             {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
 
+          {/* Official Result History Drawer Trigger */}
+          <button
+            onClick={() => setShowResultHistory(true)}
+            className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/80 hover:text-white transition-colors flex items-center gap-1 text-xs"
+            title="Official Result History"
+          >
+            <History size={16} className="text-amber-400" />
+            <span className="hidden sm:inline font-semibold">History</span>
+          </button>
+
           {/* Provably Fair Info */}
           <button
             onClick={() => setShowProvablyFair(!showProvablyFair)}
@@ -406,7 +424,9 @@ export default function SimulatedLiveTable({
       <div className="bg-black/40 border-b border-white/5 px-4 py-1.5 flex items-center justify-between text-[11px] overflow-x-auto scrollbar-hide">
         <div className="flex items-center gap-1.5 md:gap-3 mx-auto">
           {phasesOrder.map((p, idx) => {
-            const isActive = state.phase === p.key;
+            const isActive = state.phase === p.key || 
+              (p.key === 'BETTING_CLOSED' && (state.phase === 'BETTING_CLOSING' || state.phase === 'BETTING_LOCKED')) ||
+              (p.key === 'RESULT' && state.phase === 'RESULT_REVEAL');
             return (
               <React.Fragment key={p.key}>
                 <div className={`px-2.5 py-0.5 rounded-full font-bold tracking-wider uppercase transition-all duration-300 flex items-center gap-1 ${
@@ -523,25 +543,28 @@ export default function SimulatedLiveTable({
           {/* Phase Countdown Ring & Status */}
           <div className="mb-3 flex items-center gap-3">
             <div className={`px-4 py-1.5 rounded-full flex items-center gap-2 border backdrop-blur-md shadow-xl ${
-              state.phase === 'BETTING_OPEN' 
+              (state.phase === 'BETTING_OPEN' || state.phase === 'BETTING_CLOSING')
                 ? 'bg-black/70 border-emerald-500/50 text-emerald-300'
-                : state.phase === 'BETTING_CLOSED'
+                : (state.phase === 'BETTING_CLOSED' || state.phase === 'BETTING_LOCKED')
                 ? 'bg-black/70 border-red-500/50 text-red-400'
-                : state.phase === 'DEALING'
+                : (state.phase === 'PLAYING' || state.phase === 'DEALING')
                 ? 'bg-black/70 border-amber-500/50 text-amber-300'
+                : (state.phase === 'RESULT_REVEAL' || state.phase === 'RESULT')
+                ? 'bg-black/70 border-purple-500/50 text-purple-300'
                 : 'bg-black/70 border-blue-500/50 text-blue-300'
             }`}>
               <span className={`w-2.5 h-2.5 rounded-full ${
-                state.phase === 'BETTING_OPEN' ? 'bg-emerald-400 animate-pulse' :
-                state.phase === 'BETTING_CLOSED' ? 'bg-red-500' :
-                state.phase === 'DEALING' ? 'bg-amber-400 animate-spin' : 'bg-blue-400'
+                (state.phase === 'BETTING_OPEN' || state.phase === 'BETTING_CLOSING') ? 'bg-emerald-400 animate-pulse' :
+                (state.phase === 'BETTING_CLOSED' || state.phase === 'BETTING_LOCKED') ? 'bg-red-500' :
+                (state.phase === 'PLAYING' || state.phase === 'DEALING') ? 'bg-amber-400 animate-spin' : 'bg-blue-400'
               }`} />
               <span className="font-black text-xs uppercase tracking-widest">
                 {state.phase === 'CREATED' ? 'ROUND CREATED' :
                  state.phase === 'BETTING_OPEN' ? 'PLACE YOUR BETS' :
-                 state.phase === 'BETTING_CLOSED' ? 'BETS CLOSED' :
+                 state.phase === 'BETTING_CLOSING' ? 'BETS CLOSING' :
+                 (state.phase === 'BETTING_CLOSED' || state.phase === 'BETTING_LOCKED') ? 'BETS CLOSED' :
                  (state.phase === 'PLAYING' || state.phase === 'DEALING') ? 'DEALING CARDS' :
-                 state.phase === 'RESULT' ? 'WINNER ANNOUNCED' :
+                 (state.phase === 'RESULT_REVEAL' || state.phase === 'RESULT') ? 'WINNER ANNOUNCED' :
                  state.phase === 'SETTLEMENT' ? 'SETTLING WINNERS' :
                  state.phase === 'COMPLETED' ? 'ROUND COMPLETED' : 'NEXT ROUND'}
               </span>
@@ -703,9 +726,9 @@ export default function SimulatedLiveTable({
             <button
               data-testid="bet-spot-dragon"
               onClick={() => handleBetClick('DRAGON')}
-              disabled={state.phase !== 'BETTING_OPEN'}
+              disabled={state.phase !== 'BETTING_OPEN' && state.phase !== 'BETTING_CLOSING'}
               className={`relative rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-center border-2 transition-all ${
-                state.phase === 'BETTING_OPEN'
+                (state.phase === 'BETTING_OPEN' || state.phase === 'BETTING_CLOSING')
                   ? 'bg-gradient-to-b from-red-950/60 to-red-900/30 border-red-500/50 hover:border-red-400 active:scale-98 cursor-pointer'
                   : 'bg-red-950/20 border-red-500/20 opacity-60 cursor-not-allowed'
               }`}
@@ -725,9 +748,9 @@ export default function SimulatedLiveTable({
             <button
               data-testid="bet-spot-tie"
               onClick={() => handleBetClick('TIE')}
-              disabled={state.phase !== 'BETTING_OPEN'}
+              disabled={state.phase !== 'BETTING_OPEN' && state.phase !== 'BETTING_CLOSING'}
               className={`relative rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-center border-2 transition-all ${
-                state.phase === 'BETTING_OPEN'
+                (state.phase === 'BETTING_OPEN' || state.phase === 'BETTING_CLOSING')
                   ? 'bg-gradient-to-b from-emerald-950/60 to-emerald-900/30 border-emerald-500/50 hover:border-emerald-400 active:scale-98 cursor-pointer'
                   : 'bg-emerald-950/20 border-emerald-500/20 opacity-60 cursor-not-allowed'
               }`}
@@ -746,9 +769,9 @@ export default function SimulatedLiveTable({
             <button
               data-testid="bet-spot-tiger"
               onClick={() => handleBetClick('TIGER')}
-              disabled={state.phase !== 'BETTING_OPEN'}
+              disabled={state.phase !== 'BETTING_OPEN' && state.phase !== 'BETTING_CLOSING'}
               className={`relative rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-center border-2 transition-all ${
-                state.phase === 'BETTING_OPEN'
+                (state.phase === 'BETTING_OPEN' || state.phase === 'BETTING_CLOSING')
                   ? 'bg-gradient-to-b from-yellow-950/60 to-yellow-900/30 border-yellow-500/50 hover:border-yellow-400 active:scale-98 cursor-pointer'
                   : 'bg-yellow-950/20 border-yellow-500/20 opacity-60 cursor-not-allowed'
               }`}
@@ -926,6 +949,13 @@ export default function SimulatedLiveTable({
         onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
       />
 
+      {/* Official Result History Drawer */}
+      <ResultHistoryDrawer
+        gameId="dragon-tiger"
+        variantId="Standard"
+        isOpen={showResultHistory}
+        onClose={() => setShowResultHistory(false)}
+      />
     </div>
   );
 }

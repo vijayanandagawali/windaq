@@ -2,9 +2,10 @@ const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const provablyFair = require('../ProvablyFairService');
+const { UniversalRoundEngine, UNIVERSAL_PHASES } = require('../engine/UniversalRoundEngine');
+const walletService = require('../walletService');
 
-const ROUND_INTERVAL_MS = 60 * 1000; // 1 min
-const LOCK_DURATION_MS = 15 * 1000;  // 15 seconds locked
+const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 
 // Payout Matrix (multiplier of stake, excluding original stake return)
 const PAYOUTS = {
@@ -23,91 +24,114 @@ const PAYOUTS = {
   LOW: 1
 };
 
-class RouletteEngine {
-  constructor(room, coreManager) {
-    this.room = room;
+class RouletteEngine extends UniversalRoundEngine {
+  constructor(room = 'Auto', coreManager) {
+    const customDurations = {
+      CREATED: 1,
+      BETTING_OPEN: 15,
+      BETTING_CLOSING: 3,
+      BETTING_LOCKED: 2,
+      PLAYING: 6,       // Wheel spinning cinematic animation
+      RESULT_REVEAL: 3, // Winning number highlight
+      SETTLEMENT: 2,   // Atomic wallet payout
+      COMPLETED: 1,
+      NEXT_ROUND: 1
+    };
+
+    super('roulette', room, coreManager, customDurations);
     this.coreManager = coreManager;
-    this.currentRound = null;
-    this.isRunning = false;
+    this.legacyRoll = null;
   }
 
-  async start() {
-    this.isRunning = true;
-    console.log(`[RouletteEngine] Starting engine for room: ${this.room}`);
-    await this.syncRound();
-    this.loop();
+  // --- SUBCLASS UNIVERSAL HOOKS ---
+
+  async onCreateRound(roundId) {
+    try {
+      const startTime = new Date();
+      const lockTime = new Date(startTime.getTime() + (18 * 1000));
+      const resultTime = new Date(lockTime.getTime() + (8 * 1000));
+
+      // Create legacy DB record for backward compatibility
+      this.legacyRoll = await prisma.rouletteRoll.create({
+        data: {
+          id: roundId,
+          room: this.room,
+          status: 'OPEN',
+          serverSeed: this.serverSeed,
+          serverSeedHash: this.serverSeedHash,
+          clientSeed: '',
+          startTime,
+          lockTime,
+          resultTime
+        }
+      });
+      console.log(`[RouletteEngine:${this.room}] Created round ${roundId}`);
+    } catch (err) {
+      console.error(`[RouletteEngine:${this.room}] DB create error:`, err.message);
+    }
   }
 
-  stop() {
-    this.isRunning = false;
+  async onBettingOpen(roundId) {
+    this.emitLegacyTick();
   }
 
-  async syncRound() {
-    let round = await prisma.rouletteRoll.findFirst({
-      where: { room: this.room },
-      orderBy: { startTime: 'desc' }
-    });
+  async onBettingClosing(roundId) {
+    this.emitLegacyTick();
+  }
 
-    const now = new Date();
+  async onBettingLocked(roundId) {
+    if (this.legacyRoll) {
+      await prisma.rouletteRoll.update({
+        where: { id: this.legacyRoll.id },
+        data: { status: 'LOCKED' }
+      }).catch(() => {});
+    }
+    this.emitEvent('roulette:locked', { roundId });
+  }
 
-    if (!round || ['RESULT', 'SETTLED'].includes(round.status)) {
-      round = await this.createNewRound();
-    } else if (round.status === 'LOCKED' && now >= round.resultTime) {
-      await this.settleRound(round);
-      round = await this.createNewRound();
-    } else if (round.status === 'OPEN' && now >= round.lockTime) {
-      round = await this.lockRound(round);
+  async onPlay(roundId) {
+    this.animationState = {
+      action: 'SPINNING',
+      durationSeconds: this.phaseDurations.PLAYING
+    };
+    this.emitEvent('WHEEL_STARTED', { roundId, durationSeconds: this.phaseDurations.PLAYING });
+    this.emitEvent('roulette:spinning', { roundId, durationSeconds: this.phaseDurations.PLAYING });
+  }
+
+  async onResult(roundId) {
+    const pfResult = provablyFair.deriveRouletteResult(this.serverSeed, this.clientSeed, 0);
+    const resultNumber = pfResult.outcome;
+    const isRed = RED_NUMBERS.includes(resultNumber);
+    const color = resultNumber === 0 ? 'green' : (isRed ? 'red' : 'black');
+
+    const result = {
+      resultNumber,
+      color,
+      isEven: resultNumber !== 0 && resultNumber % 2 === 0,
+      isHigh: resultNumber >= 19,
+      dozen: resultNumber === 0 ? null : Math.ceil(resultNumber / 12)
+    };
+
+    if (this.legacyRoll) {
+      await prisma.rouletteRoll.update({
+        where: { id: this.legacyRoll.id },
+        data: {
+          status: 'RESULT',
+          clientSeed: this.clientSeed,
+          resultNumber
+        }
+      }).catch(() => {});
     }
 
-    this.currentRound = round;
-  }
-
-  async createNewRound() {
-    const now = Date.now();
-    const nextInterval = Math.ceil(now / ROUND_INTERVAL_MS) * ROUND_INTERVAL_MS;
-    
-    let startTime = new Date(nextInterval);
-    if (startTime.getTime() - now < 15000) {
-      startTime = new Date(nextInterval + ROUND_INTERVAL_MS);
-    }
-
-    const resultTime = new Date(startTime.getTime() + ROUND_INTERVAL_MS);
-    const lockTime = new Date(resultTime.getTime() - LOCK_DURATION_MS);
-
-    const serverSeed = crypto.randomBytes(32).toString('hex');
-    const serverSeedHash = crypto.createHash('sha256').update(serverSeed).digest('hex');
-
-    const round = await prisma.rouletteRoll.create({
-      data: {
-        room: this.room,
-        status: 'OPEN',
-        serverSeed,
-        serverSeedHash,
-        clientSeed: '',
-        startTime,
-        lockTime,
-        resultTime
-      }
+    this.emitEvent('roulette:result', {
+      roundId,
+      resultNumber,
+      color,
+      serverSeed: this.serverSeed,
+      clientSeed: this.clientSeed
     });
 
-    console.log(`[RouletteEngine] Created round ${round.id}. Ends at ${resultTime.toISOString()}`);
-    return round;
-  }
-
-  async lockRound(round) {
-    const updated = await prisma.rouletteRoll.update({
-      where: { id: round.id },
-      data: { status: 'LOCKED' }
-    });
-    
-    this.coreManager.emitToRoom(`roulette:${this.room}`, 'roulette:locked', { roundId: round.id });
-    console.log(`[RouletteEngine] Locked round ${round.id}`);
-    return updated;
-  }
-
-  generateResult(serverSeed, clientSeed) {
-    const result = provablyFair.deriveRouletteResult(serverSeed, clientSeed, 0);
-    return result.outcome;
+    return result;
   }
 
   evaluateBet(bet, resultNumber) {
@@ -119,86 +143,75 @@ class RouletteEngine {
     return 0;
   }
 
-  async settleRound(round) {
-    console.log(`[RouletteEngine] Settling round ${round.id}`);
-    
-    const clientSeed = crypto.randomBytes(16).toString('hex');
-    const resultNumber = this.generateResult(round.serverSeed, clientSeed);
+  async onSettlement(roundId, result) {
+    if (!result) return;
+    const winningNumber = result.resultNumber;
 
-    await prisma.rouletteRoll.update({
-      where: { id: round.id },
-      data: { status: 'RESULT', clientSeed, resultNumber }
-    });
+    try {
+      const bets = await prisma.rouletteBet.findMany({ where: { rollId: roundId } });
+      let totalPayout = 0n;
+      let winnersCount = 0;
 
-    this.coreManager.emitToRoom(`roulette:${this.room}`, 'roulette:result', { roundId: round.id, resultNumber });
+      for (const bet of bets) {
+        const payoutMultiplier = this.evaluateBet(bet, winningNumber);
 
-    const bets = await prisma.rouletteBet.findMany({ where: { rollId: round.id } });
-    
-    for (const bet of bets) {
-      const payoutMultiplier = this.evaluateBet(bet, resultNumber);
+        if (payoutMultiplier > 0) {
+          const payout = BigInt(Math.floor(Number(bet.amount) * payoutMultiplier));
+          totalPayout += payout;
+          winnersCount++;
 
-      if (payoutMultiplier > 0) {
-        const payout = BigInt(Math.floor(Number(bet.amount) * payoutMultiplier));
-        
-        await prisma.$transaction(async (tx) => {
-          await tx.rouletteBet.update({
-            where: { id: bet.id },
-            data: { payout }
-          });
-
-          const wallet = await tx.wallet.findFirst({ where: { userId: bet.userId, currency: 'INR' } });
-          if (wallet) {
-            const newBalance = wallet.balance + payout;
-            await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
-
-            await tx.transaction.create({
-              data: {
-                walletId: wallet.id,
-                idempotencyKey: `roulette-win-${bet.id}`,
-                type: 'BET_WIN',
-                amount: payout,
-                balanceAfter: newBalance,
-                reference: bet.id
-              }
+          await prisma.$transaction(async (tx) => {
+            await tx.rouletteBet.update({
+              where: { id: bet.id },
+              data: { payout }
             });
-          }
-        });
-      }
-    }
 
-    await prisma.rouletteRoll.update({
-      where: { id: round.id },
-      data: { status: 'SETTLED' }
-    });
-
-    console.log(`[RouletteEngine] Settled ${round.id}. Bets: ${bets.length}. Winner: ${resultNumber}`);
-  }
-
-  async loop() {
-    while (this.isRunning) {
-      const now = new Date();
-
-      if (this.currentRound) {
-        if (this.currentRound.status === 'OPEN' && now >= this.currentRound.lockTime) {
-          this.currentRound = await this.lockRound(this.currentRound);
-        } else if (this.currentRound.status === 'LOCKED' && now >= this.currentRound.resultTime) {
-          await this.settleRound(this.currentRound);
-          this.currentRound = await this.createNewRound();
+            // Universal Settlement Engine integration with exactly-once ledger transaction
+            await walletService.settleWin(tx, bet.userId, bet.amount, payout, 'ROULETTE_WIN', bet.id);
+          });
         }
       }
 
-      if (this.currentRound) {
-        this.coreManager.emitToRoom(`roulette:${this.room}`, 'roulette:tick', {
-          roundId: this.currentRound.id,
-          status: this.currentRound.status,
-          lockTime: this.currentRound.lockTime.getTime(),
-          resultTime: this.currentRound.resultTime.getTime(),
-          now: now.getTime()
-        });
+      this.totalPayoutPaise = totalPayout;
+
+      if (this.legacyRoll) {
+        await prisma.rouletteRoll.update({
+          where: { id: this.legacyRoll.id },
+          data: { status: 'SETTLED' }
+        }).catch(() => {});
       }
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      this.emitEvent('roulette:settled', {
+        roundId,
+        betsCount: bets.length,
+        winnersCount,
+        totalPayout: totalPayout.toString()
+      });
+
+      console.log(`[RouletteEngine:${this.room}] Settled ${roundId}. Bets: ${bets.length}, Winners: ${winnersCount}, Number: ${winningNumber}`);
+    } catch (err) {
+      console.error(`[RouletteEngine:${this.room}] Settlement error:`, err.message);
     }
+  }
+
+  async onCompleted(roundId, result) {
+    // Handled by UniversalRoundEngine base class
+  }
+
+  async onNextRound() {
+    this.animationState = null;
+  }
+
+  emitLegacyTick() {
+    this.emitEvent('roulette:tick', {
+      roundId: this.roundId,
+      status: this.currentPhase === UNIVERSAL_PHASES.BETTING_OPEN ? 'OPEN' : this.currentPhase,
+      phase: this.currentPhase,
+      lockTime: this.phaseEndsAt,
+      resultTime: this.phaseEndsAt + 8000,
+      now: Date.now(),
+      timeLeft: this.phaseTimeLeft
+    });
   }
 }
 

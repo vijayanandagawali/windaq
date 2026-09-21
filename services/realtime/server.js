@@ -36,6 +36,9 @@ const complianceRouter = require('./src/api/compliance');
 const paymentsRouter = require('./src/api/payments');
 const bonusRouter = require('./src/api/bonus');
 const notificationsRouter = require('./src/api/notifications');
+const historyRouter = require('./src/api/history');
+const adminRealtimeRouter = require('./src/api/adminRealtime');
+const RoundRegistry = require('./src/services/engine/RoundRegistry');
 
 const app = express();
 const server = http.createServer(app);
@@ -62,19 +65,22 @@ app.use(express.json({ limit: '10kb' })); // Output encoding / Body limit to pre
 // Rate Limiting
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 100, // Limit each IP to 100 requests per `window`
+  max: 1000, // Limit each IP to 1000 requests per `window`
+  skip: (req) => process.env.NODE_ENV === 'test' || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1',
   message: { success: false, message: 'Too many requests from this IP, please try again after a minute' }
 });
 
 const strictLimiter = rateLimit({
   windowMs: 60 * 1000, 
-  max: 10, // 10 req/min for sensitive actions (payments)
+  max: 100, // sensitive actions
+  skip: (req) => process.env.NODE_ENV === 'test' || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1',
   message: { success: false, message: 'Rate limit exceeded for sensitive action' }
 });
 
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 100, // 100 req/min for auth operations
+  max: 500, // auth operations
+  skip: (req) => process.env.NODE_ENV === 'test' || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1',
   message: { success: false, message: 'Too many auth requests, please try again in a moment' }
 });
 
@@ -108,6 +114,8 @@ app.use('/api/compliance', complianceRouter);
 app.use('/api/payments', strictLimiter, paymentsRouter); // Intentionally allowing public mock webhook for demo, but rate-limited
 app.use('/api/bonus', requireAuth, bonusRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/history', historyRouter);
+app.use('/api/admin/realtime', requireAuth, adminRealtimeRouter);
 
 const PORT = process.env.PORT || 4000;
 
@@ -118,6 +126,9 @@ async function startServer() {
 
     // 1. Connect to Redis (High-speed cache)
     await connectRedis();
+
+    // 1.5. Server restart recovery: safely resolve interrupted rounds
+    await RoundRegistry.recoverInterruptedRounds();
     
     // 2. Start Express / Socket server
     server.listen(PORT, () => {
@@ -165,6 +176,24 @@ async function startServer() {
       console.log('🔴 Starting Live Roulette Engine...');
       const liveRouletteEngine = new LiveRouletteEngine(io);
       liveRouletteEngine.startAutomatedDealer('live-roulette-1');
+
+      // Register all engines with Central Round Registry
+      RoundRegistry.register(aviatorEngine);
+      RoundRegistry.register(colourEngine1m);
+      RoundRegistry.register(colourEngine3m);
+      RoundRegistry.register(lottoEngine);
+      RoundRegistry.register(diceEngine);
+      RoundRegistry.register(dragontigerEngine);
+      RoundRegistry.register(rouletteEngine);
+      RoundRegistry.register(andarBaharEngine);
+
+      // Periodically broadcast authoritative aggregates to Admin Realtime Control Center
+      setInterval(() => {
+        if (io) {
+          const overview = RoundRegistry.getRealtimeOverview();
+          io.to('admin:realtime').emit('admin:realtime_update', overview);
+        }
+      }, 1000);
 
       // Init Sockets
       initSockets(coreManager, io, { aviatorEngine, colourEngine1m, lottoEngine, tpRoom, diceEngine, dragontigerEngine, rouletteEngine, andarbaharEngine: andarBaharEngine, rummyRoom, liveRouletteEngine });

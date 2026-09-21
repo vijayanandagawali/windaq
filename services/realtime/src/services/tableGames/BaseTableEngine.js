@@ -8,10 +8,13 @@ class BaseTableEngine extends UniversalRoundEngine {
     // Custom table game durations
     const durations = {
       CREATED: 1,
-      BETTING_OPEN: 15,
-      BETTING_CLOSED: 2,
+      BETTING_OPEN: 12,
+      BETTING_CLOSING: 3,
+      BETTING_LOCKED: 1,
+      BETTING_CLOSED: 1,
       PLAYING: 4,       // Dealing card animations
-      RESULT: 3,        // Winner reveal
+      RESULT_REVEAL: 3, // Winner reveal
+      RESULT: 3,
       SETTLEMENT: 3,    // Wallet payouts
       COMPLETED: 1,     // Finalize DB
       NEXT_ROUND: 2,    // Table reset
@@ -147,8 +150,12 @@ class BaseTableEngine extends UniversalRoundEngine {
     this.updateDealerState(UNIVERSAL_PHASES.BETTING_OPEN);
   }
 
-  async onBettingClosed(roundId) {
-    this.updateDealerState(UNIVERSAL_PHASES.BETTING_CLOSED);
+  async onBettingClosing(roundId) {
+    this.updateDealerState(UNIVERSAL_PHASES.BETTING_CLOSING);
+  }
+
+  async onBettingLocked(roundId) {
+    this.updateDealerState(UNIVERSAL_PHASES.BETTING_LOCKED);
     if (this.dbRound) {
       await prisma.tableGameRound.update({
         where: { id: this.dbRound.id },
@@ -156,6 +163,10 @@ class BaseTableEngine extends UniversalRoundEngine {
       }).catch(err => console.error(`[BaseTableEngine] Lock round error:`, err.message));
     }
     this.emitEvent('tg:locked', { roundId });
+  }
+
+  async onBettingClosed(roundId) {
+    return this.onBettingLocked(roundId);
   }
 
   async onPlay(roundId) {

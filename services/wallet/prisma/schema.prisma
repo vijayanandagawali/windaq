@@ -912,3 +912,53 @@ model GameConfigAudit {
   createdAt      DateTime    @default(now())
 }
 
+// --- CENTRAL CONTINUOUS ROUND & RESULT ENGINE ---
+
+model GameRound {
+  id                    String    @id // Authoritative roundId e.g. RLT-1726900000-abcd
+  gameId                String    // e.g. "roulette", "dragon-tiger", "andar-bahar", "colour", "aviator", "dice", "lotto"
+  variantId             String    @default("default") // e.g. "Auto", "Standard", "1min"
+  sequenceNumber        BigInt    @default(1)
+  status                String    // 'CREATED', 'BETTING_OPEN', 'BETTING_CLOSING', 'BETTING_LOCKED', 'PLAYING', 'RESULT_REVEAL', 'SETTLEMENT', 'COMPLETED'
+  serverCreatedAt       DateTime  @default(now())
+  bettingOpenAt         DateTime  @default(now())
+  bettingCloseAt        DateTime
+  gameplayStartAt       DateTime?
+  resultAt              DateTime?
+  settlementAt          DateTime?
+  completedAt           DateTime?
+  configurationVersion  Int       @default(1)
+  
+  // Provably Fair Cryptographic Commit-Reveal
+  serverSeed            String
+  serverSeedHash        String    // Pre-committed SHA-256 hash published BEFORE betting closes
+  clientSeed            String?   // Revealed AFTER betting closes
+  nonce                 Int       @default(1)
+  fairnessRef           String?   // Verification URI or proof reference
+  
+  // Authoritative Results
+  result                Json?     // Full structured result
+  resultSummary         String?   // e.g. "17 RED", "DRAGON (K vs 4)", "2.87x"
+  multiplier            Float?
+  winningNumber         Int?
+  winningColor          String?
+  cards                 Json?
+  
+  // Financial & Operational Metrics
+  settlementStatus      String    @default("PENDING") // PENDING, SETTLED, VOID
+  totalStakePaise       BigInt    @default(0)
+  totalPayoutPaise      BigInt    @default(0)
+  playerCount           Int       @default(0)
+  simulatedPlayerCount  Int       @default(0)
+  currentLiabilityPaise BigInt    @default(0)
+  isSandbox             Boolean   @default(false)
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([gameId, variantId, status])
+  @@index([gameId, completedAt])
+  @@index([serverSeedHash])
+}
+
+

@@ -41,6 +41,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
 
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6 px-2">Games & Operations</div>
+            <Link href="/admin/realtime" className="flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300 group">
+              <div className="flex items-center gap-3">
+                <ActivitySquare className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" /> Realtime Control
+              </div>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            </Link>
             <Link href="/admin/games" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
               <Gamepad2 className="w-4 h-4 text-emerald-400" /> Game Control
             </Link>
