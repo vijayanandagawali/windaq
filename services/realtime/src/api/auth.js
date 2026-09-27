@@ -1,18 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { requireAuth } = require('../middleware/auth');
 const { ensureUserAndWallet } = require('../services/walletService');
-const { getJwtSecret } = require('../config/security');
+const sessionService = require('../services/sessionService');
 const { issueOtp, verifyOtp } = require('../services/otpService');
 
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
-
-// In-memory revocation store (single-instance only; see otpService note)
-const revokedTokens = new Set();
 
 const GUEST_TEST_CREDITS_PAISE = 5000000n; // ₹50,000 play-money for explicit test/guest mode
 
@@ -34,12 +29,20 @@ function normalizePhone(rawPhone) {
   return `+91${digits}`;
 }
 
-function signSession(user, isGuest, expiresIn = JWT_EXPIRES_IN) {
-  return jwt.sign(
-    { userId: user.id, phone: user.phone, role: user.role, isGuest },
-    getJwtSecret(),
-    { expiresIn, algorithm: 'HS256' }
-  );
+/**
+ * Creates a server-side session. The returned token is handed to the Next.js proxy, which stores it
+ * in an httpOnly cookie; browsers never read it.
+ */
+function startSession(req, user, isGuest) {
+  return sessionService.createSession(user, {
+    isGuest,
+    userAgent: req.headers['user-agent'],
+    ipAddress: req.ip
+  });
+}
+
+function sessionPayload(session) {
+  return { token: session.token, session: { expiresAt: session.expiresAt.toISOString(), maxAgeSeconds: session.maxAgeSeconds } };
 }
 
 function otpErrorResponse(res, code) {
@@ -119,7 +122,7 @@ async function authenticateWithOtp(req, res, { mustBeNew }) {
     });
   }
 
-  const verification = verifyOtp(phone, otp);
+  const verification = await verifyOtp(phone, otp);
   if (!verification.ok) return otpErrorResponse(res, verification.code);
 
   if (user) {
@@ -148,12 +151,12 @@ async function authenticateWithOtp(req, res, { mustBeNew }) {
   }
 
   const wallet = await prisma.wallet.findFirst({ where: { userId: user.id, currency: 'INR' } });
-  const token = signSession(user, false);
+  const session = await startSession(req, user, false);
 
   return res.status(isNewUser ? 201 : 200).json({
     success: true,
     message: isNewUser ? 'Welcome! Your account has been created.' : 'Login successful.',
-    token,
+    ...sessionPayload(session),
     user: publicUser(user, false),
     wallet: { balance: wallet ? Number(wallet.balance) / 100 : 0, currency: 'INR' }
   });
@@ -204,12 +207,12 @@ router.post('/guest', async (req, res) => {
       initialPaise: GUEST_TEST_CREDITS_PAISE
     });
 
-    const token = signSession(user, true, '12h');
+    const session = await startSession(req, user, true);
 
     return res.json({
       success: true,
       message: 'Guest test account initialized with ₹50,000 play-money balance (not withdrawable).',
-      token,
+      ...sessionPayload(session),
       user: publicUser(user, true),
       wallet: { balance: Number(wallet.balance) / 100, currency: 'INR' }
     });
@@ -226,11 +229,6 @@ router.post('/guest', async (req, res) => {
  */
 router.get('/me', requireAuth, async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ') && revokedTokens.has(authHeader.split(' ')[1])) {
-      return res.status(401).json({ success: false, code: 'SESSION_EXPIRED', message: 'Session has been logged out. Please sign in again.' });
-    }
-
     const userId = req.user.userId;
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -258,16 +256,34 @@ router.get('/me', requireAuth, async (req, res) => {
 });
 
 /**
- * POST /api/auth/logout
+ * GET /api/auth/socket-ticket
+ * Short-lived (60 s) ticket for opening an authenticated socket connection. The session token
+ * itself is never exposed to page scripts.
  */
-router.post('/logout', (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    revokedTokens.add(authHeader.split(' ')[1]);
+router.get('/socket-ticket', requireAuth, async (req, res) => {
+  if (!req.user.sid) {
+    return res.status(401).json({ success: false, code: 'SESSION_REQUIRED', message: 'A signed-in session is required.' });
   }
+  const ticket = await sessionService.issueSocketTicket(req.user);
+  res.set('Cache-Control', 'no-store');
+  return res.json({ success: true, ticket, expiresInSeconds: 60 });
+});
+
+/**
+ * POST /api/auth/logout — revokes the current session (server-side, survives restarts).
+ */
+router.post('/logout', requireAuth, async (req, res) => {
+  if (req.user.sid) await sessionService.revokeSession(req.user.sid, 'LOGOUT');
   return res.json({ success: true, message: 'Logged out successfully.' });
+});
+
+/**
+ * POST /api/auth/logout-all — revokes every session of the current user (all devices).
+ */
+router.post('/logout-all', requireAuth, async (req, res) => {
+  const count = await sessionService.revokeAllSessionsForUser(req.user.userId, 'LOGOUT_ALL');
+  return res.json({ success: true, message: `Signed out of ${count} session(s).`, revoked: count });
 });
 
 module.exports = router;
 module.exports.normalizePhone = normalizePhone;
-module.exports.isRevoked = (token) => revokedTokens.has(token);

@@ -30,11 +30,15 @@ process.env.DATABASE_URL = TEST_URL;
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-only-jwt-secret-' + 'x'.repeat(48);
 delete process.env.DEV_FIXED_OTP;
-delete process.env.FAST2SMS_API_KEY;
+// Empty (not deleted): Prisma/dotenv auto-load .env but never override a variable that is already set,
+// so this guarantees tests can never send a real SMS.
+process.env.FAST2SMS_API_KEY = '';
+process.env.WINDAQ_TEST_HARNESS = '1';
 
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const walletService = require('../src/services/walletService');
+const sessionService = require('../src/services/sessionService');
 
 const prisma = new PrismaClient();
 
@@ -49,7 +53,7 @@ let userCounter = 0;
 
 /**
  * Creates a user whose starting balance is booked through the ledger (as a verified deposit),
- * so wallet and ledger agree from the start.
+ * so wallet and ledger agree from the start. The user also gets an active server-side session.
  */
 async function createUser({ role = 'USER', balancePaise = 0n, id, isGuest = false } = {}) {
   userCounter += 1;
@@ -60,15 +64,25 @@ async function createUser({ role = 'USER', balancePaise = 0n, id, isGuest = fals
   if (balancePaise > 0n) {
     await prisma.$transaction((tx) => walletService.creditDeposit(tx, userId, balancePaise, `seed-${userId}`, 'TEST_SEED'));
   }
-  return { id: userId, phone, role, isGuest };
+  const session = await sessionService.createSession({ id: userId }, { isGuest });
+  return { id: userId, phone, role, isGuest, sid: session.sid };
 }
 
+/**
+ * Session token bound to the user's server-side session. Extra claims (e.g. a forged role) are
+ * accepted into the JWT so tests can prove the server ignores them.
+ */
 function tokenFor(user, overrides = {}) {
   return jwt.sign(
-    { userId: user.id, phone: user.phone, role: user.role, isGuest: Boolean(user.isGuest), ...overrides },
+    { typ: 'session', sid: user.sid, userId: user.id, isGuest: Boolean(user.isGuest), ...overrides },
     process.env.JWT_SECRET,
     { expiresIn: '1h', algorithm: 'HS256' }
   );
+}
+
+/** Short-lived socket ticket for the user's session (what GET /api/auth/socket-ticket returns). */
+function socketTicketFor(user) {
+  return jwt.sign({ typ: 'socket', sid: user.sid, userId: user.id }, process.env.JWT_SECRET, { expiresIn: 60, algorithm: 'HS256' });
 }
 
 async function getWallet(userId) {
@@ -117,4 +131,4 @@ async function startHttp() {
   };
 }
 
-module.exports = { prisma, resetDb, createUser, tokenFor, getWallet, assertLedgerMatchesWallet, startHttp };
+module.exports = { prisma, resetDb, createUser, tokenFor, socketTicketFor, getWallet, assertLedgerMatchesWallet, startHttp };

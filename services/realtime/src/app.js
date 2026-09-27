@@ -25,8 +25,27 @@ const adminTablesRouter = require('./api/adminTables');
 const resultHistoryRouter = require('./api/resultHistoryApi');
 const reconciliationRouter = require('./api/reconciliationApi');
 
+const LOOPBACK_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+
+/**
+ * Rate limits apply everywhere except automated tests. The loopback exemption is for local
+ * development only: in production a reverse proxy makes every request look like loopback unless
+ * TRUST_PROXY is configured, so exempting it there would disable rate limiting entirely.
+ */
+function skipRateLimit(req) {
+  if (process.env.NODE_ENV === 'test') return true;
+  return process.env.NODE_ENV !== 'production' && LOOPBACK_IPS.has(req.ip);
+}
+
 function createApp() {
   const app = express();
+
+  // Number of trusted reverse-proxy hops in front of this service (e.g. 1 behind a load balancer),
+  // so req.ip is the real client address for rate limiting and audit logs.
+  if (process.env.TRUST_PROXY) {
+    const hops = Number(process.env.TRUST_PROXY);
+    app.set('trust proxy', Number.isNaN(hops) ? process.env.TRUST_PROXY : hops);
+  }
 
   // Security Middlewares
   app.use(helmet()); // Sets HSTS, X-Frame-Options, X-Content-Type-Options, etc.
@@ -41,27 +60,42 @@ function createApp() {
   const apiLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
     max: 1000, // Limit each IP to 1000 requests per `window`
-    skip: (req) => process.env.NODE_ENV === 'test' || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1',
+    skip: skipRateLimit,
     message: { success: false, message: 'Too many requests from this IP, please try again after a minute' }
   });
 
   const strictLimiter = rateLimit({
     windowMs: 60 * 1000, 
     max: 100, // sensitive actions
-    skip: (req) => process.env.NODE_ENV === 'test' || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1',
+    skip: skipRateLimit,
     message: { success: false, message: 'Rate limit exceeded for sensitive action' }
   });
 
   const authLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 500, // auth operations
-    skip: (req) => process.env.NODE_ENV === 'test' || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1',
+    skip: skipRateLimit,
     message: { success: false, message: 'Too many auth requests, please try again in a moment' }
   });
 
   app.use('/api/', apiLimiter);
 
   // APIs
+  // OTP delivery costs money and login attempts guess codes: tighter per-IP limits.
+  const otpSendLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 10,
+    skip: skipRateLimit,
+    message: { success: false, code: 'RATE_LIMITED', message: 'Too many verification codes requested. Please try again later.' }
+  });
+  const otpVerifyLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 30,
+    skip: skipRateLimit,
+    message: { success: false, code: 'RATE_LIMITED', message: 'Too many sign-in attempts. Please try again later.' }
+  });
+  app.use('/api/auth/send-otp', otpSendLimiter);
+  app.use(['/api/auth/login', '/api/auth/register'], otpVerifyLimiter);
   app.use('/api/auth', authLimiter, authRouter);
   app.use('/api/catalog', catalogRouter);
   app.use('/api/ledger', requireAuth, ledgerRouter);

@@ -3,6 +3,7 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { requireRole, logAudit } = require('../middleware/AdminRBAC');
+const { revokeAllSessionsForUser } = require('../services/sessionService');
 
 // --- DASHBOARD METRICS ---
 router.get('/dashboard', requireRole(['SUPPORT', 'RISK', 'FINANCE', 'SUPER_ADMIN']), async (req, res) => {
@@ -221,6 +222,8 @@ router.post('/risk/flags/:id/resolve', requireRole(['RISK', 'SUPER_ADMIN']), asy
         where: { userId: flag.userId },
         data: { isSuspended: true, suspensionReason: notes || `Suspended due to flag ${id}` }
       });
+      // A suspended account is signed out everywhere immediately.
+      await revokeAllSessionsForUser(flag.userId, 'SUSPENDED');
     }
 
     await logAudit(req.admin.id, 'RESOLVE_RISK_FLAG', id, { status, suspendUser, notes }, req.ip);

@@ -1,29 +1,26 @@
-const jwt = require('jsonwebtoken');
-const { getJwtSecret } = require('../config/security');
+const { authenticateSessionToken, SessionError } = require('../services/sessionService');
 
-const requireAuth = (req, res, next) => {
+/**
+ * Authenticates a request from its Bearer session token.
+ * The token must reference an active server-side session; the principal (including role) is
+ * loaded from the database, never taken from token claims.
+ */
+const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-  
+
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     try {
-      const payload = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] });
-      req.user = payload;
-      req.headers['x-user-id'] = payload.userId;
+      const { identity } = await authenticateSessionToken(token);
+      req.user = identity;
+      req.headers['x-user-id'] = identity.userId;
       return next();
     } catch (error) {
-      if (error.name === 'TokenExpiredError') {
-        return res.status(401).json({ 
-          success: false, 
-          code: 'SESSION_EXPIRED', 
-          message: 'Session expired. Please log in again.' 
-        });
+      if (error instanceof SessionError) {
+        return res.status(401).json({ success: false, code: error.code, message: error.message });
       }
-      return res.status(401).json({ 
-        success: false, 
-        code: 'INVALID_TOKEN', 
-        message: 'Invalid authorization token.' 
-      });
+      console.error('[Auth] Session lookup failed:', error.message);
+      return res.status(503).json({ success: false, code: 'AUTH_UNAVAILABLE', message: 'Authentication is temporarily unavailable.' });
     }
   }
 

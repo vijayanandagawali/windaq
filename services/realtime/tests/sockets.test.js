@@ -50,7 +50,7 @@ test.after(async () => {
 
 test('client-supplied winAmount is ignored: cashout without a bet pays nothing', async () => {
   const user = await h.createUser({ balancePaise: 0n });
-  const socket = await connect(h.tokenFor(user));
+  const socket = await connect(h.socketTicketFor(user));
   const res = await emitAck(socket, 'aviator:cashout', { amount: 100, multiplier: 1000, winAmount: 10000000, userId: user.id });
   assert.equal(res.success, false);
   assert.equal(res.code, 'NO_ACTIVE_BET');
@@ -65,7 +65,7 @@ test('unauthenticated sockets cannot bet or cash out', async () => {
 
 test('socket bet + cashout round trip settles through the ledger', async () => {
   const user = await h.createUser({ balancePaise: 50000n });
-  const socket = await connect(h.tokenFor(user));
+  const socket = await connect(h.socketTicketFor(user));
   const bet = await emitAck(socket, 'place_bet', { amount: 100, slot: 0 });
   assert.equal(bet.success, true, JSON.stringify(bet));
   assert.equal(bet.newBalance, 400);
@@ -87,8 +87,8 @@ test('socket bet + cashout round trip settles through the ledger', async () => {
 test('private rooms cannot be joined and wallet events reach only their owner', async () => {
   const victim = await h.createUser({ balancePaise: 10000n });
   const attacker = await h.createUser({ balancePaise: 0n });
-  const victimSocket = await connect(h.tokenFor(victim));
-  const attackerSocket = await connect(h.tokenFor(attacker));
+  const victimSocket = await connect(h.socketTicketFor(victim));
+  const attackerSocket = await connect(h.socketTicketFor(attacker));
 
   const leaked = [];
   attackerSocket.onAny((event, payload) => leaked.push({ event, payload }));
@@ -107,4 +107,17 @@ test('private rooms cannot be joined and wallet events reach only their owner', 
   assert.equal(victimEvents.length, 1, 'owner receives their wallet update');
   const leakedWallet = leaked.filter((e) => e.event === 'WALLET_UPDATED' || e.event === 'admin:realtime_update');
   assert.equal(leakedWallet.length, 0, `attacker received: ${JSON.stringify(leakedWallet)}`);
+});
+
+test('session tokens are not accepted as socket credentials; revoked sessions lose socket access', async () => {
+  const user = await h.createUser({ balancePaise: 50000n });
+
+  const withSessionToken = await connect(h.tokenFor(user));
+  assert.equal((await emitAck(withSessionToken, 'place_bet', { amount: 100 })).code, 'AUTH_REQUIRED');
+
+  const ticket = h.socketTicketFor(user);
+  await h.prisma.userSession.update({ where: { id: user.sid }, data: { revokedAt: new Date() } });
+  const withRevokedTicket = await connect(ticket);
+  assert.equal((await emitAck(withRevokedTicket, 'place_bet', { amount: 100 })).code, 'AUTH_REQUIRED');
+  assert.equal((await h.getWallet(user.id)).balance, 50000n);
 });

@@ -45,6 +45,7 @@ model User {
   bonusBalances  BonusBalance[]
   notifPrefs     NotificationPreference?
   notifLogs      NotificationLog[]
+  authSessions   UserSession[]
 }
 
 model Wallet {
@@ -1047,3 +1048,34 @@ model ReconciliationCase {
 }
 
 
+
+// --- AUTH SESSIONS & OTP (Phase 3) ---
+
+/// Server-side login session. The session JWT carries this id (sid); every authenticated request
+/// checks it here, so logout, logout-all and suspension take effect immediately.
+model UserSession {
+  id           String    @id // sid embedded in the session JWT
+  userId       String
+  isGuest      Boolean   @default(false)
+  userAgent    String?
+  ipAddress    String?
+  createdAt    DateTime  @default(now())
+  lastSeenAt   DateTime  @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  revokeReason String?
+
+  user         User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// One active OTP challenge per phone number. Only a SHA-256 hash of the code is stored.
+model OtpChallenge {
+  phone     String   @id // E.164
+  codeHash  String
+  attempts  Int      @default(0)
+  issuedAt  DateTime @default(now())
+  expiresAt DateTime
+}

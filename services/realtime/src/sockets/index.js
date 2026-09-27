@@ -1,5 +1,4 @@
-const jwt = require('jsonwebtoken');
-const { getJwtSecret } = require('../config/security');
+const { authenticateSocketTicket } = require('../services/sessionService');
 const riskService = require('../services/riskService');
 const { initPokerSockets } = require('./pokerHandler');
 const { handleColourSockets } = require('./colourHandler');
@@ -26,26 +25,22 @@ const MAX_CONNECTIONS_PER_USER = 3;
  */
 function initSockets(coreManager, io, engines = {}) {
   // Authentication Middleware for Sockets
-  io.use((socket, next) => {
-    const token = socket.handshake.auth?.token;
-    if (!token) {
+  // Only short-lived socket tickets (GET /api/auth/socket-ticket) are accepted; they must belong to
+  // a still-active server-side session. Anything else connects as a read-only spectator.
+  io.use(async (socket, next) => {
+    const ticket = socket.handshake.auth?.token;
+    if (!ticket) {
       // Allow unauthenticated visitor connections for viewing / spectating only
       socket.user = { id: 'guest', userId: 'guest', role: 'viewer', isGuest: true };
       return next();
     }
 
     try {
-      const decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] });
-      const effectiveUserId = decoded.userId || decoded.id;
-      
-      socket.user = {
-        id: effectiveUserId,
-        userId: effectiveUserId,
-        phone: decoded.phone,
-        role: decoded.role,
-        isGuest: Boolean(decoded.isGuest)
-      };
-      
+      const identity = await authenticateSocketTicket(ticket);
+      const effectiveUserId = identity.userId;
+
+      socket.user = identity;
+
       // Enforce Connection Limits per User
       const userConns = activeUserConnections.get(effectiveUserId) || 0;
       if (userConns >= MAX_CONNECTIONS_PER_USER) {

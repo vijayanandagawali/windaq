@@ -7,7 +7,7 @@ These tests exercise the real Express routes, Socket.io handlers, wallet service
 - `DATABASE_URL_TEST` must be set explicitly.
 - It must differ from the `DATABASE_URL` in the repo's `.env`.
 - The host must be local (`localhost` / `127.0.0.1`) unless `ALLOW_REMOTE_TEST_DB=true`.
-- A throwaway `JWT_SECRET` is always used; SMS sending is disabled.
+- A throwaway `JWT_SECRET` is always used; SMS sending is hard-disabled (`FAST2SMS_API_KEY` forced empty, `WINDAQ_TEST_HARNESS=1`).
 
 ## Running
 
@@ -21,8 +21,9 @@ These tests exercise the real Express routes, Socket.io handlers, wallet service
 ## Coverage
 | File | What it proves |
 |---|---|
-| `security.unit.test.js` | Required JWT secret, OTP hashing/single-use/attempt limits, room guard, exact paise parsing |
+| `security.unit.test.js` | Required JWT secret, room guard, exact paise parsing |
 | `auth.api.test.js` | No `mock-token`, no universal OTPs, OTP-verified register/login, zero starting balance, forged/unsigned/`alg=none` tokens rejected, `/me` never creates users or trusts role claims |
+| `sessions.api.test.js` | DB-backed hashed OTPs (cooldown, single use, concurrent attempt limit, no SMS in production without a provider), server-side sessions: logout, logout-all, expiry, suspension revoke; socket tickets |
 | `payments.api.test.js` | Deposits never credit without finance approval; single credit under concurrent approvals; UTR reuse blocked; guests blocked; withdrawal holds, review, concurrency and overdraw protection; wallet == ledger |
 | `authorization.api.test.js` | Admin routes reject anonymous users and players (even with forged role claims); sandbox headers ignored in production |
 | `aviator.engine.test.js` | Server-authoritative Aviator: ledgered bets, server-multiplier cashouts, no double cashout, loss settlement, auto cashout |
