@@ -76,7 +76,7 @@ interface OverviewData {
 }
 
 export default function AdminRealtimeControlCenter() {
-  const { token } = useAuthStore();
+  const { user } = useAuthStore();
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -86,10 +86,8 @@ export default function AdminRealtimeControlCenter() {
 
   const fetchOverview = async () => {
     try {
-      const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem('windaq_token') : null);
       const res = await fetch(getApiUrl('/api/admin/realtime/overview'), {
         headers: {
-          'Authorization': `Bearer ${activeToken}`
         }
       });
       if (res.ok) {
@@ -114,7 +112,7 @@ export default function AdminRealtimeControlCenter() {
     fetchOverview();
     const interval = setInterval(fetchOverview, 1000);
     return () => clearInterval(interval);
-  }, [token, selectedTable]);
+  }, [user, selectedTable]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);

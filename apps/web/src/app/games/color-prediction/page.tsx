@@ -7,7 +7,8 @@ import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
-import { io, Socket } from '@/lib/gameSocket';
+import { Socket } from '@/lib/gameSocket';
+import { createGameSocket } from '@/lib/config';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
 import { audioEngine } from '@/lib/audioEngine';
 import AnimatedChipFlight from '@/components/games/animation/AnimatedChipFlight';
@@ -42,9 +43,7 @@ export default function ColorPrediction() {
 
   // Initialize Socket
   useEffect(() => {
-    const s = io('http://localhost:4000', {
-      auth: { token: null } // Guest auth for now
-    });
+    const s = createGameSocket();
     setSocket(s);
 
     return () => {

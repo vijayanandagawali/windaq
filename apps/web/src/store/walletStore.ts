@@ -122,16 +122,12 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   },
 
   submitDeposit: async (amount, utr = '', method = 'UPI', idempotencyKey) => {
-    const uid = get().userId || (typeof window !== 'undefined' ? localStorage.getItem('windaq_user_id') : null);
-    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
 
     try {
       const res = await fetch(getApiUrl('/api/ledger/deposit/instant'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(uid ? { 'x-user-id': uid } : {}),
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ amount, utr, method, idempotencyKey })
       });
@@ -158,16 +154,12 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   },
 
   submitWithdraw: async (amount, upiId, method = 'UPI', idempotencyKey) => {
-    const uid = get().userId || (typeof window !== 'undefined' ? localStorage.getItem('windaq_user_id') : null);
-    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
 
     try {
       const res = await fetch(getApiUrl('/api/ledger/withdraw/instant'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(uid ? { 'x-user-id': uid } : {}),
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ amount, upiId, method, idempotencyKey })
       });
@@ -247,24 +239,13 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
   fetchBalance: async () => {
     try {
-      let uid = get().userId;
-      let token: string | null = null;
-      if (typeof window !== 'undefined') {
-        token = localStorage.getItem('windaq_auth_token') || localStorage.getItem('windaq_token');
-        if (!uid) {
-          uid = localStorage.getItem('windaq_user_id') || (localStorage.getItem('windaq_user_data') ? JSON.parse(localStorage.getItem('windaq_user_data') || '{}').id : null);
-        }
-      }
-      if (!uid && !token) {
+      // The httpOnly session cookie authenticates the request; signed-out visitors have no balance.
+      if (!get().userId) {
         set({ balance: 0, availableBalance: 0 });
         return;
       }
 
-      const headers: Record<string, string> = {};
-      if (uid) headers['x-user-id'] = uid;
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch(getApiUrl('/api/ledger/balance'), { headers });
+      const res = await fetch(getApiUrl('/api/ledger/balance'), { cache: 'no-store' });
       const data = await res.json();
       if (data.success && typeof data.balance === 'number') {
         set({ 
@@ -287,21 +268,9 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
   fetchTransactions: async () => {
     try {
-      let uid = get().userId;
-      let token: string | null = null;
-      if (typeof window !== 'undefined') {
-        token = localStorage.getItem('windaq_auth_token');
-        if (!uid) {
-          uid = localStorage.getItem('windaq_user_id') || (localStorage.getItem('windaq_user_data') ? JSON.parse(localStorage.getItem('windaq_user_data') || '{}').id : null);
-        }
-      }
-      if (!uid && !token) return;
+      if (!get().userId) return;
 
-      const headers: Record<string, string> = {};
-      if (uid) headers['x-user-id'] = uid;
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch(getApiUrl('/api/ledger/transactions?limit=30'), { headers });
+      const res = await fetch(getApiUrl('/api/ledger/transactions?limit=30'), { cache: 'no-store' });
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         set({ transactions: data.data });

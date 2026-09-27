@@ -7,16 +7,14 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuthStore } from '@/store/authStore';
 
 export default function MyBonusesPage() {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const [bonuses, setBonuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !token) return;
+    if (!user) return;
     fetch(getApiUrl('/api/bonus/active'), {
       headers: { 
-        'x-user-id': user.id,
-        'Authorization': `Bearer ${token}`
       }
     })
       .then(res => res.json())
@@ -24,7 +22,7 @@ export default function MyBonusesPage() {
         if (data.success) setBonuses(data.data);
       })
       .finally(() => setLoading(false));
-  }, [user, token]);
+  }, [user]);
 
   return (
     <ProtectedRoute title="MY BONUSES">

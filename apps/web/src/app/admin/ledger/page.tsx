@@ -13,9 +13,7 @@ export default function LedgerDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
     const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
 
     fetch(getApiUrl('/api/ledger?limit=100'), { headers })
       .then(res => res.json())

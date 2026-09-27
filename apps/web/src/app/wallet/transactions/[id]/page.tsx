@@ -42,7 +42,7 @@ export default function TransactionDetailPage() {
   const params = useParams();
   const router = useRouter();
   const txId = params?.id as string;
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
 
   const [tx, setTx] = useState<TransactionDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,15 +54,11 @@ export default function TransactionDetailPage() {
     setLoading(true);
     setError(null);
 
-    const uid = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('windaq_user_id') : null);
-    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null);
 
     try {
       const res = await fetch(getApiUrl(`/api/ledger/transactions/${txId}`), {
         headers: {
           'Content-Type': 'application/json',
-          ...(uid ? { 'x-user-id': uid } : {}),
-          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
         }
       });
 
@@ -78,8 +74,6 @@ export default function TransactionDetailPage() {
         const listRes = await fetch(getApiUrl(`/api/ledger/transactions?limit=100`), {
           headers: {
             'Content-Type': 'application/json',
-            ...(uid ? { 'x-user-id': uid } : {}),
-            ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
           }
         });
         const listData = await listRes.json();

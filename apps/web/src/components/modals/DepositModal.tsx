@@ -14,7 +14,7 @@ const PRESETS = [500, 1000, 2000, 5000, 10000];
 
 export default function DepositModal() {
   const { isDepositing, setDepositing, submitDeposit, fetchBalance, balance, availableBalance } = useWalletStore();
-  const { user, token, isAuthenticated, openAuthModal } = useAuthStore();
+  const { user, isAuthenticated, openAuthModal } = useAuthStore();
   
   const [amount, setAmount] = useState<number>(1000);
   const [utr, setUtr] = useState<string>('');

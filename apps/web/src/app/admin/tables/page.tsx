@@ -80,7 +80,7 @@ interface DealerOption {
 }
 
 export default function AdminTablesPage() {
-  const { token } = useAuthStore();
+  const { user } = useAuthStore();
   const [tables, setTables] = useState<AdminTable[]>([]);
   const [dealers, setDealers] = useState<DealerOption[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -103,7 +103,6 @@ export default function AdminTablesPage() {
   const fetchTables = async () => {
     try {
       const res = await fetch(getApiUrl('/api/admin/tables'), {
-        headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to fetch table data');
       const data = await res.json();
@@ -120,7 +119,6 @@ export default function AdminTablesPage() {
   const fetchDealers = async () => {
     try {
       const res = await fetch(getApiUrl('/api/admin/tables/dealers'), {
-        headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
       if (data.success && data.dealers) {
@@ -134,7 +132,7 @@ export default function AdminTablesPage() {
   useEffect(() => {
     fetchTables();
     fetchDealers();
-  }, [token]);
+  }, [user]);
 
   useEffect(() => {
     if (!isPolling) return;
@@ -142,7 +140,7 @@ export default function AdminTablesPage() {
       fetchTables();
     }, 1500);
     return () => clearInterval(interval);
-  }, [isPolling, token]);
+  }, [isPolling, user]);
 
   const handleOpenConfig = (table: AdminTable) => {
     setSelectedTable(table);
@@ -159,7 +157,6 @@ export default function AdminTablesPage() {
       const res = await fetch(getApiUrl(`/api/admin/tables/${selectedTable.tableId}/config`), {
         method: 'PATCH',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -194,7 +191,6 @@ export default function AdminTablesPage() {
       const res = await fetch(getApiUrl(`/api/admin/tables/${selectedTable.tableId}/dealer`), {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ dealerId: editDealerId })
@@ -218,7 +214,6 @@ export default function AdminTablesPage() {
       const res = await fetch(getApiUrl(`/api/admin/tables/${table.tableId}/simulation/toggle`), {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ enabled: nextState })
@@ -238,7 +233,6 @@ export default function AdminTablesPage() {
       const res = await fetch(getApiUrl('/api/admin/tables/simulation/bot-reconnect-test'), {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ botId, action })
@@ -257,7 +251,6 @@ export default function AdminTablesPage() {
     setSelectedTable(table);
     try {
       const res = await fetch(getApiUrl(`/api/admin/tables/${table.tableId}/audits`), {
-        headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
       if (data.success) {

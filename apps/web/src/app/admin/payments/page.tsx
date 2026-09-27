@@ -30,9 +30,7 @@ const COPY: Record<Kind, { approveLabel: string; approvePrompt: string; noteRequ
 };
 
 function authHeaders(): Record<string, string> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
   return headers;
 }
 

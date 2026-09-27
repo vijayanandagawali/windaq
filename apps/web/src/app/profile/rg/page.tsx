@@ -6,20 +6,18 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuthStore } from '@/store/authStore';
 
 export default function ResponsibleGamingPage() {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const [dailyWagerLimit, setDailyWagerLimit] = useState('');
   const [selfExcludeDays, setSelfExcludeDays] = useState('');
   const [message, setMessage] = useState('');
 
   const handleUpdate = async () => {
-    if (!user || !token) return;
+    if (!user) return;
     try {
       const res = await fetch(getApiUrl('/api/compliance/rg-limits'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': user.id,
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ 
           dailyWagerLimit: dailyWagerLimit ? parseInt(dailyWagerLimit) * 100 : undefined,

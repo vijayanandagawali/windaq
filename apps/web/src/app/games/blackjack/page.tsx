@@ -6,7 +6,8 @@ import { ChevronLeft } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { io, Socket } from '@/lib/gameSocket';
+import { Socket } from '@/lib/gameSocket';
+import { createGameSocket } from '@/lib/config';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
 import { audioEngine, haptic } from '@/lib/audioEngine';
 
@@ -29,7 +30,7 @@ export default function BlackjackGame() {
   }>({ status: 'IDLE', amount: 0 });
 
   useEffect(() => {
-    const s = io('http://localhost:4000', { auth: { token: null } });
+    const s = createGameSocket();
     setSocket(s);
 
     s.on('connect', () => {

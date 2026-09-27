@@ -7,7 +7,8 @@ import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
-import { io, Socket } from '@/lib/gameSocket';
+import { Socket } from '@/lib/gameSocket';
+import { createGameSocket } from '@/lib/config';
 import { audioEngine, haptic } from '@/lib/audioEngine';
 import { useAudioStore } from '@/store/audioStore';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
@@ -44,9 +45,7 @@ export default function SlotsGame() {
 
   // Init Socket
   useEffect(() => {
-    const s = io('http://localhost:4000', {
-      auth: { token: null } // Guest auth
-    });
+    const s = createGameSocket();
     setSocket(s);
 
     s.on('connect', () => {

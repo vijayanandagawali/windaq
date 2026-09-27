@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Info, HelpCircle, ShieldCheck } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
-import { io, Socket } from '@/lib/gameSocket';
+import { Socket } from '@/lib/gameSocket';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';

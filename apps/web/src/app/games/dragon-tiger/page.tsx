@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import toast from 'react-hot-toast';
-import { io, Socket } from '@/lib/gameSocket';
+import { Socket } from '@/lib/gameSocket';
+import { createGameSocket } from '@/lib/config';
 import SimulatedLiveTable, { SimulatedLiveState } from '@/components/games/SimulatedLiveTable';
 import { stateRecovery } from '@/lib/stateRecovery';
 
@@ -37,11 +38,7 @@ export default function DragonTigerGamePage() {
     // Initial balance fetch
     fetchBalance();
 
-    const token = typeof window !== 'undefined' ? (localStorage.getItem('windaq_token') || localStorage.getItem('windaq_auth_token')) : null;
-    const s = io('http://localhost:4000', { 
-      transports: ['websocket', 'polling'],
-      auth: { token } 
-    });
+    const s = createGameSocket();
     setSocket(s);
 
     s.on('connect', () => {

@@ -90,7 +90,7 @@ export default function WalletHub() {
   const [withdrawUpi, setWithdrawUpi] = useState<string>('');
   const [isSubmittingWithdraw, setIsSubmittingWithdraw] = useState<boolean>(false);
 
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
 
   // Effective user ID
   const getEffectiveUserId = useCallback(() => {
@@ -107,20 +107,15 @@ export default function WalletHub() {
   }, [userId, user]);
 
   const getAuthHeaders = useCallback(() => {
-    const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null);
-    const uid = getEffectiveUserId();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (uid) headers['x-user-id'] = uid;
-    if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
     return headers;
-  }, [token, getEffectiveUserId]);
+  }, [getEffectiveUserId]);
 
   // Fetch Transactions
   const fetchTransactions = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const uid = getEffectiveUserId();
 
       let url = getApiUrl(`/api/ledger/transactions?limit=50&dateRange=${dateRange}`);
       if (typeFilter !== 'ALL') {
@@ -151,7 +146,6 @@ export default function WalletHub() {
   // Fetch Wagers
   const fetchWagers = useCallback(async () => {
     try {
-      const uid = getEffectiveUserId();
       const res = await fetch(getApiUrl('/api/ledger/wagers'), {
         headers: getAuthHeaders()
       });
@@ -192,7 +186,6 @@ export default function WalletHub() {
 
     try {
       setIsSubmittingDeposit(true);
-      const uid = getEffectiveUserId();
       const res = await fetch(getApiUrl('/api/ledger/deposit/instant'), {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -237,7 +230,6 @@ export default function WalletHub() {
 
     try {
       setIsSubmittingWithdraw(true);
-      const uid = getEffectiveUserId();
       const res = await fetch(getApiUrl('/api/ledger/withdraw/instant'), {
         method: 'POST',
         headers: getAuthHeaders(),

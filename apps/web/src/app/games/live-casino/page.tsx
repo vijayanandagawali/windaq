@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { ChevronLeft, Maximize2, Volume2, ShieldCheck, History, Clock } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import toast from 'react-hot-toast';
-import { io, Socket } from '@/lib/gameSocket';
+import { Socket } from '@/lib/gameSocket';
+import { createGameSocket } from '@/lib/config';
 import UniversalBetPanel from '@/components/games/UniversalBetPanel';
 
 export default function LiveCasino() {
@@ -26,10 +27,7 @@ export default function LiveCasino() {
   useEffect(() => {
     fetchBalance();
 
-    const s = io('http://localhost:4000', { 
-      transports: ['websocket', 'polling'],
-      auth: { token: null } 
-    });
+    const s = createGameSocket();
     setSocket(s);
 
     s.on('connect', () => {

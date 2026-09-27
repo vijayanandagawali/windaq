@@ -6,7 +6,8 @@ import { ChevronLeft, History } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { io, Socket } from '@/lib/gameSocket';
+import { Socket } from '@/lib/gameSocket';
+import { createGameSocket } from '@/lib/config';
 import RouletteWheel from '@/components/games/RouletteWheel';
 import { audioEngine } from '@/lib/audioEngine';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
@@ -122,8 +123,7 @@ export default function RouletteGame() {
   };
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? (localStorage.getItem('windaq_token') || localStorage.getItem('windaq_auth_token')) : null;
-    const s = io('http://localhost:4000', { auth: { token } });
+    const s = createGameSocket();
     setSocket(s);
     
     s.on('connect', () => {

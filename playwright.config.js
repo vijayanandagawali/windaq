@@ -19,6 +19,7 @@ const backendEnv = {
   JWT_SECRET: E2E.jwtSecret,
   DEV_FIXED_OTP: E2E.otp,
   FAST2SMS_API_KEY: '',
+  WINDAQ_TEST_HARNESS: '1',
   FRONTEND_URL: E2E.webUrl
 };
 

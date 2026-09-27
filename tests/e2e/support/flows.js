@@ -18,11 +18,19 @@ async function loginViaUi(page, phone, { path = '/wallet' } = {}) {
   await page.getByText('Send OTP via SMS').click();
   await page.getByPlaceholder('Enter 6-digit OTP').fill(E2E.otp);
   await page.getByText('SECURE SIGN IN').click();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('windaq_auth_token'))).toBeTruthy();
+  await expect.poll(async () => Boolean(await sessionCookie(page))).toBe(true);
 }
 
+/** The httpOnly session cookie set by the /api proxy (readable by Playwright, not by page scripts). */
+async function sessionCookie(page) {
+  const cookies = await page.context().cookies();
+  return cookies.find((c) => c.name === 'windaq_session') || null;
+}
+
+/** Session token for direct backend API assertions, taken from the httpOnly cookie. */
 async function tokenFromPage(page) {
-  return page.evaluate(() => localStorage.getItem('windaq_auth_token'));
+  const cookie = await sessionCookie(page);
+  return cookie ? cookie.value : null;
 }
 
 /** Direct backend login (used for set-up steps that are not under test). */
@@ -58,4 +66,4 @@ async function fundPlayer(request, playerToken, amountInr, utr) {
   expect(approve.ok()).toBeTruthy();
 }
 
-module.exports = { uniquePhone, loginViaUi, tokenFromPage, apiLogin, apiBalance, fundPlayer };
+module.exports = { uniquePhone, loginViaUi, sessionCookie, tokenFromPage, apiLogin, apiBalance, fundPlayer };

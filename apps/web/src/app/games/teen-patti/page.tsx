@@ -6,7 +6,8 @@ import { ChevronLeft, Info, Eye, LogOut, CheckCircle2 } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { io, Socket } from '@/lib/gameSocket';
+import { Socket } from '@/lib/gameSocket';
+import { createGameSocket } from '@/lib/config';
 
 import confetti from 'canvas-confetti';
 import { audioEngine, haptic } from '@/lib/audioEngine';
@@ -35,7 +36,7 @@ export default function TeenPattiGame() {
     const activeId = userId || (typeof window !== 'undefined' ? (localStorage.getItem('windaq_user_id') || 'guest') : 'guest');
     setMyId(activeId);
 
-    const s = io('http://localhost:4000', { auth: { token: null } });
+    const s = createGameSocket();
     setSocket(s);
     
     s.on('connect', () => {

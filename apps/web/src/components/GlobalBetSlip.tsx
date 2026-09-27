@@ -15,12 +15,12 @@ export default function GlobalBetSlip() {
   } = useBetSlipStore();
   
   const { balance, fetchBalance, userId } = useWalletStore();
-  const { user, token, isAuthenticated, openAuthModal } = useAuthStore();
+  const { user, isAuthenticated, openAuthModal } = useAuthStore();
 
   if (!isOpen || !selection) return null;
 
   const handlePlaceBet = async () => {
-    if (!isAuthenticated || !token || !user) {
+    if (!isAuthenticated || !user) {
       setStatus('ERROR', 'Please login to place bets');
       openAuthModal('LOGIN');
       return;
@@ -38,11 +38,7 @@ export default function GlobalBetSlip() {
 
       const res = await fetch(getApiUrl('/api/wager/place'), {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'x-user-id': activeUserId
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: activeUserId,
           gameType: selection.gameType,

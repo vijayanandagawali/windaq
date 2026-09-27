@@ -8,9 +8,7 @@ export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<any>(null);
   
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
     const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
 
     fetch(getApiUrl('/api/admin/dashboard'), { headers })
       .then(res => res.json())

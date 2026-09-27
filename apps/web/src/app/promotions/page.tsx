@@ -8,7 +8,7 @@ import { useWalletStore } from '@/store/walletStore';
 import { useAuthStore } from '@/store/authStore';
 
 export default function PromotionsPage() {
-  const { user, token, isAuthenticated, openAuthModal } = useAuthStore();
+  const { user, isAuthenticated, openAuthModal } = useAuthStore();
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +22,7 @@ export default function PromotionsPage() {
   }, []);
 
   const activateCampaign = async (id: string) => {
-    if (!isAuthenticated || !token || !user) {
+    if (!isAuthenticated || !user) {
       openAuthModal('LOGIN');
       alert('Please log in to claim promotions.');
       return;
@@ -33,8 +33,6 @@ export default function PromotionsPage() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json', 
-          'x-user-id': user.id,
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ campaignId: id })
       });

@@ -13,7 +13,6 @@ export interface UserProfile {
 
 interface AuthState {
   user: UserProfile | null;
-  token: string | null;
   isAuthenticated: boolean;
   isGuest: boolean;
   isLoading: boolean;
@@ -35,12 +34,13 @@ interface AuthState {
   clearError: () => void;
 }
 
-const TOKEN_KEY = 'windaq_auth_token';
+// Sessions live in an httpOnly cookie set by the /api proxy; page code never sees the token.
+// Older builds stored a bearer token here — it is purged on sight.
+const LEGACY_TOKEN_KEY = 'windaq_auth_token';
 const USER_KEY = 'windaq_user_data';
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  token: null,
   isAuthenticated: false,
   isGuest: false,
   isLoading: false,
@@ -92,16 +92,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         createdAt: data.user.createdAt
       };
 
-      const token = data.token;
 
       if (typeof window !== 'undefined') {
-        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.removeItem(LEGACY_TOKEN_KEY);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
       }
 
       set({
         user,
-        token,
         isAuthenticated: true,
         isGuest: user.isGuest,
         isLoading: false,
@@ -149,16 +147,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         createdAt: data.user.createdAt
       };
 
-      const token = data.token;
 
       if (typeof window !== 'undefined') {
-        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.removeItem(LEGACY_TOKEN_KEY);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
       }
 
       set({
         user,
-        token,
         isAuthenticated: true,
         isGuest: false,
         isLoading: false,
@@ -206,16 +202,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         createdAt: data.user.createdAt
       };
 
-      const token = data.token;
 
       if (typeof window !== 'undefined') {
-        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.removeItem(LEGACY_TOKEN_KEY);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
       }
 
       set({
         user,
-        token,
         isAuthenticated: true,
         isGuest: true,
         isLoading: false,
@@ -239,16 +233,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(LEGACY_TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
     }
 
-    // Call server-side logout notify asynchronously
+    // Revokes the server-side session; the proxy clears the httpOnly cookie.
     fetch(getApiUrl('/api/auth/logout'), { method: 'POST' }).catch(() => {});
 
     set({
       user: null,
-      token: null,
       isAuthenticated: false,
       isGuest: false,
       isLoading: false,
@@ -266,28 +259,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   checkSession: async () => {
     if (typeof window === 'undefined') return false;
 
-    const token = localStorage.getItem(TOKEN_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
     const cachedUser = localStorage.getItem(USER_KEY);
 
-    if (!token) {
-      set({ isAuthenticated: false, user: null, token: null, isLoading: false });
-      return false;
-    }
-
     try {
-      const res = await fetch(getApiUrl('/api/auth/me'), {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
+      // The httpOnly session cookie is sent automatically (same-origin request).
+      const res = await fetch(getApiUrl('/api/auth/me'), { cache: 'no-store' });
       const data = await res.json();
 
-      // Any 401 means the stored token is not a valid server session (expired, revoked,
-      // or a legacy unsigned token) and must be discarded.
+      // 401: no session, or it expired / was revoked on the server.
       if (res.status === 401) {
-        localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
-        set({ isAuthenticated: false, user: null, token: null, isLoading: false });
-        toast.error('Session expired. Please log in again.');
+        set({ isAuthenticated: false, user: null, isLoading: false });
+        if (cachedUser) toast.error('Session expired. Please log in again.');
         return false;
       }
 
@@ -304,8 +288,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         localStorage.setItem(USER_KEY, JSON.stringify(user));
         set({
           user,
-          token,
-          isAuthenticated: true,
+            isAuthenticated: true,
           isGuest: user.isGuest,
           isLoading: false
         });
@@ -320,7 +303,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // If response unexpected but cached user exists, fall back gracefully
       if (cachedUser) {
         const parsed = JSON.parse(cachedUser);
-        set({ user: parsed, token, isAuthenticated: true, isGuest: parsed.isGuest, isLoading: false });
+        set({ user: parsed, isAuthenticated: true, isGuest: parsed.isGuest, isLoading: false });
         return true;
       }
 
@@ -329,7 +312,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Offline / network failure: retain cached session if available
       if (cachedUser) {
         const parsed = JSON.parse(cachedUser);
-        set({ user: parsed, token, isAuthenticated: true, isGuest: parsed.isGuest, isLoading: false });
+        set({ user: parsed, isAuthenticated: true, isGuest: parsed.isGuest, isLoading: false });
         return true;
       }
       return false;

@@ -10,9 +10,7 @@ export default function WalletAdjustmentsPage() {
   const [error, setError] = useState('');
 
   const getHeaders = (extra: Record<string, string> = {}) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
     const headers: Record<string, string> = { ...extra };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
     return headers;
   };
 

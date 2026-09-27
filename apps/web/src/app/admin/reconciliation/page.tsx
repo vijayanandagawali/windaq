@@ -41,7 +41,7 @@ interface ReconciliationCase {
 }
 
 export default function AdminReconciliationPage() {
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const [summary, setSummary] = useState<SummaryCards>({
     totalWallets: 0,
     totalTransactions: 0,
@@ -67,12 +67,8 @@ export default function AdminReconciliationPage() {
   const [isSubmittingResolution, setIsSubmittingResolution] = useState(false);
 
   const getHeaders = () => {
-    const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null);
-    const uid = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('windaq_user_id') : null);
     return {
       'Content-Type': 'application/json',
-      ...(uid ? { 'x-user-id': uid } : {}),
-      ...(activeToken ? { 'Authorization': `Bearer ${activeToken}` } : {})
     };
   };
 

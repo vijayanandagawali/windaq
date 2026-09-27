@@ -9,9 +9,7 @@ export default function AuditLogsPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
     const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
 
     fetch(getApiUrl('/api/admin/audit'), { headers })
       .then(res => res.json())

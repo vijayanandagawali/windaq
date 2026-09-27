@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { io, Socket } from '@/lib/gameSocket';
+import { Socket } from '@/lib/gameSocket';
+import { createGameSocket } from '@/lib/config';
 import toast from 'react-hot-toast';
 import { Lock, Unlock, PlayCircle, CheckCircle, StopCircle, RefreshCw, AlertTriangle } from 'lucide-react';
 
@@ -16,7 +17,7 @@ export default function DealerConsole() {
   const [recentBets, setRecentBets] = useState<any[]>([]);
 
   useEffect(() => {
-    const s = io('http://localhost:4000', { auth: { token: null } });
+    const s = createGameSocket();
     setSocket(s);
     
     s.on('live:state', (data: any) => {

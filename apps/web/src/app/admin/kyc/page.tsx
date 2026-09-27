@@ -8,9 +8,7 @@ export default function KYCReviewPage() {
   const [loading, setLoading] = useState(true);
 
   const getHeaders = () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('windaq_auth_token') : null;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
     return headers;
   };
 
