@@ -13,7 +13,8 @@
     "bootstrap:sandbox": "node scripts/bootstrap_sandbox.js",
     "teardown:sandbox": "node scripts/teardown_sandbox.js",
     "db:reset-and-seed": "node scripts/reset_and_seed_db.js",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:backend": "npm test --workspace=backend"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0"
