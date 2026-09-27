@@ -13,9 +13,19 @@ import { audioEngine } from '@/lib/audioEngine';
 import { useAuthStore } from '@/store/authStore';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
 
+interface CashoutResult {
+  success: boolean;
+  slot: number;
+  multiplier: number;
+  payout: number;
+  newBalance?: number;
+  auto?: boolean;
+}
+
 export default function AviatorGame() {
-  const { balance, deductBalance, addWinnings, userId } = useWalletStore();
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const { balance, setBalance, fetchBalance } = useWalletStore();
+  // Held in a ref: the socket is an external resource, not render state.
+  const socketRef = useRef<Socket | null>(null);
   
   // Game State
   const [gameState, setGameState] = useState<'waiting' | 'flying' | 'crashed'>('waiting');
@@ -35,77 +45,8 @@ export default function AviatorGame() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Initialize WebSockets
-  useEffect(() => {
-    const newSocket = createGameSocket();
-    setSocket(newSocket);
 
-    newSocket.emit('join_room', 'aviator');
-
-    newSocket.on('aviator:waiting', (data) => {
-      setGameState('waiting');
-      setCountdown(data.countdown);
-      if (data.hash) setProvablyFairHash(data.hash);
-      if (data.countdown <= 3 && data.countdown > 0) {
-        audioEngine.play('countdown', { urgent: true });
-      }
-      
-      // Reset bets for new round if they were not placed for *next* round
-      setBet1(prev => ({ ...prev, cashedOut: false, won: 0, placed: prev.placed && !prev.cashedOut ? true : false }));
-      setBet2(prev => ({ ...prev, cashedOut: false, won: 0, placed: prev.placed && !prev.cashedOut ? true : false }));
-      setCelebration({ status: 'IDLE', amount: 0 });
-    });
-
-    newSocket.on('aviator:tick', (data) => {
-      setGameState(prev => {
-        if (prev !== 'flying') {
-          audioEngine.play('roundStart');
-        }
-        return 'flying';
-      });
-      setMultiplier(data.multiplier);
-      drawCurve(parseFloat(data.multiplier));
-    });
-
-    newSocket.on('aviator:crashed', (data) => {
-      setGameState('crashed');
-      setMultiplier(data.multiplier);
-      drawCrashed(parseFloat(data.multiplier));
-      audioEngine.play('loss');
-
-      setBet1(prev => {
-        if (prev.placed && !prev.cashedOut) {
-          setCelebration({
-            status: 'LOST',
-            amount: prev.amount,
-            message: `Flew Away at ${data.multiplier}x`
-          });
-        }
-        return { ...prev, placed: false };
-      });
-      setBet2(prev => {
-        return { ...prev, placed: false };
-      });
-    });
-
-    return () => {
-      newSocket.disconnect();
-    };
-  }, []);
-
-  // Auto Cashout Logic check on every tick
-  useEffect(() => {
-    if (gameState === 'flying') {
-      const currentMulti = parseFloat(multiplier);
-      
-      if (bet1.placed && !bet1.cashedOut && bet1.autoCashout > 1 && currentMulti >= bet1.autoCashout) {
-        handleCashout(1, currentMulti);
-      }
-      if (bet2.placed && !bet2.cashedOut && bet2.autoCashout > 1 && currentMulti >= bet2.autoCashout) {
-        handleCashout(2, currentMulti);
-      }
-    }
-  }, [multiplier, gameState]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Auto cashout is enforced server-side (sent with the bet), so there is no client-side trigger here.
 
   // Canvas Drawing Logic
   const drawCurve = (currentMulti: number) => {
@@ -244,7 +185,28 @@ export default function AviatorGame() {
     }
   };
 
-  // Actions
+  // Actions — the server owns stake, multiplier and payout. The UI only reflects acknowledgements.
+  const applyCashoutResult = (result: CashoutResult) => {
+    if (!result?.success) return;
+    const panel: 1 | 2 = result.slot === 1 ? 2 : 1;
+    if (typeof result.newBalance === 'number') setBalance(result.newBalance);
+
+    audioEngine.play('win');
+    confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 }, colors: ['#00FFA3', '#FFFFFF'] });
+
+    const update = (prev: typeof bet1) => ({ ...prev, cashedOut: true, won: result.payout });
+    if (panel === 1) setBet1(update);
+    else setBet2(update);
+
+    setCelebration({
+      status: 'WON',
+      amount: result.payout,
+      multiplier: result.multiplier,
+      message: `CASHED OUT AT ${result.multiplier.toFixed(2)}x`
+    });
+    toast.success(`${result.auto ? 'Auto cashout' : 'Cashed out'} at ${result.multiplier.toFixed(2)}x — ₹${result.payout.toFixed(2)}`);
+  };
+
   const handlePlaceBet = (panel: 1 | 2, amount: number) => {
     const authState = useAuthStore.getState();
     if (!authState.isAuthenticated || !authState.user) {
@@ -252,61 +214,111 @@ export default function AviatorGame() {
       authState.openAuthModal('LOGIN');
       return;
     }
-
-    if (balance < amount) {
-      toast.error("Insufficient balance!");
+    const socket = socketRef.current;
+    if (!socket) {
+      toast.error('Game server is not connected.');
       return;
     }
-    
-    audioEngine.play('bet');
-    
-    deductBalance(amount);
-    if (socket) {
-      socket.emit('place_bet', { amount, userId: authState.user.id });
+    if (!amount || amount <= 0) {
+      toast.error('Enter a bet amount.');
+      return;
     }
-    toast.success(`Bet placed: ₹${amount}`);
-    
-    if (panel === 1) setBet1(prev => ({ ...prev, amount, placed: true }));
-    else setBet2(prev => ({ ...prev, amount, placed: true }));
-  };
-
-  const handleCashout = (panel: 1 | 2, currentMulti: number) => {
-    const authUser = useAuthStore.getState().user;
-    audioEngine.play('win');
-    
-    // Confetti
-    confetti({
-      particleCount: 50,
-      spread: 60,
-      origin: { y: 0.8 },
-      colors: ['#00FFA3', '#FFFFFF']
-    });
 
     const targetBet = panel === 1 ? bet1 : bet2;
-    const winAmount = targetBet.amount * currentMulti;
-    addWinnings(winAmount);
+    socket.emit(
+      'place_bet',
+      { amount, slot: panel - 1, autoCashout: targetBet.autoCashout > 1 ? targetBet.autoCashout : undefined },
+      (res: { success: boolean; message?: string; newBalance?: number }) => {
+        if (!res?.success) {
+          toast.error(res?.message || 'Bet was not accepted.');
+          fetchBalance();
+          return;
+        }
+        audioEngine.play('bet');
+        if (typeof res.newBalance === 'number') setBalance(res.newBalance);
+        toast.success(`Bet placed: ₹${amount}`);
+        if (panel === 1) setBet1(prev => ({ ...prev, amount, placed: true, cashedOut: false, won: 0 }));
+        else setBet2(prev => ({ ...prev, amount, placed: true, cashedOut: false, won: 0 }));
+      }
+    );
+  };
 
-    if (socket && authUser) {
-      socket.emit('aviator:cashout', { 
-        amount: targetBet.amount, 
-        multiplier: currentMulti, 
-        winAmount, 
-        userId: authUser.id 
-      });
-    }
+  const handleCashout = (panel: 1 | 2) => {
+    const socket = socketRef.current;
+    if (!socket) return;
+    // Only the slot is sent. The server settles at its own current multiplier.
+    socket.emit('aviator:cashout', { slot: panel - 1 }, (res: CashoutResult & { message?: string }) => {
+      if (!res?.success) {
+        toast.error(res?.message || 'Cashout failed.');
+        return;
+      }
+      applyCashoutResult(res);
+    });
+  };
 
-    if (panel === 1) setBet1(prev => ({ ...prev, cashedOut: true, won: winAmount }));
-    else setBet2(prev => ({ ...prev, cashedOut: true, won: winAmount }));
-    
-    setCelebration({
-      status: 'WON',
-      amount: winAmount,
-      multiplier: currentMulti,
-      message: `CASHED OUT AT ${currentMulti.toFixed(2)}x`
+  // Initialize WebSockets
+  useEffect(() => {
+    const newSocket = createGameSocket();
+    socketRef.current = newSocket;
+
+    newSocket.emit('join_room', 'aviator');
+
+    newSocket.on('aviator:waiting', (data) => {
+      setGameState('waiting');
+      setCountdown(data.countdown);
+      if (data.hash) setProvablyFairHash(data.hash);
+      if (data.countdown <= 3 && data.countdown > 0) {
+        audioEngine.play('countdown', { urgent: true });
+      }
+      
+      // Reset bets for new round if they were not placed for *next* round
+      setBet1(prev => ({ ...prev, cashedOut: false, won: 0, placed: prev.placed && !prev.cashedOut ? true : false }));
+      setBet2(prev => ({ ...prev, cashedOut: false, won: 0, placed: prev.placed && !prev.cashedOut ? true : false }));
+      setCelebration({ status: 'IDLE', amount: 0 });
     });
 
-    toast.success(`Cashed Out! You won ₹${winAmount.toFixed(2)}`);
-  };
+    newSocket.on('aviator:tick', (data) => {
+      setGameState(prev => {
+        if (prev !== 'flying') {
+          audioEngine.play('roundStart');
+        }
+        return 'flying';
+      });
+      setMultiplier(data.multiplier);
+      drawCurve(parseFloat(data.multiplier));
+    });
+
+    newSocket.on('aviator:crashed', (data) => {
+      setGameState('crashed');
+      setMultiplier(data.multiplier);
+      drawCrashed(parseFloat(data.multiplier));
+      audioEngine.play('loss');
+
+      setBet1(prev => {
+        if (prev.placed && !prev.cashedOut) {
+          setCelebration({
+            status: 'LOST',
+            amount: prev.amount,
+            message: `Flew Away at ${data.multiplier}x`
+          });
+        }
+        return { ...prev, placed: false };
+      });
+      setBet2(prev => {
+        return { ...prev, placed: false };
+      });
+    });
+
+    // Auto cashouts are executed by the server; it notifies us with the settled result.
+    newSocket.on('aviator:cashout_result', (result: CashoutResult) => {
+      applyCashoutResult(result);
+    });
+
+    return () => {
+      newSocket.disconnect();
+      socketRef.current = null;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-[calc(100dvh-58px)] bg-obsidian font-sans selection:bg-neon-mint selection:text-deep-ocean relative flex flex-col overflow-y-auto">
@@ -395,7 +407,7 @@ export default function AviatorGame() {
             gameState={gameState}
             currentMulti={parseFloat(multiplier)}
             onPlaceBet={() => handlePlaceBet(1, bet1.amount)}
-            onCashout={() => handleCashout(1, parseFloat(multiplier))}
+            onCashout={() => handleCashout(1)}
           />
           <BetPanel 
             panelNum={2}
@@ -404,7 +416,7 @@ export default function AviatorGame() {
             gameState={gameState}
             currentMulti={parseFloat(multiplier)}
             onPlaceBet={() => handlePlaceBet(2, bet2.amount)}
-            onCashout={() => handleCashout(2, parseFloat(multiplier))}
+            onCashout={() => handleCashout(2)}
           />
         </div>
       </div>

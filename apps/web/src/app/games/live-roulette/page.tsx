@@ -6,7 +6,8 @@ import { ChevronLeft, Info, HelpCircle, Activity, Wifi, ShieldCheck, History } f
 import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { io, Socket } from '@/lib/gameSocket';
+import { Socket } from '@/lib/gameSocket';
+import { createGameSocket } from '@/lib/config';
 
 const ROULETTE_NUMBERS = [
   0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
@@ -25,7 +26,7 @@ export default function LiveRoulette() {
 
   useEffect(() => {
     // We connect to the live-dealer namespace (or default, where we registered it)
-    const s = io('http://localhost:4000', { auth: { token: 'mock-token' } });
+    const s = createGameSocket();
     setSocket(s);
     
     s.on('connect', () => {

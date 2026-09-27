@@ -1,6 +1,7 @@
 const express = require('express');
 const wagerService = require('../services/wagerService');
 const router = express.Router();
+const { requireRole } = require('../middleware/AdminRBAC');
 
 router.post('/place', async (req, res) => {
   try {
@@ -67,7 +68,7 @@ router.post('/place', async (req, res) => {
   }
 });
 
-router.post('/settle', async (req, res) => {
+router.post('/settle', requireRole(['RISK', 'FINANCE', 'SUPER_ADMIN']), async (req, res) => {
   try {
     // Admin / Staff Authorization check
     if (req.user && req.user.role === 'USER') {

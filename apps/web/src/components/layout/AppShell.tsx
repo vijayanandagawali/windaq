@@ -8,6 +8,7 @@ import TrustFooter from '@/components/ui/TrustFooter';
 import GlobalModalProvider from '@/components/GlobalModalProvider';
 import GlobalBetSlip from '@/components/GlobalBetSlip';
 import NetworkWatcher from '@/components/NetworkWatcher';
+import DemoModeBanner from '@/components/layout/DemoModeBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { Toaster } from 'react-hot-toast';
 
@@ -59,6 +60,9 @@ export default function AppShell({ children }: AppShellProps) {
 
         {/* Unified Responsive Application Header */}
         <Header />
+
+        {/* Explicit demo notice while games run on the browser simulator */}
+        <DemoModeBanner />
 
         {/* Main Content Area */}
         <main className={`flex-1 w-full ${isImmersiveGame ? 'pb-0' : 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-0'}`}>

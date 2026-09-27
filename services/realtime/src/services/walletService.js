@@ -17,9 +17,9 @@ function setIo(ioInstance) {
 function emitWalletEvent(userId, event, payload) {
   try {
     if (globalIo) {
+      // Private per-user room only (joined server-side on authenticated connection).
+      // Never broadcast wallet data to all sockets.
       globalIo.to(`user:${userId}`).emit(event, payload);
-      // General room for multi-device sync
-      globalIo.emit(event, { ...payload, userId });
     }
   } catch (err) {
     console.warn('[WalletService:emitWalletEvent Error]:', err.message);
@@ -50,7 +50,7 @@ async function getOrCreateUserAndWallet(client, userId, options = {}) {
   const currency = options.currency || 'INR';
   const initialPaise = typeof options.initialPaise === 'bigint' 
     ? options.initialPaise 
-    : (options.initialPaise !== undefined ? BigInt(options.initialPaise) : 1000000n); // Default ₹10,000 for testers/guests
+    : (options.initialPaise !== undefined ? BigInt(options.initialPaise) : 0n); // Never mint unbacked balance by default
   const role = options.role || 'USER';
 
   // 1. AUTH USER & FIND USER
@@ -556,6 +556,19 @@ async function revertWithdrawalHold(tx, userId, amountPaise, referenceId, reason
   });
 
   const available = BigInt(wallet.balance) - newLocked;
+
+  // Statement entry so the player sees the held funds returned
+  await tx.transaction.create({
+    data: {
+      walletId: wallet.id,
+      idempotencyKey: `tx-wdr-revert-${referenceId}`,
+      type: 'REFUND',
+      amount: amountPaise,
+      balanceAfter: available,
+      reference: referenceId
+    }
+  });
+
   emitWalletEvent(userId, 'WITHDRAWAL_REVERSED', {
     userId,
     referenceId,

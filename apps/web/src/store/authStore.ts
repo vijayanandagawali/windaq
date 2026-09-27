@@ -25,8 +25,8 @@ interface AuthState {
   redirectAfterAuth: string | null;
 
   // Actions
-  login: (phone: string, otp?: string) => Promise<boolean>;
-  register: (phone: string, referralCode?: string) => Promise<boolean>;
+  login: (phone: string, otp: string) => Promise<boolean>;
+  register: (phone: string, otp: string, referralCode?: string) => Promise<boolean>;
   loginAsGuest: () => Promise<boolean>;
   logout: () => void;
   checkSession: () => Promise<boolean>;
@@ -66,7 +66,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: null });
   },
 
-  login: async (phone: string, otp = '1234') => {
+  login: async (phone: string, otp: string) => {
     set({ isLoading: true, error: null });
     try {
       const res = await fetch(getApiUrl('/api/auth/login'), {
@@ -123,13 +123,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  register: async (phone: string, referralCode?: string) => {
+  register: async (phone: string, otp: string, referralCode?: string) => {
     set({ isLoading: true, error: null });
     try {
       const res = await fetch(getApiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, referralCode })
+        body: JSON.stringify({ phone, otp, referralCode })
       });
 
       const data = await res.json();
@@ -168,9 +168,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Synchronize Wallet Store
       const { useWalletStore } = await import('@/store/walletStore');
-      useWalletStore.getState().setAuthenticatedUser(user, data.wallet?.balance ?? 500);
+      useWalletStore.getState().setAuthenticatedUser(user, data.wallet?.balance ?? 0);
 
-      toast.success('Registration successful! ₹500 welcome credits added to your wallet.');
+      toast.success('Registration successful! Welcome to WinDaq.');
       return true;
     } catch {
       const errorMsg = 'Network error. Registration server unavailable.';
@@ -225,7 +225,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Synchronize Wallet Store
       const { useWalletStore } = await import('@/store/walletStore');
-      useWalletStore.getState().setAuthenticatedUser(user, data.wallet?.balance ?? 50000);
+      useWalletStore.getState().setAuthenticatedUser(user, data.wallet?.balance ?? 0);
 
       toast.success('Entered 🧪 TEST GUEST MODE! ₹50,000 sandbox balance provisioned.');
       return true;
@@ -281,7 +281,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const data = await res.json();
 
-      if (res.status === 401 && data.code === 'SESSION_EXPIRED') {
+      // Any 401 means the stored token is not a valid server session (expired, revoked,
+      // or a legacy unsigned token) and must be discarded.
+      if (res.status === 401) {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
         set({ isAuthenticated: false, user: null, token: null, isLoading: false });

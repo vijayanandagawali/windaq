@@ -1,13 +1,19 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 require('dotenv').config();
 require('./src/utils/logger'); // Apply global log redaction
-const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const { requireAuth } = require('./src/middleware/auth');
+const { createApp } = require('./src/app');
+const { assertSecurityConfig } = require('./src/config/security');
+
+// Fail fast on missing/weak secrets before anything else starts.
+assertSecurityConfig();
+
+// Outside production the game engines write rounds/bets continuously, so a dev server must not
+// run against a shared or remote database unless that is explicitly confirmed.
+if (process.env.NODE_ENV !== 'production') {
+  require('./src/config/dbSafety').guardDatabaseOrExit('realtime server (non-production)');
+}
 
 const { connectRedis } = require('./src/config/redisClient');
 const { initSockets } = require('./src/sockets/index');
@@ -23,28 +29,11 @@ const { AndarBaharEngine } = require('./src/services/tableGames/AndarBaharEngine
 const { RummyRoom } = require('./src/services/rummy/RummyRoom');
 const LiveRouletteEngine = require('./src/services/live/LiveRouletteEngine');
 const walletService = require('./src/services/walletService');
-const catalogRouter = require('./src/api/catalog');
-const authRouter = require('./src/api/auth');
-const ledgerRouter = require('./src/api/ledger');
-const wagerRouter = require('./src/api/wager');
-const sportsAdminRouter = require('./src/api/sportsAdmin');
-const fairnessRouter = require('./src/api/fairness');
-const adminRouter = require('./src/api/admin');
-const adminGamesRouter = require('./src/api/adminGames');
 const adminGameConfigService = require('./src/services/adminGameConfigService');
-const complianceRouter = require('./src/api/compliance');
-const paymentsRouter = require('./src/api/payments');
-const bonusRouter = require('./src/api/bonus');
-const notificationsRouter = require('./src/api/notifications');
-const historyRouter = require('./src/api/history');
-const adminRealtimeRouter = require('./src/api/adminRealtime');
-const adminTablesRouter = require('./src/api/adminTables');
-const resultHistoryRouter = require('./src/api/resultHistoryApi');
-const reconciliationRouter = require('./src/api/reconciliationApi');
 const { tableManager } = require('./src/services/tableGames/VirtualTableManager');
 const RoundRegistry = require('./src/services/engine/RoundRegistry');
 
-const app = express();
+const app = createApp();
 const server = http.createServer(app);
 
 // High-speed WebSocket server setup with CORS
@@ -59,73 +48,6 @@ const io = new Server(server, {
 
 // Bind io to wallet service for authoritative realtime balance propagation
 walletService.setIo(io);
-
-// Security Middlewares
-app.use(helmet()); // Sets HSTS, X-Frame-Options, X-Content-Type-Options, etc.
-app.use(cors({
-  origin: process.env.FRONTEND_URL || '*', // Restrict in production
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'x-admin-user-id', 'x-mfa-token']
-}));
-app.use(express.json({ limit: '10kb' })); // Output encoding / Body limit to prevent payload DoS
-
-// Rate Limiting
-const apiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 1000, // Limit each IP to 1000 requests per `window`
-  skip: (req) => process.env.NODE_ENV === 'test' || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1',
-  message: { success: false, message: 'Too many requests from this IP, please try again after a minute' }
-});
-
-const strictLimiter = rateLimit({
-  windowMs: 60 * 1000, 
-  max: 100, // sensitive actions
-  skip: (req) => process.env.NODE_ENV === 'test' || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1',
-  message: { success: false, message: 'Rate limit exceeded for sensitive action' }
-});
-
-const authLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 500, // auth operations
-  skip: (req) => process.env.NODE_ENV === 'test' || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1',
-  message: { success: false, message: 'Too many auth requests, please try again in a moment' }
-});
-
-app.use('/api/', apiLimiter);
-
-// Basic REST API for Wallet Actions (Deprecated/Internal)
-app.post('/api/wallet/deduct', requireAuth, async (req, res) => {
-  try {
-    const { userId, amount } = req.body;
-    // IDOR protection: enforce that token user matches requested user
-    if (req.user.userId !== userId && req.user.role !== 'ADMIN') {
-      return res.status(403).json({ success: false, message: 'IDOR attempt blocked: Cannot modify another user.' });
-    }
-    const newBalance = await walletService.deductBalance(userId, amount);
-    res.json({ success: true, balance: newBalance });
-  } catch (err) {
-    res.status(400).json({ success: false, message: err.message });
-  }
-});
-
-// APIs
-app.use('/api/auth', authLimiter, authRouter);
-app.use('/api/catalog', catalogRouter);
-app.use('/api/ledger', requireAuth, ledgerRouter);
-app.use('/api/wager', requireAuth, wagerRouter);
-app.use('/api/sports/admin', requireAuth, sportsAdminRouter);
-app.use('/api/fairness', fairnessRouter);
-app.use('/api', resultHistoryRouter);
-app.use('/api/admin', requireAuth, reconciliationRouter);
-app.use('/api/admin/games', requireAuth, adminGamesRouter);
-app.use('/api/admin', requireAuth, adminRouter);
-app.use('/api/compliance', complianceRouter);
-app.use('/api/payments', strictLimiter, paymentsRouter); // Intentionally allowing public mock webhook for demo, but rate-limited
-app.use('/api/bonus', requireAuth, bonusRouter);
-app.use('/api/notifications', notificationsRouter);
-app.use('/api/history', historyRouter);
-app.use('/api/admin/realtime', requireAuth, adminRealtimeRouter);
-app.use('/api/admin/tables', requireAuth, adminTablesRouter);
 
 const PORT = process.env.PORT || 4000;
 

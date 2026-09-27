@@ -13,12 +13,18 @@
     "bootstrap:sandbox": "node scripts/bootstrap_sandbox.js",
     "teardown:sandbox": "node scripts/teardown_sandbox.js",
     "db:reset-and-seed": "node scripts/reset_and_seed_db.js",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:backend": "npm test --workspace=backend",
+    "db:local": "node scripts/local-db.js",
+    "typecheck": "npm run typecheck --workspace=frontend",
+    "test:e2e:legacy": "playwright test -c playwright.legacy.config.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "embedded-postgres": "15.18.0-beta.17",
     "prisma": "^5.22.0"
   }
 }

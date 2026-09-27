@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 
 const CHIPS = [100, 500, 1000, 2000, 5000, 10000];
 const GATEWAYS = [
-  { id: 'upi', name: 'Instant UPI / QR', icon: 'UPI', tag: 'Fastest' },
+  { id: 'upi', name: 'UPI / QR', icon: 'UPI', tag: 'Recommended' },
   { id: 'gpay', name: 'Google Pay', icon: 'GPay', tag: 'Direct' },
   { id: 'phonepe', name: 'PhonePe UPI', icon: 'Pe', tag: 'Direct' },
   { id: 'paytm', name: 'Paytm UPI', icon: 'Paytm', tag: 'Direct' },
@@ -31,7 +31,8 @@ export default function DepositScreen() {
   const [errorMessage, setErrorMessage] = useState('');
   const [lastTxId, setLastTxId] = useState('');
 
-  const merchantVpa = process.env.NEXT_PUBLIC_MERCHANT_UPI_ID || 'windaq.merchant@icici';
+  // No fallback: never show a guessed VPA that could belong to someone else.
+  const merchantVpa = process.env.NEXT_PUBLIC_MERCHANT_UPI_ID || '';
 
   const handleInitiate = () => {
     if (!isAuthenticated) {
@@ -41,6 +42,10 @@ export default function DepositScreen() {
     }
     if (amount < 100) {
       toast.error('Minimum deposit amount is ₹100');
+      return;
+    }
+    if (!merchantVpa) {
+      toast.error('Deposits are temporarily unavailable. Please try again later.');
       return;
     }
     setStep('intent');
@@ -59,7 +64,7 @@ export default function DepositScreen() {
         setStep('success');
         setLastTxId(res.data?.transactionId || res.data?.id || `TX-${Date.now()}`);
         await fetchBalance();
-        toast.success(`Deposited ₹${amount.toLocaleString('en-IN')} successfully!`);
+        toast.success(res.message || 'Deposit submitted for verification.');
       } else {
         setStep('failed');
         setErrorMessage(res.message || 'Payment verification failed');
@@ -152,7 +157,7 @@ export default function DepositScreen() {
                       </div>
                       <div>
                         <p className="text-white font-bold text-sm">{gateway.name}</p>
-                        <p className="text-gray-400 text-[10px] font-semibold">{gateway.tag} • Instant Verification</p>
+                        <p className="text-gray-400 text-[10px] font-semibold">{gateway.tag} • Verified by our team</p>
                       </div>
                     </div>
                     <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedGateway === gateway.id ? 'border-neon-mint' : 'border-gray-500'}`}>
@@ -185,7 +190,7 @@ export default function DepositScreen() {
                 </span>
                 <div>
                   <h2 className="text-xl font-black text-white">Complete ₹{amount.toLocaleString('en-IN')} Transfer</h2>
-                  <p className="text-xs text-gray-400 mt-1">Transfer via UPI and enter your 12-digit UTR below for immediate confirmation.</p>
+                  <p className="text-xs text-gray-400 mt-1">Transfer via UPI, then enter your 12-digit UTR below. Your balance is credited after verification.</p>
                 </div>
 
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-left space-y-2">
@@ -251,9 +256,9 @@ export default function DepositScreen() {
             <motion.div key="success" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="py-12 text-center space-y-5">
               <TransactionStatusAnimation status="SUCCESS" size="lg" />
               <div>
-                <h2 className="text-2xl font-black text-emerald-400">Deposit Reconciled & Credited!</h2>
+                <h2 className="text-2xl font-black text-emerald-400">Deposit Submitted for Verification</h2>
                 <p className="text-xs text-gray-300 mt-1">
-                  ₹{amount.toLocaleString('en-IN')} has been credited to your authoritative wallet balance.
+                  ₹{amount.toLocaleString('en-IN')} will be credited to your wallet once the payment is verified.
                 </p>
               </div>
 

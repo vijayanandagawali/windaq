@@ -70,7 +70,7 @@ export default function WithdrawModal() {
       if (res.success) {
         setStep('CONFIRMED');
         setLastTxId(res.data?.transactionId || res.data?.id || `TX-${Date.now()}`);
-        toast.success(`Withdrawal of ₹${amount.toLocaleString('en-IN')} successfully initiated!`);
+        toast.success(res.message || 'Withdrawal requested and awaiting review.');
       } else {
         setStep('FAILED');
         setErrorMessage(res.message || 'Withdrawal rejected by banking risk engine');
@@ -108,7 +108,7 @@ export default function WithdrawModal() {
             <div className="flex items-center gap-2">
               <span className="text-xl">💸</span>
               <div>
-                <h3 className="text-white font-black text-sm tracking-wide uppercase">Instant Bank Payout</h3>
+                <h3 className="text-white font-black text-sm tracking-wide uppercase">UPI Withdrawal</h3>
                 <p className="text-[10px] text-gray-400 font-semibold">Authoritative Ledger Settlements</p>
               </div>
             </div>
@@ -252,11 +252,11 @@ export default function WithdrawModal() {
 
           {step === 'CONFIRMED' && (
             <div className="py-6 text-center space-y-4">
-              <TransactionStatusAnimation status="SUCCESS" size="lg" />
+              <TransactionStatusAnimation status="PENDING_REVIEW" size="lg" />
               <div>
-                <h4 className="text-emerald-400 font-black text-lg">Withdrawal Processed!</h4>
+                <h4 className="text-amber-400 font-black text-lg">Withdrawal Requested</h4>
                 <p className="text-xs text-gray-300 mt-1">
-                  ₹{amount.toLocaleString('en-IN')} has been deducted from your authoritative balance and sent to your UPI.
+                  ₹{amount.toLocaleString('en-IN')} is on hold and will be sent to your UPI after review.
                 </p>
               </div>
 

@@ -11,6 +11,7 @@
 
 import { io as realIo, Socket } from 'socket.io-client';
 import { useWalletStore } from '@/store/walletStore';
+import { useDemoModeStore } from '@/store/demoModeStore';
 
 type EventHandler = (...args: any[]) => void;
 
@@ -23,6 +24,8 @@ class VirtualGameSocket {
 
   constructor() {
     this.connected = true;
+    // Surface a visible DEMO banner whenever the browser simulator is in use.
+    useDemoModeStore.getState().markSimulated();
     // Notify connect handler on next tick
     setTimeout(() => {
       this.emitInternal('connect');
@@ -87,13 +90,9 @@ class VirtualGameSocket {
       return;
     }
 
-    if (event === 'place_bet') {
-      if (ack) ack({ success: true, message: 'Bet placed successfully' });
-      return;
-    }
-
-    if (event === 'aviator:cashout') {
-      if (ack) ack({ success: true, winAmount: data?.winAmount });
+    // Real-money betting is never simulated: the browser simulator is display-only.
+    if (event === 'place_bet' || event === 'aviator:cashout') {
+      if (ack) ack({ success: false, code: 'DEMO_MODE', message: 'Game server offline. Betting is disabled in demo mode.' });
       return;
     }
 
@@ -647,6 +646,17 @@ export function getGameSocket(url?: string, options?: any): any {
       transports: ['websocket', 'polling'],
       timeout: 3000,
       ...options
+    });
+    // Surface connection health so the UI can show an explicit "server offline" state
+    // instead of an endless "waiting for next round".
+    let failures = 0;
+    s.on('connect', () => {
+      failures = 0;
+      useDemoModeStore.getState().setServerOffline(false);
+    });
+    s.on('connect_error', () => {
+      failures += 1;
+      if (failures >= 2) useDemoModeStore.getState().setServerOffline(true);
     });
     return s;
   } catch {

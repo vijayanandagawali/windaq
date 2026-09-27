@@ -6,411 +6,268 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { requireAuth } = require('../middleware/auth');
 const { ensureUserAndWallet } = require('../services/walletService');
+const { getJwtSecret } = require('../config/security');
+const { issueOtp, verifyOtp } = require('../services/otpService');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-fallback';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
-// In-memory OTP & Revocation Stores
-const activeOtpStore = new Map(); // phone -> { otp, expiresAt }
-const revokedTokens = new Set(); // token string
+// In-memory revocation store (single-instance only; see otpService note)
+const revokedTokens = new Set();
 
-// Helper to normalize Indian phone numbers to E.164 (+919876543210)
+const GUEST_TEST_CREDITS_PAISE = 5000000n; // ₹50,000 play-money for explicit test/guest mode
+
+function isGuestModeEnabled() {
+  if (process.env.NODE_ENV !== 'production') return process.env.ENABLE_GUEST_MODE !== 'false';
+  return process.env.ENABLE_GUEST_MODE === 'true';
+}
+
+/**
+ * Normalizes an Indian mobile number to E.164 (+91XXXXXXXXXX).
+ * Returns null unless the input is exactly 10 digits, optionally prefixed with 91/0.
+ */
 function normalizePhone(rawPhone) {
   if (!rawPhone) return null;
-  const digits = rawPhone.toString().replace(/\D/g, '');
-  if (digits.length === 10) return `+91${digits}`;
-  if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
-  if (digits.length > 10) return `+${digits}`;
-  return `+91${digits.padStart(10, '0')}`;
+  let digits = rawPhone.toString().replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
+  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+  if (!/^[6-9]\d{9}$/.test(digits)) return null;
+  return `+91${digits}`;
+}
+
+function signSession(user, isGuest, expiresIn = JWT_EXPIRES_IN) {
+  return jwt.sign(
+    { userId: user.id, phone: user.phone, role: user.role, isGuest },
+    getJwtSecret(),
+    { expiresIn, algorithm: 'HS256' }
+  );
+}
+
+function otpErrorResponse(res, code) {
+  const messages = {
+    OTP_NOT_REQUESTED: 'Please request a verification code first.',
+    OTP_EXPIRED: 'Your verification code has expired. Please request a new one.',
+    OTP_ATTEMPTS_EXCEEDED: 'Too many incorrect attempts. Please request a new code.',
+    INVALID_OTP: 'Invalid verification code. Please check and try again.'
+  };
+  return res.status(401).json({ success: false, code, message: messages[code] || 'Verification failed.' });
+}
+
+function invalidPhone(res) {
+  return res.status(400).json({
+    success: false,
+    code: 'INVALID_PHONE',
+    message: 'Please provide a valid 10-digit Indian mobile number.'
+  });
+}
+
+function publicUser(user, isGuest) {
+  return { id: user.id, phone: user.phone, role: user.role, isGuest, createdAt: user.createdAt };
 }
 
 /**
  * POST /api/auth/send-otp
- * Generates and dispatches OTP for login or registration.
+ * Issues an OTP via the SMS provider. The code is never returned or logged.
  */
 router.post('/send-otp', async (req, res) => {
   try {
-    const { phone: rawPhone } = req.body;
-    const phone = normalizePhone(rawPhone);
+    const phone = normalizePhone(req.body?.phone);
+    if (!phone) return invalidPhone(res);
 
-    if (!phone || phone.length < 12) {
-      return res.status(400).json({
+    const result = await issueOtp(phone);
+    if (!result.ok) {
+      if (result.code === 'OTP_COOLDOWN') {
+        return res.status(429).json({
+          success: false,
+          code: result.code,
+          message: `Please wait ${Math.ceil(result.retryAfterMs / 1000)} seconds before requesting another code.`
+        });
+      }
+      console.error('[Auth /send-otp] OTP delivery failed:', result.code);
+      return res.status(503).json({
         success: false,
-        code: 'INVALID_PHONE',
-        message: 'Please provide a valid 10-digit mobile number.'
+        code: result.code,
+        message: 'We could not send the verification code right now. Please try again shortly.'
       });
     }
 
-    const otp = (process.env.NODE_ENV === 'test' || rawPhone?.endsWith('0001')) 
-      ? '1234' 
-      : Math.floor(1000 + Math.random() * 9000).toString();
-
-    activeOtpStore.set(phone, {
-      otp,
-      expiresAt: Date.now() + 5 * 60 * 1000 // 5 min expiry
-    });
-
-    console.log(`[Auth /send-otp] Generated OTP for ${phone}: ${otp}`);
-
-    return res.json({
-      success: true,
-      message: `OTP sent successfully to ${phone}`,
-      demoOtp: '1234'
-    });
+    return res.json({ success: true, message: `Verification code sent to ${phone.slice(0, 5)}XXXXX${phone.slice(-2)}` });
   } catch (error) {
-    console.error('[Auth send-otp Error]:', error);
-    return res.status(500).json({
-      success: false,
-      code: 'SERVER_ERROR',
-      message: 'Failed to send OTP. Please try again.'
-    });
+    console.error('[Auth send-otp Error]:', error.message);
+    return res.status(500).json({ success: false, code: 'SERVER_ERROR', message: 'Failed to send OTP. Please try again.' });
   }
 });
 
 /**
- * POST /api/auth/register
- * Creates a brand new user, auto-provisions Wallet (₹500 welcome bonus),
- * creates double-entry ledger accounts, and returns JWT session token.
+ * Shared login/registration handler: verifies the OTP, then finds or creates the user.
+ * New accounts start with a zero cash balance — no unbacked credit is ever minted here.
  */
-router.post('/register', async (req, res) => {
-  try {
-    const { phone: rawPhone, referralCode } = req.body;
-    const phone = normalizePhone(rawPhone);
+async function authenticateWithOtp(req, res, { mustBeNew }) {
+  const phone = normalizePhone(req.body?.phone);
+  if (!phone) return invalidPhone(res);
 
-    if (!phone || phone.length < 12) {
-      return res.status(400).json({
-        success: false,
-        code: 'INVALID_PHONE',
-        message: 'Please provide a valid 10-digit mobile number.'
-      });
-    }
+  const otp = req.body?.otp ? req.body.otp.toString().trim() : '';
+  if (!otp) {
+    return res.status(400).json({ success: false, code: 'OTP_REQUIRED', message: 'Please enter the verification code (OTP).' });
+  }
 
-    // Check if phone already registered
-    const existing = await prisma.user.findUnique({ where: { phone } });
-    if (existing) {
-      return res.status(409).json({
-        success: false,
-        code: 'USER_EXISTS',
-        message: 'This mobile number is already registered. Please log in instead.'
-      });
-    }
-
-    const userId = `usr_${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
-    const welcomeBonusPaise = 50000n; // ₹500 in paise
-
-    // Atomically provision User, Wallet, LedgerAccount, KYC, and Risk Profile
-    const { user, wallet } = await ensureUserAndWallet(prisma, userId, {
-      phone,
-      role: 'USER',
-      initialPaise: welcomeBonusPaise
+  let user = await prisma.user.findUnique({ where: { phone } });
+  if (mustBeNew && user) {
+    return res.status(409).json({
+      success: false,
+      code: 'USER_EXISTS',
+      message: 'This mobile number is already registered. Please log in instead.'
     });
+  }
 
-    // Create default KYC Profile and Risk Profile
+  const verification = verifyOtp(phone, otp);
+  if (!verification.ok) return otpErrorResponse(res, verification.code);
+
+  if (user) {
+    const risk = await prisma.userRiskProfile.findUnique({ where: { userId: user.id } }).catch(() => null);
+    if (risk && risk.isSuspended) {
+      return res.status(403).json({ success: false, code: 'ACCOUNT_RESTRICTED', message: 'This account is restricted. Please contact support.' });
+    }
+  }
+
+  const isNewUser = !user;
+  if (isNewUser) {
+    const userId = `usr_${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
+    const result = await ensureUserAndWallet(prisma, userId, { phone, role: 'USER', initialPaise: 0n });
+    user = result.user;
+
     await prisma.kycProfile.upsert({
       where: { userId },
       create: { userId, status: 'PENDING', jurisdiction: 'IN-MH' },
       update: {}
     }).catch(() => {});
-
     await prisma.userRiskProfile.upsert({
       where: { userId },
       create: { userId, riskScore: 0, isSuspended: false },
       update: {}
     }).catch(() => {});
+  }
 
-    // Sign JWT session token
-    const token = jwt.sign(
-      { userId: user.id, phone: user.phone, role: user.role, isGuest: false },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
+  const wallet = await prisma.wallet.findFirst({ where: { userId: user.id, currency: 'INR' } });
+  const token = signSession(user, false);
 
-    return res.status(201).json({
-      success: true,
-      message: 'Registration successful! Welcome to WinDaq.',
-      token,
-      user: {
-        id: user.id,
-        phone: user.phone,
-        role: user.role,
-        isGuest: false,
-        createdAt: user.createdAt
-      },
-      wallet: {
-        balance: Number(wallet.balance) / 100,
-        currency: 'INR'
-      }
-    });
+  return res.status(isNewUser ? 201 : 200).json({
+    success: true,
+    message: isNewUser ? 'Welcome! Your account has been created.' : 'Login successful.',
+    token,
+    user: publicUser(user, false),
+    wallet: { balance: wallet ? Number(wallet.balance) / 100 : 0, currency: 'INR' }
+  });
+}
+
+/**
+ * POST /api/auth/register — OTP-verified account creation.
+ */
+router.post('/register', async (req, res) => {
+  try {
+    return await authenticateWithOtp(req, res, { mustBeNew: true });
   } catch (error) {
-    console.error('[Auth Register Error]:', error);
-    return res.status(500).json({
-      success: false,
-      code: 'SERVER_ERROR',
-      message: 'Registration failed due to a server error. Please try again.'
-    });
+    console.error('[Auth Register Error]:', error.message);
+    return res.status(500).json({ success: false, code: 'SERVER_ERROR', message: 'Registration failed due to a server error. Please try again.' });
   }
 });
 
 /**
- * POST /api/auth/login
- * Validates credentials / OTP (test OTP: 1234) and returns JWT session token.
- * If user does not exist, automatically provisions them so login NEVER fails with "User not found".
+ * POST /api/auth/login — OTP-verified login (creates the account on first verified login).
  */
 router.post('/login', async (req, res) => {
   try {
-    const { phone: rawPhone, otp } = req.body;
-    const phone = normalizePhone(rawPhone);
-
-    if (!phone || phone.length < 12) {
-      return res.status(400).json({
-        success: false,
-        code: 'INVALID_PHONE',
-        message: 'Please provide a valid 10-digit mobile number.'
-      });
-    }
-
-    // In sandbox / test environment, verify OTP
-    const cleanOtp = otp ? otp.toString().trim() : '';
-    if (!cleanOtp) {
-      return res.status(400).json({
-        success: false,
-        code: 'OTP_REQUIRED',
-        message: 'Please enter the verification code (OTP).'
-      });
-    }
-
-    const storedRecord = activeOtpStore.get(phone);
-    const isStoredOtpValid = storedRecord && (Date.now() <= storedRecord.expiresAt) && (storedRecord.otp === cleanOtp);
-    const isTestOtp = cleanOtp === '1234' || cleanOtp === '0000' || cleanOtp === '123456';
-
-    if (!isTestOtp && !isStoredOtpValid) {
-      return res.status(401).json({
-        success: false,
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid verification code (OTP). Please check your code and try again.'
-      });
-    }
-
-    // Check if user already exists and is suspended
-    let user = await prisma.user.findUnique({ where: { phone } });
-    if (user) {
-      const risk = await prisma.userRiskProfile.findUnique({ where: { userId: user.id } }).catch(() => null);
-      if (risk && risk.isSuspended) {
-        return res.status(403).json({
-          success: false,
-          code: 'ACCOUNT_RESTRICTED',
-          message: 'This account is restricted. Please contact support.'
-        });
-      }
-    }
-
-    let isNewUser = false;
-
-    if (!user) {
-      // Auto-provision brand new user
-      isNewUser = true;
-      const userId = `usr_${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
-      const result = await ensureUserAndWallet(prisma, userId, {
-        phone,
-        role: 'USER',
-        initialPaise: 50000n // ₹500 welcome credits
-      });
-      user = result.user;
-    } else {
-      // Auto-heal wallet/ledger if missing
-      await ensureUserAndWallet(prisma, user.id, {
-        phone: user.phone,
-        role: user.role
-      });
-    }
-
-    // Clear used OTP
-    if (storedRecord) activeOtpStore.delete(phone);
-
-    // Fetch up-to-date wallet balance
-    const wallet = await prisma.wallet.findFirst({
-      where: { userId: user.id, currency: 'INR' }
-    });
-
-    const balance = wallet ? Number(wallet.balance) / 100 : 0;
-
-    const token = jwt.sign(
-      { userId: user.id, phone: user.phone, role: user.role, isGuest: false },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-
-    return res.json({
-      success: true,
-      message: isNewUser ? 'Welcome! New account created and logged in.' : 'Login successful.',
-      token,
-      user: {
-        id: user.id,
-        phone: user.phone,
-        role: user.role,
-        isGuest: false,
-        createdAt: user.createdAt
-      },
-      wallet: {
-        balance,
-        currency: 'INR'
-      }
-    });
+    return await authenticateWithOtp(req, res, { mustBeNew: false });
   } catch (error) {
-    console.error('[Auth Login Error]:', error);
-    return res.status(500).json({
-      success: false,
-      code: 'SERVER_ERROR',
-      message: 'Login failed due to a server error. Please try again.'
-    });
+    console.error('[Auth Login Error]:', error.message);
+    return res.status(500).json({ success: false, code: 'SERVER_ERROR', message: 'Login failed due to a server error. Please try again.' });
   }
 });
 
 /**
  * POST /api/auth/guest
- * Explicit TEST MODE guest account.
- * Creates or attaches to a dedicated test guest account with ₹50,000 test credits.
+ * Explicit TEST MODE guest account with play-money credits.
+ * Guest wallets can never deposit or withdraw (enforced in the ledger routes).
+ * Disabled in production unless ENABLE_GUEST_MODE=true.
  */
 router.post('/guest', async (req, res) => {
+  if (!isGuestModeEnabled()) {
+    return res.status(403).json({ success: false, code: 'GUEST_MODE_DISABLED', message: 'Guest test mode is not available.' });
+  }
   try {
-    const guestSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 6);
+    const guestSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
     const guestId = `sbx_guest_${guestSuffix}`;
-    const guestPhone = `+9199990${guestSuffix.padStart(5, '0').slice(0, 5)}`;
-    const guestTestCreditsPaise = 5000000n; // ₹50,000 in paise
+    const guestPhone = `+90000${crypto.randomInt(10000000, 99999999)}`;
 
     const { user, wallet } = await ensureUserAndWallet(prisma, guestId, {
       phone: guestPhone,
       role: 'USER',
-      initialPaise: guestTestCreditsPaise
+      initialPaise: GUEST_TEST_CREDITS_PAISE
     });
 
-    const token = jwt.sign(
-      { userId: user.id, phone: user.phone, role: user.role, isGuest: true },
-      JWT_SECRET,
-      { expiresIn: '12h' }
-    );
+    const token = signSession(user, true, '12h');
 
     return res.json({
       success: true,
-      message: 'Guest test account initialized with ₹50,000 sandbox balance.',
+      message: 'Guest test account initialized with ₹50,000 play-money balance (not withdrawable).',
       token,
-      user: {
-        id: user.id,
-        phone: user.phone,
-        role: user.role,
-        isGuest: true,
-        createdAt: user.createdAt
-      },
-      wallet: {
-        balance: Number(wallet.balance) / 100,
-        currency: 'INR'
-      }
+      user: publicUser(user, true),
+      wallet: { balance: Number(wallet.balance) / 100, currency: 'INR' }
     });
   } catch (error) {
-    console.error('[Auth Guest Error]:', error);
-    return res.status(500).json({
-      success: false,
-      code: 'SERVER_ERROR',
-      message: 'Failed to provision guest test account.'
-    });
+    console.error('[Auth Guest Error]:', error.message);
+    return res.status(500).json({ success: false, code: 'SERVER_ERROR', message: 'Failed to provision guest test account.' });
   }
 });
 
 /**
  * GET /api/auth/me
- * Protected session validation route.
- * Returns the currently authenticated user, active wallet balance, and KYC status.
- * Auto-heals if records are missing.
+ * Returns the authenticated user. Never creates users or trusts role claims from the token:
+ * the role always comes from the database.
  */
 router.get('/me', requireAuth, async (req, res) => {
   try {
-    const userId = req.user.userId;
-
-    // Check token revocation
     const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      if (revokedTokens.has(token)) {
-        return res.status(401).json({
-          success: false,
-          code: 'SESSION_EXPIRED',
-          message: 'Session has been logged out. Please sign in again.'
-        });
-      }
+    if (authHeader && authHeader.startsWith('Bearer ') && revokedTokens.has(authHeader.split(' ')[1])) {
+      return res.status(401).json({ success: false, code: 'SESSION_EXPIRED', message: 'Session has been logged out. Please sign in again.' });
     }
 
-    // Guarantee user & wallet exist (permanent elimination of User not found)
-    const { user, wallet } = await ensureUserAndWallet(prisma, userId, {
-      phone: req.user.phone,
-      role: req.user.role || 'USER'
-    });
+    const userId = req.user.userId;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(401).json({ success: false, code: 'SESSION_INVALID', message: 'Account not found. Please sign in again.' });
+    }
 
+    // Wallet self-heal is allowed (zero balance only), user creation is not.
+    const { wallet } = await ensureUserAndWallet(prisma, user.id, { initialPaise: 0n });
     const kyc = await prisma.kycProfile.findUnique({ where: { userId } }).catch(() => null);
     const risk = await prisma.userRiskProfile.findUnique({ where: { userId } }).catch(() => null);
 
     return res.json({
       success: true,
       user: {
-        id: user.id,
-        phone: user.phone,
-        role: user.role,
-        isGuest: req.user.isGuest || false,
+        ...publicUser(user, Boolean(req.user.isGuest)),
         kycStatus: kyc ? kyc.status : 'PENDING',
-        isSuspended: Boolean(risk?.isSuspended),
-        createdAt: user.createdAt
+        isSuspended: Boolean(risk?.isSuspended)
       },
-      wallet: {
-        balance: Number(wallet.balance) / 100,
-        currency: 'INR'
-      }
+      wallet: { balance: Number(wallet.balance) / 100, currency: 'INR' }
     });
   } catch (error) {
-    console.error('[Auth /me Error]:', error);
-    return res.status(500).json({
-      success: false,
-      code: 'SERVER_ERROR',
-      message: 'Failed to retrieve user session.'
-    });
+    console.error('[Auth /me Error]:', error.message);
+    return res.status(500).json({ success: false, code: 'SERVER_ERROR', message: 'Failed to retrieve user session.' });
   }
 });
 
 /**
  * POST /api/auth/logout
- * Terminates user session.
  */
 router.post('/logout', (req, res) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    revokedTokens.add(token);
+    revokedTokens.add(authHeader.split(' ')[1]);
   }
-  return res.json({
-    success: true,
-    message: 'Logged out successfully.'
-  });
-});
-
-/**
- * Legacy mock-token endpoint (preserved for backward compatibility with old test suites)
- */
-router.get('/mock-token', (req, res) => {
-  const userId = req.query.userId || 'TEST_PLAYER_01';
-  const role = req.query.role || 'USER';
-
-  const token = jwt.sign(
-    { userId, role, scope: 'full_access' },
-    JWT_SECRET,
-    { expiresIn: '12h' }
-  );
-
-  res.json({
-    success: true,
-    data: {
-      userId,
-      token,
-      message: 'Use this Bearer token in the Authorization header.'
-    }
-  });
+  return res.json({ success: true, message: 'Logged out successfully.' });
 });
 
 module.exports = router;
+module.exports.normalizePhone = normalizePhone;
+module.exports.isRevoked = (token) => revokedTokens.has(token);

@@ -7,7 +7,7 @@ const { requireRole, logAudit } = require('../middleware/AdminRBAC');
  * GET /api/admin/reconciliation
  * Returns reconciliation summary cards & list of recent cases
  */
-router.get('/reconciliation', async (req, res) => {
+router.get('/reconciliation', requireRole(['FINANCE', 'SUPER_ADMIN']), async (req, res) => {
   try {
     const summary = await reconciliationService.getDashboardSummary();
     res.json(summary);
@@ -21,7 +21,7 @@ router.get('/reconciliation', async (req, res) => {
  * POST /api/admin/reconciliation/run
  * Manually trigger full ledger cross-reconciliation sweep
  */
-router.post('/reconciliation/run', async (req, res) => {
+router.post('/reconciliation/run', requireRole(['FINANCE', 'SUPER_ADMIN']), async (req, res) => {
   try {
     const report = await reconciliationService.runFullReconciliation();
     res.json({
@@ -39,7 +39,7 @@ router.post('/reconciliation/run', async (req, res) => {
  * POST /api/admin/reconciliation/cases/:caseId/resolve
  * Resolves a discrepancy case with mandatory audit reference
  */
-router.post('/reconciliation/cases/:caseId/resolve', async (req, res) => {
+router.post('/reconciliation/cases/:caseId/resolve', requireRole(['FINANCE', 'SUPER_ADMIN']), async (req, res) => {
   try {
     const { caseId } = req.params;
     const { resolutionReference, resolutionNote } = req.body;

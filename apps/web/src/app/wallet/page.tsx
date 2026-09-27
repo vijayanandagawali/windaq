@@ -185,6 +185,10 @@ export default function WalletHub() {
       toast.error('Minimum deposit amount is ₹100');
       return;
     }
+    if (!/^[A-Za-z0-9]{8,30}$/.test(depositUtr.trim())) {
+      toast.error('Enter the 12-digit UPI reference (UTR) from your payment app after paying.');
+      return;
+    }
 
     try {
       setIsSubmittingDeposit(true);
@@ -194,13 +198,14 @@ export default function WalletHub() {
         headers: getAuthHeaders(),
         body: JSON.stringify({
           amount: depositAmount,
+          utr: depositUtr.trim(),
           method: 'UPI'
         })
       });
 
       const data = await res.json();
       if (data.success) {
-        toast.success(`Deposited ₹${depositAmount} successfully!`);
+        toast.success(data.message || 'Deposit submitted for verification.');
         setIsDepositOpen(false);
         setDepositUtr('');
         handleRefresh();
@@ -245,7 +250,7 @@ export default function WalletHub() {
 
       const data = await res.json();
       if (data.success) {
-        toast.success(`Withdrawal of ₹${withdrawAmount} processed!`);
+        toast.success(data.message || 'Withdrawal requested and awaiting review.');
         setIsWithdrawOpen(false);
         setWithdrawUpi('');
         handleRefresh();
@@ -277,7 +282,7 @@ export default function WalletHub() {
               </span>
             </div>
             <p className="text-xs text-white/50 mt-1">
-              Server-authoritative balances, instant deposits, and complete double-entry transaction history.
+              Server-authoritative balances, verified deposits and withdrawals, and complete double-entry transaction history.
             </p>
           </div>
 
@@ -341,7 +346,7 @@ export default function WalletHub() {
                   className="flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-neon-mint to-emerald-400 hover:from-emerald-400 hover:to-neon-mint text-deep-ocean font-black text-sm rounded-2xl shadow-[0_0_20px_rgba(0,255,163,0.4)] active:scale-95 transition-all cursor-pointer min-h-[44px]"
                 >
                   <ArrowDownLeft size={20} strokeWidth={3} />
-                  <span>INSTANT DEPOSIT</span>
+                  <span>DEPOSIT</span>
                 </button>
 
                 <button
@@ -702,7 +707,7 @@ export default function WalletHub() {
 
       </main>
 
-      {/* --- MODAL 1: INSTANT DEPOSIT MODAL --- */}
+      {/* --- MODAL 1: DEPOSIT MODAL --- */}
       {isDepositOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#0e1626] border border-neon-mint/40 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-left">
@@ -780,7 +785,7 @@ export default function WalletHub() {
 
               {/* UTR Input */}
               <div>
-                <label className="text-xs font-bold text-white/60 block mb-1.5">12-Digit UPI Ref / UTR Number (Optional)</label>
+                <label className="text-xs font-bold text-white/60 block mb-1.5">12-Digit UPI Ref / UTR Number (required after paying)</label>
                 <input
                   type="text"
                   maxLength={16}

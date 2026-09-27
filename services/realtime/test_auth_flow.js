@@ -86,7 +86,7 @@ async function runAuthFlowTest() {
   console.log('\n6️⃣ Testing Session Expiry (Expired JWT Rejection)...');
   const expiredToken = jwt.sign(
     { userId: registeredUser.id, phone: testPhone, role: 'USER' },
-    process.env.JWT_SECRET || 'super-secret-key-fallback',
+    process.env.JWT_SECRET,
     { expiresIn: -10 } // expired 10 seconds ago
   );
 

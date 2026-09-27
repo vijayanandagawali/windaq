@@ -60,7 +60,7 @@ export default function WithdrawScreen() {
         setStep('success');
         setLastTxId(res.data?.transactionId || res.data?.id || `TX-${Date.now()}`);
         await fetchBalance();
-        toast.success(`Withdrawal of ₹${numAmount.toLocaleString('en-IN')} successfully initiated!`);
+        toast.success(res.message || 'Withdrawal requested and awaiting review.');
       } else {
         setStep('failed');
         setErrorMessage(res.message || 'Withdrawal rejected by banking risk engine');
@@ -155,7 +155,7 @@ export default function WithdrawScreen() {
                 >
                   <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center font-black text-white text-xs">UPI</div>
                   <div>
-                    <p className="text-white font-bold text-sm">Instant UPI</p>
+                    <p className="text-white font-bold text-sm">UPI</p>
                     <p className="text-gray-400 text-[10px]">~30 Seconds</p>
                   </div>
                 </div>
@@ -217,11 +217,11 @@ export default function WithdrawScreen() {
 
           {step === 'success' && (
             <motion.div key="success" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="py-12 text-center space-y-5">
-              <TransactionStatusAnimation status="SUCCESS" size="lg" />
+              <TransactionStatusAnimation status="PENDING_REVIEW" size="lg" />
               <div>
-                <h2 className="text-2xl font-black text-emerald-400">Withdrawal Processed!</h2>
+                <h2 className="text-2xl font-black text-amber-400">Withdrawal Requested</h2>
                 <p className="text-xs text-gray-300 mt-1">
-                  ₹{Number(amount).toLocaleString('en-IN')} has been deducted from your authoritative balance and dispatched to {destination}.
+                  ₹{Number(amount).toLocaleString('en-IN')} is on hold and will be paid to {destination} after review.
                 </p>
               </div>
 

@@ -89,13 +89,13 @@ export default function AuthModal() {
       return;
     }
 
+    if (!otp) {
+      toast.error('Please enter the OTP sent to your phone.');
+      return;
+    }
     if (activeTab === 'REGISTER') {
-      await register(phone, referralCode);
+      await register(phone, otp, referralCode);
     } else {
-      if (!otp) {
-        toast.error('Please enter the OTP sent to your phone.');
-        return;
-      }
       await login(phone, otp);
     }
   };
@@ -131,7 +131,7 @@ export default function AuthModal() {
             {activeTab === 'GUEST'
               ? 'Instant sandbox session with test currency'
               : activeTab === 'REGISTER'
-              ? 'Create your verified account & claim ₹500 welcome bonus'
+              ? 'Create your account — verified by SMS code'
               : 'Sign in with your mobile OTP to access your wallet'}
           </p>
         </div>
@@ -242,8 +242,8 @@ export default function AuthModal() {
               </div>
             </div>
 
-            {/* Login: Real OTP Input with Send OTP Button */}
-            {activeTab === 'LOGIN' && (
+            {/* OTP verification (required for both login and registration) */}
+            {(activeTab === 'LOGIN' || activeTab === 'REGISTER') && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-[11px] font-black uppercase text-gray-400">
@@ -298,10 +298,6 @@ export default function AuthModal() {
                     className="w-full bg-white/5 border border-white/15 focus:border-neon-mint rounded-2xl py-3 pl-10 pr-4 text-white font-mono text-xs uppercase outline-none transition-colors"
                   />
                 </div>
-                <div className="mt-2.5 p-2.5 bg-neon-mint/10 border border-neon-mint/20 rounded-xl flex items-center gap-2 text-[11px] text-neon-mint font-bold">
-                  <Sparkles size={14} className="shrink-0" />
-                  <span>₹500 instant welcome bonus credited upon signup!</span>
-                </div>
               </div>
             )}
 
@@ -309,7 +305,7 @@ export default function AuthModal() {
             <button
               type="submit"
               data-testid="auth-submit-btn"
-              disabled={isLoading || phone.length < 10}
+              disabled={isLoading || phone.length < 10 || otp.length < 4}
               className="w-full py-3.5 bg-neon-mint text-deep-ocean font-black text-sm rounded-2xl shadow-[0_0_20px_rgba(0,255,163,0.35)] hover:bg-[#1ed49c] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
@@ -319,7 +315,7 @@ export default function AuthModal() {
                 </>
               ) : (
                 <>
-                  <span>{activeTab === 'REGISTER' ? 'CREATE ACCOUNT & CLAIM ₹500' : 'SECURE SIGN IN'}</span>
+                  <span>{activeTab === 'REGISTER' ? 'VERIFY & CREATE ACCOUNT' : 'SECURE SIGN IN'}</span>
                   <ArrowRight size={16} strokeWidth={3} />
                 </>
               )}

@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { resultHistoryService } = require('../services/history/ResultHistoryService');
+const { requireAuth } = require('../middleware/auth');
+const { requireRole } = require('../middleware/AdminRBAC');
+
+const ADMIN_VIEW_ROLES = ['SUPPORT', 'RISK', 'FINANCE', 'SUPER_ADMIN'];
 
 /**
  * Universal Result History & Roadmap REST API (Prompt #65)
@@ -97,7 +101,7 @@ router.get('/results/:resultId/verify', (req, res) => {
 });
 
 // 6. GET /api/admin/history — Comprehensive Admin Global History Dashboard query
-router.get('/admin/history', (req, res) => {
+router.get('/admin/history', requireAuth, requireRole(ADMIN_VIEW_ROLES), (req, res) => {
   try {
     const { gameId, tableId, status, search, page, limit } = req.query;
 
@@ -118,7 +122,7 @@ router.get('/admin/history', (req, res) => {
 });
 
 // 7. GET /api/admin/rounds/:roundId/timeline — Authoritative lifecycle event timeline
-router.get('/admin/rounds/:roundId/timeline', (req, res) => {
+router.get('/admin/rounds/:roundId/timeline', requireAuth, requireRole(ADMIN_VIEW_ROLES), (req, res) => {
   try {
     const { roundId } = req.params;
     const timeline = resultHistoryService.getRoundTimeline(roundId);
@@ -135,16 +139,9 @@ router.get('/admin/rounds/:roundId/timeline', (req, res) => {
 });
 
 // 8. POST /api/admin/results/:resultId/correct — Audited result correction workflow
-router.post('/admin/results/:resultId/correct', async (req, res) => {
+router.post('/admin/results/:resultId/correct', requireAuth, requireRole(['SUPER_ADMIN', 'RISK']), async (req, res) => {
   try {
-    // Only SUPER_ADMIN, RISK, or FINANCE roles permitted
-    const userRole = req.user?.role || 'SUPER_ADMIN';
-    if (userRole !== 'SUPER_ADMIN' && userRole !== 'RISK') {
-      return res.status(403).json({
-        success: false,
-        message: 'Forbidden: Insufficient privileges to submit result corrections.'
-      });
-    }
+    // Role (SUPER_ADMIN / RISK) is enforced from the database by requireRole above.
 
     const { resultId } = req.params;
     const { correctionReason, newResult } = req.body;
@@ -163,7 +160,7 @@ router.post('/admin/results/:resultId/correct', async (req, res) => {
       });
     }
 
-    const authorizedActor = req.user?.phone || req.user?.id || 'SUPER_ADMIN';
+    const authorizedActor = req.admin.id;
     const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
 
     const correctionResult = await resultHistoryService.correctResult(resultId, {

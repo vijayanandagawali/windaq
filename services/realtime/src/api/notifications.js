@@ -4,9 +4,11 @@ const { PrismaClient } = require('@prisma/client');
 const { ensureUserAndWallet } = require('../services/walletService');
 const prisma = new PrismaClient();
 const notificationService = require('../services/notificationService');
+const { requireAuth } = require('../middleware/auth');
+const { requireRole } = require('../middleware/AdminRBAC');
 
 // Admin: View Notification Logs
-router.get('/admin/logs', async (req, res) => {
+router.get('/admin/logs', requireAuth, requireRole(['SUPPORT', 'SUPER_ADMIN']), async (req, res) => {
   try {
     const logs = await prisma.notificationLog.findMany({
       orderBy: { createdAt: 'desc' },
@@ -22,7 +24,7 @@ router.get('/admin/logs', async (req, res) => {
 });
 
 // Admin: Retry failed notification
-router.post('/admin/retry/:logId', async (req, res) => {
+router.post('/admin/retry/:logId', requireAuth, requireRole(['SUPPORT', 'SUPER_ADMIN']), async (req, res) => {
   try {
     const log = await prisma.notificationLog.findUnique({ where: { id: req.params.logId } });
     if (!log) return res.status(404).json({ success: false, message: 'Log not found' });
@@ -38,7 +40,6 @@ router.post('/admin/retry/:logId', async (req, res) => {
   }
 });
 
-const { requireAuth } = require('../middleware/auth');
 
 // User: Update Preferences
 router.post('/preferences', requireAuth, async (req, res) => {

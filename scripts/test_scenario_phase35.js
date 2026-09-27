@@ -17,6 +17,8 @@
  * - Difference between Wallet and Ledger = ₹0.00
  */
 require('dotenv').config({ path: require('path').resolve(__dirname, '../services/wallet/.env') });
+// Refuse to write to a shared/remote database unless explicitly confirmed (see services/realtime/src/config/dbSafety.js)
+require(require('path').resolve(__dirname, '../services/realtime/src/config/dbSafety')).guardDatabaseOrExit('test_scenario_phase35.js');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { WalletReconciliationService } = require('../services/realtime/src/services/reconciliation/WalletReconciliationService');
