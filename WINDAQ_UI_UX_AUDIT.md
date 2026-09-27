@@ -75,7 +75,7 @@ Screenshots and raw JSON were kept in the session scratchpad and not committed.
 | Static | `/promotions`, `/fairness`, `/terms`, `/privacy`, `/support`, `/responsible-gaming` | `/promotions` throws an unhandled error without the backend |
 
 ## 4. Not covered in this pass
-- Logged-in flows (would need auth against the shared DB; skipped to avoid writes).
+- Logged-in flows (skipped during the audit to avoid writing to the `.env` database; logged-in flows are now covered by `tests/e2e`).
 - Win/loss animations and result reveals (need live rounds).
 - Modals (deposit, withdraw, auth sheet) in interactive states.
 - LCP/CLS/bundle measurements.

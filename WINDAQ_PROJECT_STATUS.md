@@ -33,15 +33,21 @@ Statuses: **DONE · IN PROGRESS · BLOCKED · NEEDS REVIEW · FAILED**
 | Game artwork | IN PROGRESS | visual sweep | 54 original SVGs; stock video/photos on live pages | P3 | 2026-09-27 |
 | Mobile layout | NEEDS REVIEW | visual sweep | See UI audit | P2 | 2026-09-27 |
 | Legacy `server/` + `public/` stack | FAILED | none | RTP rigging switch; PII files tracked; stale deploy scripts | P1 (remove) | 2026-09-27 |
-| E2E test suite | BLOCKED | — | `@playwright/test` not installed; backend integration suite now exists (41 tests, isolated DB) | P1 | 2026-09-27 |
+| E2E test suite | DONE | 8 Playwright tests ✅ (Aviator 3/3 repeat) | New suite in `tests/e2e` against real backend + production build; legacy specs kept under `test:e2e:legacy` (not maintained) | P1 | 2026-09-27 |
 | Unit tests | IN PROGRESS | 41 backend tests (`npm run test:backend`) | No frontend unit tests yet | P1 | 2026-09-27 |
-| CI/CD | FAILED | — | No pipeline | P2 | 2026-09-27 |
-| Environment separation | IN PROGRESS | test harness refuses shared DB | Tests use `DATABASE_URL_TEST` (local only). Dev scripts still point at the shared DB | **P0** | 2026-09-27 |
+| CI/CD | NEEDS REVIEW | workflow YAML parsed; every step run locally | `.github/workflows/ci.yml` (web, backend, e2e) not yet executed on GitHub; lint uses a ratchet (63/552) | P1 | 2026-09-27 |
+| Environment separation | DONE | guard refusal verified | `npm run db:local` (dev + test DBs); `.env` → `windaq_dev`; DB guard on scripts + dev server; destructive scripts need typed confirmation | P0 | 2026-09-27 |
 | Observability | NEEDS REVIEW | — | Log redaction helper exists; no request IDs | P2 | 2026-09-27 |
 
 ## Phase 1 — containment (completed 2026-09-27)
 Done: 1 (demo banner, fabricated fallbacks removed), 2 (secret fallbacks removed; **key rotation still required by the owner**), 3 (Aviator), 4 (instant deposit/withdraw), 5 (mock-token, master OTPs), 8 (admin route guards). Also pulled forward: socket broadcast + room isolation (part of 9), `/me` auto-provisioning (part of 7).
 Verification: 41 backend integration tests on an isolated DB (mutation-checked), browser E2E of login → deposit → admin approval → Aviator bet/cashout/auto-cashout with wallet == ledger.
+
+## Phase 2 — foundations (2026-09-27)
+Done: 10 (isolated dev/test databases, DB write guard, dev server guard), 18 (Playwright installed, maintained E2E suite, lint ratchet, CI workflow, TESTING.md).
+
+### Incident — local database wiped (2026-09-27)
+While testing the new DB guard, the agent ran `scripts/reset_and_seed_db.js` expecting a refusal. It resolved `services/wallet/.env` → the owner's local Postgres (`localhost:5432/windaq`), which the guard (then host-only) allowed, and the script deleted all rows (199 users, 193 wallets, ledger, statements, rounds) and re-seeded 13 synthetic users. Autovacuum reclaimed the rows a minute later, so no in-database recovery was possible. The owner chose to move `.env` to the disposable `windaq_dev` database. **Fix:** destructive scripts now always require `WINDAQ_CONFIRM_DESTRUCTIVE=<dbname>`, even on localhost.
 
 ## Top 20 priorities (ordered)
 

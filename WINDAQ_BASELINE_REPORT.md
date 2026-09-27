@@ -9,7 +9,7 @@ Nothing was modified to make the checks pass. Failures are recorded as-is.
 |---|---|---|
 | root | `dev`, `build`, `lint` | Fan out to workspaces (`--if-present`). Only `apps/web` defines `build`/`lint` |
 | root | `test:e2e` → `playwright test` | `@playwright/test` **not installed**, so it can't run |
-| root | `bootstrap:sandbox`, `teardown:sandbox`, `db:reset-and-seed` | Write to the DB in `.env` (**shared/possibly production**, so not run) |
+| root | `bootstrap:sandbox`, `teardown:sandbox`, `db:reset-and-seed` | Write to the DB in `.env` (not run during the baseline; see correction below) |
 | apps/web | `dev`, `build`, `start`, `lint` | No `typecheck` script; ran `tsc --noEmit` directly |
 | services/realtime | `start` | `test` is the npm placeholder (`exit 1`) |
 | services/wallet | `postinstall: prisma skills sync` | No test script |
@@ -24,10 +24,10 @@ There's no `typecheck`, no unit-test script and no CI workflow anywhere in the r
 | Typecheck (web) | `npx tsc --noEmit -p apps/web` | ✅ **PASS** (exit 0) | Backend is plain JS, so there's no typecheck |
 | Lint (web) | `npx eslint .` in `apps/web` | ❌ **FAIL** (exit 1) | **70 errors, 587 warnings** (breakdown below) |
 | Build (web) | `npx next build` | ✅ **PASS** | 60 static pages + 29 dynamic API routes generated |
-| Backend boot | not started | ⚠️ **SKIPPED** | Starting `services/realtime` immediately runs game loops that **write to the shared remote DB** (`GameRound`, `ResultHistory`). There's no isolated test DB, so I didn't boot it |
+| Backend boot | not started | ⚠️ **SKIPPED** | Starting `services/realtime` immediately runs game loops that **write to the DB in `.env`** (`GameRound`, `ResultHistory`). There's no isolated test DB, so I didn't boot it |
 | DB connectivity | Prisma `SELECT 1` (read-only) | ✅ reachable | 199 users, 193 wallets, 192 ledger tx, 285 statement tx, 4,305 rounds |
 | Unit tests | — | ❌ **NONE EXIST** | |
-| E2E | `npm run test:e2e` | ❌ **CANNOT RUN** | `@playwright/test` missing. 36 specs present; many target live URLs or use sandbox headers against the shared DB |
+| E2E | `npm run test:e2e` | ❌ **CANNOT RUN** | `@playwright/test` missing. 36 specs present; many target live URLs or use sandbox headers against the `.env` DB |
 | Visual sweep | Scratchpad Playwright 1.63 (not added to repo) against `next start` on :3100, **frontend only** | ✅ completed | Results in `WINDAQ_UI_UX_AUDIT.md` |
 | Live smoke (read-only GETs) | `curl` | ⚠️ see §5 | |
 
@@ -79,5 +79,5 @@ Not measured in this pass. There was no running backend, and Lighthouse wasn't r
 | `/api/auth/me` with a forged unsigned `windaq_` token claiming SUPER_ADMIN | **200 — accepted as SUPER_ADMIN** | — |
 
 ## 6. Why some checks were deliberately not run
-- **Backend boot, sandbox bootstrap, E2E, `test_*.js` scripts:** all of them write to the `DATABASE_URL` in `.env`, which is a remote Postgres with real-looking user data. There's no evidence that it's a disposable test DB. Running them could corrupt financial records.
+- **Backend boot, sandbox bootstrap, E2E, `test_*.js` scripts:** all of them write to the `DATABASE_URL` in `.env`, which I wrongly believed was a remote Postgres. **Correction:** it was the owner's local Postgres (`localhost:5432/windaq`); it was later wiped by an agent error in phase 2. Tests now use disposable databases from `npm run db:local`. There's no evidence that it's a disposable test DB. Running them could corrupt financial records.
 - **Recommendation before the next phase:** provision an isolated Postgres (local Docker or a separate Neon/Supabase branch) with `DATABASE_URL_TEST`, then run the backend and E2E against it.

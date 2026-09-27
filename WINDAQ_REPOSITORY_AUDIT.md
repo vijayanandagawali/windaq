@@ -44,7 +44,7 @@ services/realtime (Express + Socket.io, single process, in-memory state)
   ├── Socket handlers per game (sockets/*.js)
   ├── Timed engines started in server.js (aviator, colour 1m/3m, lotto, dice, DT, roulette, AB, live roulette)
   ├── RoundRegistry / UniversalRoundEngine (GameRound + ResultHistory)
-  └── Prisma → PostgreSQL (remote; DATABASE_URL in root .env)
+  └── Prisma → PostgreSQL (DATABASE_URL in root .env — local database, see correction in §5)
 ```
 
 On the **live site**, `/api/realtime/socket.io` and `/socket.io` return the Next.js HTML page, and `/api/ledger/balance` returns the fabricated ₹10,000 fallback. So the realtime backend is **not reachable in production**, and every game there runs in `VirtualGameSocket`. No `GameRound` row has been written since **2026-09-21 08:31 UTC**.
@@ -94,7 +94,9 @@ On the **live site**, `/api/realtime/socket.io` and `/socket.io` return the Next
 - All state is held in process memory, so the service can't run more than one instance and doesn't survive serverless.
 
 ## 5. Database
-- PostgreSQL (remote host configured in `.env`), about 50 models. No `prisma/migrations` directory, so there's no migration history.
+> **Correction (2026-09-27):** the `DATABASE_URL` in `.env` pointed at the owner's **local** Postgres (`localhost:5432/windaq`), not a remote/shared database as originally stated here. That database was subsequently wiped by an agent error during phase 2 (see `WINDAQ_PROJECT_STATUS.md`); `.env` now points at the disposable `windaq_dev` database created by `npm run db:local`.
+
+- PostgreSQL (configured in `.env`), about 50 models. No `prisma/migrations` directory, so there's no migration history.
 - Live row counts: 199 users, 193 wallets, 192 ledger transactions, 285 statement rows, 4,305 game rounds, 6 non-USER (admin) accounts, 22 `MOCK_UPI` deposits stuck in `PENDING`.
 - **Whether this DB is production is unclear.** Local dev and the E2E scripts point at the same `DATABASE_URL`. Automated tests that mutate it would alter real records.
 
