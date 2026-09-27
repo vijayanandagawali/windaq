@@ -24,7 +24,8 @@ export default function DepositModal() {
   const [depositResult, setDepositResult] = useState<any>(null);
 
   // Dynamic Merchant VPA configured via environment or backend (Prompt #69 Phase 13)
-  const merchantUpi = process.env.NEXT_PUBLIC_MERCHANT_UPI_ID || 'windaq.payments@okhdfcbank';
+  // No fallback: never show a guessed VPA that could belong to someone else.
+  const merchantUpi = process.env.NEXT_PUBLIC_MERCHANT_UPI_ID || '';
   const merchantName = 'WinDaq Gaming India';
 
   useEffect(() => {
@@ -37,6 +38,18 @@ export default function DepositModal() {
 
   if (!isDepositing || !isAuthenticated) return null;
 
+  if (!merchantUpi) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setDepositing(false)}>
+        <div role="dialog" aria-modal="true" className="w-full max-w-sm bg-[#0d121f] border border-white/10 rounded-3xl p-6 text-center space-y-3" onClick={(e) => e.stopPropagation()}>
+          <h4 className="text-lg font-black text-white">Deposits unavailable</h4>
+          <p className="text-xs text-slate-400">Deposits are temporarily unavailable. Please try again later.</p>
+          <button onClick={() => setDepositing(false)} className="w-full py-3 rounded-2xl bg-white/10 text-white text-sm font-bold cursor-pointer">Close</button>
+        </div>
+      </div>
+    );
+  }
+
   const upiDeepLink = `upi://pay?pa=${encodeURIComponent(merchantUpi)}&pn=${encodeURIComponent(merchantName)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent('WinDaq_Wallet_Deposit')}`;
 
   const handleCopyUpi = () => {
@@ -48,25 +61,11 @@ export default function DepositModal() {
     }
   };
 
-  const handleOpenUpiApp = async (app: string) => {
-    setStep('verifying');
-    setLoading(true);
-    toast(`Initiating ${app} deposit of ₹${amount}...`, { icon: '📲', duration: 2000 });
-
-    const generatedUtr = 'UTR' + Date.now().toString().slice(-8) + Math.floor(1000 + Math.random() * 9000);
-    
-    // Server-authoritative deposit execution
-    const res = await submitDeposit(amount, generatedUtr, app);
-    setLoading(false);
-
-    if (res.success) {
-      setDepositResult(res.data);
-      setStep('success');
-      toast.success(`₹${amount.toLocaleString('en-IN')} credited to your wallet!`);
-    } else {
-      setStep('pay');
-      toast.error(res.message || 'Payment verification could not be confirmed.');
-    }
+  // Opens the player's UPI app with the payment pre-filled. Nothing is submitted here:
+  // after paying, the player enters the UTR from their app so finance can verify it.
+  const handleOpenUpiApp = (app: string) => {
+    if (typeof window !== 'undefined') window.location.assign(upiDeepLink);
+    toast(`After paying in ${app}, enter the 12-digit UTR below to submit your deposit.`, { icon: '📲', duration: 5000 });
   };
 
   const handleSubmitUtr = async () => {
@@ -85,7 +84,7 @@ export default function DepositModal() {
     if (res.success) {
       setDepositResult(res.data);
       setStep('success');
-      toast.success(`₹${amount.toLocaleString('en-IN')} deposited successfully!`);
+      toast.success(res.message || 'Deposit submitted for verification.');
     } else {
       setStep('pay');
       toast.error(res.message || 'Deposit could not be verified.');
@@ -125,10 +124,10 @@ export default function DepositModal() {
               </div>
               <div>
                 <h3 className="font-black text-white text-base tracking-tight uppercase">
-                  Instant UPI Deposit
+                  UPI Deposit
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Zero Fees • Instant Settlement • 256-Bit SSL
+                  Pay by UPI • Credited after verification
                 </p>
               </div>
             </div>
@@ -232,7 +231,7 @@ export default function DepositModal() {
               {/* UPI Intent One-Click Apps */}
               <div>
                 <span className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
-                  Instant Pay via UPI App
+                  Open your UPI app
                 </span>
                 <div className="grid grid-cols-2 gap-2.5">
                   {['PhonePe', 'Google Pay', 'Paytm', 'BHIM UPI'].map((app) => (
@@ -296,25 +295,25 @@ export default function DepositModal() {
               </div>
               <div>
                 <h4 className="text-lg font-black text-white uppercase tracking-tight">
-                  Deposit Confirmed!
+                  Deposit Submitted
                 </h4>
                 <p className="text-xs text-emerald-400 font-mono mt-0.5">
-                  ₹{amount.toLocaleString('en-IN')} added to your authoritative balance
+                  ₹{amount.toLocaleString('en-IN')} will be credited once the payment is verified
                 </p>
               </div>
 
               <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 text-left text-xs font-mono">
                 <div className="flex justify-between text-slate-400">
                   <span>UTR / Reference:</span>
-                  <span className="text-white font-bold">{depositResult?.utr || 'Confirmed'}</span>
+                  <span className="text-white font-bold">{depositResult?.utr || '—'}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
-                  <span>Transaction ID:</span>
-                  <span className="text-slate-300 truncate max-w-[180px]">{depositResult?.transactionId || 'tx-settled'}</span>
+                  <span>Request ID:</span>
+                  <span className="text-slate-300 truncate max-w-[180px]">{depositResult?.intentId || '—'}</span>
                 </div>
                 <div className="flex justify-between border-t border-white/10 pt-2 text-slate-400">
-                  <span>New Balance:</span>
-                  <span className="text-emerald-400 font-bold">₹{depositResult?.newBalance?.toFixed(2) || balance.toFixed(2)}</span>
+                  <span>Status:</span>
+                  <span className="text-amber-400 font-bold">Awaiting verification</span>
                 </div>
               </div>
 
