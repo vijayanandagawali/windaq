@@ -16,6 +16,8 @@
 const path = require('path');
 const { execSync } = require('child_process');
 require('dotenv').config({ path: path.resolve(__dirname, '../services/wallet/.env') });
+// Refuse to write to a shared/remote database unless explicitly confirmed (see services/realtime/src/config/dbSafety.js)
+require(require('path').resolve(__dirname, '../services/realtime/src/config/dbSafety')).guardDatabaseOrExit('reset_and_seed_db.js', { destructive: true });
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();

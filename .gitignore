@@ -13,6 +13,7 @@ dist/
 .env
 .env.local
 .env.*.local
+.env.bak-*
 !.env.example
 
 # Logs & Runtime
@@ -39,3 +40,6 @@ playwright-report/
 test-results/
 tests/*.png
 .vercel/
+
+# Local development database (npm run db:local)
+.local/

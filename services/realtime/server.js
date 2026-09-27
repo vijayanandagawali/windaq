@@ -9,6 +9,12 @@ const { assertSecurityConfig } = require('./src/config/security');
 // Fail fast on missing/weak secrets before anything else starts.
 assertSecurityConfig();
 
+// Outside production the game engines write rounds/bets continuously, so a dev server must not
+// run against a shared or remote database unless that is explicitly confirmed.
+if (process.env.NODE_ENV !== 'production') {
+  require('./src/config/dbSafety').guardDatabaseOrExit('realtime server (non-production)');
+}
+
 const { connectRedis } = require('./src/config/redisClient');
 const { initSockets } = require('./src/sockets/index');
 const CoreSocketManager = require('./src/sockets/CoreSocketManager');

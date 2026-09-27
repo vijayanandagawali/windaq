@@ -1,4 +1,6 @@
 require('dotenv').config();
+// Refuse to write to a shared/remote database unless explicitly confirmed (see services/realtime/src/config/dbSafety.js)
+require(require('path').resolve(__dirname, '../realtime/src/config/dbSafety')).guardDatabaseOrExit('seed.js');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
