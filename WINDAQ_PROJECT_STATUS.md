@@ -8,8 +8,8 @@ Statuses: **DONE · IN PROGRESS · BLOCKED · NEEDS REVIEW · FAILED**
 | Feature | Status | Tests | Known issues | Priority | Last verified |
 |---|---|---|---|---|---|
 | Web build (Next.js 16) | DONE | `next build` ✅, `tsc` ✅ | Lint still fails: 63 errors / 552 warnings (was 70 / 587) | P2 | 2026-09-27 |
-| Authentication (backend JWT) | NEEDS REVIEW | 10 API tests + OTP unit test ✅ | Fixed: required secret, no mock-token, no master OTPs, hashed single-use OTP, `/me` no auto-create. Open: in-memory OTP/revocation store (single instance only), no refresh tokens | P1 | 2026-09-27 |
-| Authentication (Next.js routes, used by UI) | DONE | covered via backend tests | Fake routes deleted; UI now uses backend JWTs through the `/api` proxy. Hard-coded SMS key removed (key still needs rotation) | P0 | 2026-09-27 |
+| Authentication (backend JWT) | DONE | 49 backend + 3 cookie E2E tests ✅ | Server-side sessions (UserSession) checked on every request; role from DB; DB-backed hashed OTPs with atomic attempt limit; logout / logout-all / suspension revoke immediately; per-IP OTP rate limits | P1 | 2026-09-28 |
+| Authentication (Next.js routes, used by UI) | DONE | cookie E2E ✅ | Session token only in an httpOnly SameSite=Lax cookie managed by the `/api` proxy; never in localStorage or response bodies; cross-site POSTs blocked; sockets use 60 s tickets | P1 | 2026-09-28 |
 | Admin RBAC | NEEDS REVIEW | 13 routes × anon/player/forged-role tests ✅ | Role always read from DB; guards added to result correction, reconciliation, notifications, ledger, wager settle. Open: MFA is a plain-text header compare (S19) | P1 | 2026-09-27 |
 | Wallet balance (server) | NEEDS REVIEW | none | Integer paise ✅, row locks in `walletService` ✅; many games bypass it | P0 | 2026-09-27 |
 | Double-entry ledger | FAILED | wallet==ledger asserted in tests ✅ | New writes (Aviator, deposits, withdrawals) stay balanced. Historic drift (191 wallets, ₹19.77 lakh) not yet backfilled; most games still bypass the ledger | **P0** | 2026-09-27 |
@@ -35,7 +35,7 @@ Statuses: **DONE · IN PROGRESS · BLOCKED · NEEDS REVIEW · FAILED**
 | Legacy `server/` + `public/` stack | FAILED | none | RTP rigging switch; PII files tracked; stale deploy scripts | P1 (remove) | 2026-09-27 |
 | E2E test suite | DONE | 8 Playwright tests ✅ (Aviator 3/3 repeat) | New suite in `tests/e2e` against real backend + production build; legacy specs kept under `test:e2e:legacy` (not maintained) | P1 | 2026-09-27 |
 | Unit tests | IN PROGRESS | 41 backend tests (`npm run test:backend`) | No frontend unit tests yet | P1 | 2026-09-27 |
-| CI/CD | NEEDS REVIEW | workflow YAML parsed; every step run locally | `.github/workflows/ci.yml` (web, backend, e2e) not yet executed on GitHub; lint uses a ratchet (63/552) | P1 | 2026-09-27 |
+| CI/CD | DONE | GitHub Actions green on PR #1 (web, backend, e2e) | Lint uses a ratchet (63 errors / 547 warnings) | P2 | 2026-09-28 |
 | Environment separation | DONE | guard refusal verified | `npm run db:local` (dev + test DBs); `.env` → `windaq_dev`; DB guard on scripts + dev server; destructive scripts need typed confirmation | P0 | 2026-09-27 |
 | Observability | NEEDS REVIEW | — | Log redaction helper exists; no request IDs | P2 | 2026-09-27 |
 
@@ -48,6 +48,10 @@ Done: 10 (isolated dev/test databases, DB write guard, dev server guard), 18 (Pl
 
 ### Incident — local database wiped (2026-09-27)
 While testing the new DB guard, the agent ran `scripts/reset_and_seed_db.js` expecting a refusal. It resolved `services/wallet/.env` → the owner's local Postgres (`localhost:5432/windaq`), which the guard (then host-only) allowed, and the script deleted all rows (199 users, 193 wallets, ledger, statements, rounds) and re-seeded 13 synthetic users. Autovacuum reclaimed the rows a minute later, so no in-database recovery was possible. The owner chose to move `.env` to the disposable `windaq_dev` database. **Fix:** destructive scripts now always require `WINDAQ_CONFIRM_DESTRUCTIVE=<dbname>`, even on localhost.
+
+## Phase 3 — login system (2026-09-28)
+Done: 6 (single signed session system, httpOnly cookie via the /api proxy), 7 (no auto-provisioning; role and identity always from the database). Also: server-side session revocation (logout, logout-all, suspension), DB-backed OTPs, socket tickets, CSRF origin check, S20 rate-limit fix (TRUST_PROXY, loopback exemption only outside production). All game pages now use the shared authenticated socket (11 pages hard-coded `localhost:4000` with no auth).
+Incident: during phase 3 testing one OTP SMS was most likely sent through the (still unrotated) Fast2SMS key to a test number (+91 98765 00001), because Prisma auto-loaded the key from .env into the test process. Test harnesses now force an empty key and the OTP service refuses to send under the harness.
 
 ## Top 20 priorities (ordered)
 

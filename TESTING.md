@@ -25,7 +25,7 @@ Keep it running in its own terminal.
 |---|---|
 | `npm run typecheck` | `tsc --noEmit` for the web app |
 | `node scripts/lint-ratchet.js` | ESLint for the web app; fails if errors or warnings exceed `lint-baseline.json` |
-| `npm run test:backend` | 41 integration tests (auth, payments, authorization, Aviator, sockets) against `DATABASE_URL_TEST` |
+| `npm run test:backend` | 49 integration tests (auth, sessions/OTP, payments, authorization, Aviator, sockets) against `DATABASE_URL_TEST` |
 | `npm run test:e2e` | Playwright: boots the real backend + a production build of the web app against `DATABASE_URL_TEST` |
 | `npm run test:e2e:legacy` | The pre-audit Playwright specs in `tests/*.spec.js` (many target live URLs; kept for reference) |
 
@@ -45,13 +45,14 @@ npm run test:e2e
   - **destructive** scripts (`db:reset-and-seed`, `teardown:sandbox`) additionally require
     `WINDAQ_CONFIRM_DESTRUCTIVE=<database name>` — even on localhost — and never run with `NODE_ENV=production`.
 - E2E runs the backend with `NODE_ENV=development` and a dev-only fixed OTP; production never honours a fixed OTP.
+- Test harnesses set `FAST2SMS_API_KEY` to an empty string and `WINDAQ_TEST_HARNESS=1`, and the OTP service refuses to call the SMS provider under the harness, so tests can never send a real SMS.
 
 ## 4. What the suites cover
 - **Backend** (`services/realtime/tests/README.md`): no mock tokens or universal OTPs, forged/unsigned tokens rejected,
   deposits credited only after finance approval (exactly once under concurrency), withdrawal holds and review,
   admin route authorization, server-authoritative Aviator settlement, socket room isolation. Wallet == ledger is
   asserted after every money movement.
-- **E2E** (`tests/e2e`): proxy security (no fabricated balances, stripped sandbox headers), deposit → finance approval
+- **E2E** (`tests/e2e`, 11 tests): proxy security (no fabricated balances, stripped sandbox headers, httpOnly session cookie, cross-site POST blocked, logout revokes server-side), deposit → finance approval
   in the admin UI, withdrawal rejection returning funds, and a live Aviator round (bet → cashout or loss) where the UI
   balance matches the server.
 
