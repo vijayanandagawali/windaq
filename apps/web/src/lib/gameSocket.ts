@@ -647,6 +647,17 @@ export function getGameSocket(url?: string, options?: any): any {
       timeout: 3000,
       ...options
     });
+    // Surface connection health so the UI can show an explicit "server offline" state
+    // instead of an endless "waiting for next round".
+    let failures = 0;
+    s.on('connect', () => {
+      failures = 0;
+      useDemoModeStore.getState().setServerOffline(false);
+    });
+    s.on('connect_error', () => {
+      failures += 1;
+      if (failures >= 2) useDemoModeStore.getState().setServerOffline(true);
+    });
     return s;
   } catch {
     return new VirtualGameSocket();
