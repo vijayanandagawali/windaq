@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../config/security');
 const riskService = require('../services/riskService');
 const { initPokerSockets } = require('./pokerHandler');
 const { handleColourSockets } = require('./colourHandler');
@@ -14,6 +15,7 @@ const { handleRummySockets } = require('./rummyHandler');
 const { handleLiveDealerSockets } = require('./liveDealerHandler');
 const { handleUniversalSockets } = require('./universalHandler');
 const CoreSocketManager = require('./CoreSocketManager');
+const { installRoomGuard, isAllowedClientRoom } = require('./roomGuard');
 
 // Store active connections per user to enforce limits
 const activeUserConnections = new Map();
@@ -33,7 +35,7 @@ function initSockets(coreManager, io, engines = {}) {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super-secret-key-fallback');
+      const decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] });
       const effectiveUserId = decoded.userId || decoded.id;
       
       socket.user = {
@@ -69,8 +71,10 @@ function initSockets(coreManager, io, engines = {}) {
     console.log(`🔌 Client connected: ${socket.id} [${uid || 'guest'}]`);
     coreManager.registerSocket(socket);
 
+    // All client-driven joins are filtered; only the server may join private rooms.
+    const serverJoin = installRoomGuard(socket);
     if (uid && uid !== 'guest') {
-      socket.join(`user:${uid}`);
+      serverJoin(`user:${uid}`);
     }
 
     // Handle joining game rooms (Multiplexing)
@@ -78,6 +82,9 @@ function initSockets(coreManager, io, engines = {}) {
       // Rate Limit Check
       if (!coreManager.checkRateLimit(socket.id)) {
         return socket.emit('error', 'Rate limit exceeded');
+      }
+      if (!isAllowedClientRoom(room)) {
+        return socket.emit('error', 'Room not available');
       }
 
       socket.join(room);
@@ -109,104 +116,51 @@ function initSockets(coreManager, io, engines = {}) {
     handleLiveDealerSockets(socket, io, engines.liveRouletteEngine);
     handleUniversalSockets(socket, io, engines);
 
-    // Real Prisma-backed Aviator Bet & Settlement Engine
-    const { PrismaClient } = require('@prisma/client');
-    const { ensureUserAndWallet } = require('../services/walletService');
-    const prisma = new PrismaClient();
+    // Aviator betting — server-authoritative. The engine owns stake, multiplier and payout;
+    // identity comes only from the verified socket session.
+    const aviatorEngine = engines.aviatorEngine;
+    const aviatorUserId = () => (socket.user?.userId && socket.user.userId !== 'guest' ? socket.user.userId : null);
+    const replyAviatorError = (callback, err, eventName) => {
+      const payload = { success: false, code: err.code || 'SERVER_ERROR', message: err.code ? err.message : 'Request failed. Please try again.' };
+      if (!err.code) console.error(`[Aviator ${eventName} Error]`, err.message);
+      if (typeof callback === 'function') callback(payload);
+      socket.emit('bet_error', payload);
+    };
 
     socket.on('place_bet', async (data, callback) => {
-      const userId = (socket.user?.id && !socket.user.isGuest) ? socket.user.id : null;
-      if (!userId) {
-        const errPayload = { success: false, code: 'AUTH_REQUIRED', message: 'Authentication required to place bets' };
-        if (callback) callback(errPayload);
-        socket.emit('bet_error', errPayload);
-        return socket.emit('error', errPayload);
-      }
-
-      // Check account restriction
-      const risk = await prisma.userRiskProfile.findUnique({ where: { userId } }).catch(() => null);
-      if (risk && risk.isSuspended) {
-        const errPayload = { success: false, code: 'ACCOUNT_RESTRICTED', message: 'Account is restricted: Betting suspended.' };
-        if (callback) callback(errPayload);
-        socket.emit('bet_error', errPayload);
-        return socket.emit('error', errPayload);
-      }
-
-      const amount = Number(data?.amount || 100);
-      const amountPaise = BigInt(Math.round(amount * 100));
-
+      const userId = aviatorUserId();
+      if (!userId) return replyAviatorError(callback, { code: 'AUTH_REQUIRED', message: 'Authentication required to place bets' }, 'place_bet');
+      if (!coreManager.checkRateLimit(socket.id)) return replyAviatorError(callback, { code: 'RATE_LIMITED', message: 'Too many requests. Slow down.' }, 'place_bet');
+      if (!aviatorEngine) return replyAviatorError(callback, { code: 'GAME_UNAVAILABLE', message: 'Aviator is not available right now.' }, 'place_bet');
       try {
-        let wallet = await prisma.wallet.findFirst({ where: { userId, currency: 'INR' } });
-        if (!wallet) {
-          const ensured = await ensureUserAndWallet(prisma, userId);
-          wallet = ensured.wallet;
-        }
-        if (!wallet || wallet.balance < amountPaise) {
-          if (callback) callback({ success: false, code: 'INSUFFICIENT_BALANCE', message: 'Insufficient balance in wallet.' });
-          return socket.emit('error', 'Insufficient balance');
-        }
-
-        await prisma.wallet.update({
-          where: { id: wallet.id },
-          data: { balance: wallet.balance - amountPaise }
+        const result = await aviatorEngine.placeBet(userId, {
+          amount: data?.amount,
+          slot: data?.slot ?? 0,
+          autoCashout: data?.autoCashout
         });
-
-        await prisma.transaction.create({
-          data: {
-            walletId: wallet.id,
-            idempotencyKey: `aviator_bet_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-            type: 'BET_PLACE',
-            amount: amountPaise,
-            balanceAfter: wallet.balance - amountPaise,
-            reference: 'aviator_round'
-          }
-        });
-
-        if (callback) callback({ success: true, newBalance: Number(wallet.balance - amountPaise) / 100 });
-        console.log(`[Aviator] Bet placed by ${userId} for ₹${amount}`);
+        if (typeof callback === 'function') callback({ success: true, ...result });
       } catch (err) {
-        console.error('[Aviator Bet Error]', err);
-        if (callback) callback({ success: false, message: err.message });
+        replyAviatorError(callback, err, 'place_bet');
       }
     });
 
     socket.on('aviator:cashout', async (data, callback) => {
-      const userId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
-      if (!userId || userId === 'guest') return;
-
-      const winAmount = Number(data?.winAmount || (data?.amount * data?.multiplier));
-      const winPaise = BigInt(Math.floor(winAmount * 100));
-
+      const userId = aviatorUserId();
+      if (!userId) return replyAviatorError(callback, { code: 'AUTH_REQUIRED', message: 'Authentication required' }, 'cashout');
+      if (!aviatorEngine) return replyAviatorError(callback, { code: 'GAME_UNAVAILABLE', message: 'Aviator is not available right now.' }, 'cashout');
       try {
-        let wallet = await prisma.wallet.findFirst({ where: { userId, currency: 'INR' } });
-        if (!wallet) {
-          const ensured = await ensureUserAndWallet(prisma, userId);
-          wallet = ensured.wallet;
-        }
-        if (wallet) {
-          const newBal = wallet.balance + winPaise;
-          await prisma.wallet.update({
-            where: { id: wallet.id },
-            data: { balance: newBal }
-          });
-
-          await prisma.transaction.create({
-            data: {
-              walletId: wallet.id,
-              idempotencyKey: `aviator_win_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-              type: 'BET_WIN',
-              amount: winPaise,
-              balanceAfter: newBal,
-              reference: `aviator_win_${data.multiplier || 1}x`
-            }
-          });
-
-          if (callback) callback({ success: true, newBalance: Number(newBal) / 100 });
-          console.log(`[Aviator] Cashout processed for ${userId}: ₹${winAmount}`);
-        }
+        // Only the slot is read from the client; amount/multiplier/winAmount are ignored.
+        const result = await aviatorEngine.cashout(userId, { slot: data?.slot ?? 0 });
+        if (typeof callback === 'function') callback({ success: true, ...result });
       } catch (err) {
-        console.error('[Aviator Cashout Error]', err);
+        replyAviatorError(callback, err, 'cashout');
       }
+    });
+
+    socket.on('aviator:my_bets', (data, callback) => {
+      const userId = aviatorUserId();
+      if (typeof callback !== 'function') return;
+      callback({ success: true, bets: userId && aviatorEngine ? aviatorEngine.getUserBets(userId) : [] });
     });
 
     socket.on('disconnect', () => {

@@ -1,17 +1,21 @@
 const express = require('express');
-const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const router = express.Router();
-const { 
-  getWallet, 
-  ensureUserAndWallet, 
-  lockFundsForWithdrawal, 
-  revertWithdrawalHold, 
-  finalizeWithdrawal, 
-  creditDeposit,
-  emitWalletEvent 
-} = require('../services/walletService');
+const { getWallet } = require('../services/walletService');
+const manualPayments = require('../services/manualPaymentService');
+const { requireRole } = require('../middleware/AdminRBAC');
+
+function sendPaymentError(res, error, action) {
+  if (error instanceof manualPayments.PaymentRequestError) {
+    return res.status(error.status).json({ success: false, code: error.code, message: error.message });
+  }
+  if (/Insufficient available balance|restricted/i.test(error.message || '')) {
+    return res.status(400).json({ success: false, code: 'REQUEST_REJECTED', message: error.message });
+  }
+  console.error(`[Ledger ${action} Error]:`, error.message);
+  return res.status(500).json({ success: false, code: 'SERVER_ERROR', message: 'Request could not be processed. Please try again.' });
+}
 
 /**
  * GET /api/ledger/balance
@@ -301,168 +305,67 @@ router.get('/transactions/:id', async (req, res) => {
 
 /**
  * POST /api/ledger/deposit/instant
- * Processes an instant deposit with full double-entry ledger bookkeeping & strict idempotency
+ * Submits a deposit for verification. It NEVER credits the wallet directly: the player's UTR is
+ * recorded as a PENDING_REVIEW PaymentIntent and finance credits it only after confirming the
+ * payment on the bank statement (see /api/payments/admin/deposits). Path kept for client compatibility.
  */
 router.post('/deposit/instant', async (req, res) => {
   try {
-    const userId = req.user?.userId || req.headers['x-user-id'] || (process.env.NODE_ENV === 'test' ? 'TEST_PLAYER_01' : null);
-    if (!userId) {
-      return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', message: 'Authentication required' });
-    }
-    const { amount, utr, method = 'UPI', idempotencyKey } = req.body;
-    const reqIdempKey = idempotencyKey || req.headers['idempotency-key'];
-
-    const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount < 100) {
-      return res.status(400).json({ success: false, message: 'Minimum deposit amount is ₹100.' });
-    }
-
-    const amountPaise = BigInt(Math.floor(numAmount * 100));
-    const genUtr = utr || `UTR${Date.now()}${Math.floor(1000 + Math.random() * 9000)}`;
-    const finalIdempKey = reqIdempKey || `dep-${genUtr}`;
-
-    // Idempotency check: if transaction already processed with this idempotency key, return existing record
-    const existingTx = await prisma.transaction.findUnique({
-      where: { idempotencyKey: `tx-${finalIdempKey}` }
+    const { intent, duplicate } = await manualPayments.createDepositRequest(prisma, req.user, {
+      amount: req.body?.amount,
+      utr: req.body?.utr
     });
-    if (existingTx) {
-      return res.json({
-        success: true,
-        message: 'Deposit already processed (Idempotent response)',
-        data: {
-          transactionId: existingTx.id,
-          utr: existingTx.reference,
-          amount: Number(existingTx.amount) / 100,
-          newBalance: Number(existingTx.balanceAfter) / 100,
-          isDuplicate: true
-        }
-      });
-    }
-
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Atomically credit deposit via walletService (with FOR UPDATE lock)
-      const credited = await creditDeposit(tx, userId, amountPaise, genUtr, method, finalIdempKey);
-
-      // 2. Record or update PaymentIntent
-      await tx.paymentIntent.upsert({
-        where: { providerReference: genUtr },
-        create: {
-          userId,
-          amount: amountPaise,
-          type: 'DEPOSIT',
-          provider: method,
-          providerReference: genUtr,
-          status: 'SUCCESS',
-          metadata: { utr: genUtr, idempotencyKey: finalIdempKey }
-        },
-        update: {
-          status: 'SUCCESS'
-        }
-      });
-
-      return {
-        transactionId: credited.transactionId,
-        utr: genUtr,
-        amount: numAmount,
-        newBalance: credited.newBalance
-      };
-    });
-
-    res.json({
+    res.status(duplicate ? 200 : 202).json({
       success: true,
-      message: `₹${numAmount} successfully deposited to your wallet!`,
-      data: result
+      status: 'PENDING_REVIEW',
+      message: duplicate
+        ? 'This deposit was already submitted and is awaiting verification.'
+        : 'Deposit submitted. Your balance will be credited once the payment is verified.',
+      data: {
+        intentId: intent.id,
+        utr: intent.metadata?.utr,
+        amount: Number(intent.amount) / 100,
+        status: intent.status,
+        isDuplicate: duplicate
+      }
     });
-
   } catch (error) {
-    console.error('[POST /api/ledger/deposit/instant Error]:', error);
-    res.status(500).json({ success: false, message: error.message });
+    sendPaymentError(res, error, 'deposit');
   }
 });
 
 /**
  * POST /api/ledger/withdraw/instant
- * Atomic withdrawal request with row-level locking, fund locking, and ledger bookkeeping
+ * Requests a withdrawal. Funds are locked (ledger hold) and the request waits for finance review;
+ * nothing is paid out automatically. Path kept for client compatibility.
  */
 router.post('/withdraw/instant', async (req, res) => {
   try {
-    const userId = req.user?.userId || req.headers['x-user-id'] || (process.env.NODE_ENV === 'test' ? 'TEST_PLAYER_01' : null);
-    if (!userId) {
-      return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', message: 'Authentication required' });
-    }
-
-    const { amount, upiId, method = 'UPI', idempotencyKey } = req.body;
-    const reqIdempKey = idempotencyKey || req.headers['idempotency-key'];
-
-    const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount < 200) {
-      return res.status(400).json({ success: false, message: 'Minimum withdrawal amount is ₹200.' });
-    }
-
-    if (!upiId || !upiId.includes('@')) {
-      return res.status(400).json({ success: false, message: 'Please enter a valid UPI ID (e.g. name@okhdfcbank).' });
-    }
-
-    const amountPaise = BigInt(Math.floor(numAmount * 100));
-    const refId = `WDR${Date.now()}${Math.floor(100 + Math.random() * 900)}`;
-    const finalIdempKey = reqIdempKey || `wdr-${refId}`;
-
-    // Idempotency check: prevent duplicate withdrawal submission
-    const existingTx = await prisma.transaction.findUnique({
-      where: { idempotencyKey: `tx-wdr-hold-${finalIdempKey}` }
+    const { intent, duplicate } = await manualPayments.createWithdrawalRequest(prisma, req.user, {
+      amount: req.body?.amount,
+      upiId: req.body?.upiId,
+      idempotencyKey: req.body?.idempotencyKey || req.headers['idempotency-key']
     });
-    if (existingTx) {
-      return res.json({
-        success: true,
-        message: 'Withdrawal already requested (Idempotent response)',
-        data: {
-          transactionId: existingTx.id,
-          referenceId: existingTx.reference,
-          amount: Number(existingTx.amount) / 100,
-          newBalance: Number(existingTx.balanceAfter) / 100,
-          isDuplicate: true
-        }
-      });
-    }
-
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Atomically lock funds from available balance (FOR UPDATE lock)
-      const hold = await lockFundsForWithdrawal(tx, userId, amountPaise, finalIdempKey, upiId);
-
-      // 2. Create PaymentIntent record
-      await tx.paymentIntent.create({
-        data: {
-          userId,
-          amount: amountPaise,
-          type: 'WITHDRAWAL',
-          provider: method,
-          providerReference: finalIdempKey,
-          status: 'SUCCESS', // Auto-cleared in instant mode
-          metadata: { upiId, idempotencyKey: finalIdempKey }
-        }
-      });
-
-      // 3. Finalize withdrawal clearance from liability to external bank
-      await finalizeWithdrawal(tx, userId, amountPaise, finalIdempKey);
-
-      return {
-        transactionId: hold.transactionId,
-        referenceId: finalIdempKey,
-        amount: numAmount,
-        upiId,
-        newBalance: Number(hold.availableBalancePaise) / 100
-      };
-    });
-
-    res.json({
+    const wallet = await getWallet(prisma, req.user.userId);
+    res.status(duplicate ? 200 : 202).json({
       success: true,
-      message: `Withdrawal of ₹${numAmount} successfully processed to ${upiId}!`,
-      data: result
+      status: 'PENDING_REVIEW',
+      message: duplicate
+        ? 'This withdrawal was already requested and is awaiting review.'
+        : 'Withdrawal requested. The amount is on hold and will be paid out after review.',
+      data: {
+        intentId: intent.id,
+        referenceId: intent.providerReference,
+        amount: Number(intent.amount) / 100,
+        upiId: intent.metadata?.destination,
+        status: intent.status,
+        availableBalance: wallet.availableBalanceNumber,
+        lockedBalance: wallet.lockedBalanceNumber,
+        isDuplicate: duplicate
+      }
     });
-
   } catch (error) {
-    console.error('[POST /api/ledger/withdraw/instant Error]:', error);
-    res.status(400).json({ success: false, message: error.message });
+    sendPaymentError(res, error, 'withdraw');
   }
 });
 
@@ -534,7 +437,7 @@ router.get('/wagers', async (req, res) => {
 /**
  * GET /api/ledger (Admin / Invariant inspection)
  */
-router.get('/', async (req, res) => {
+router.get('/', requireRole(['FINANCE', 'SUPER_ADMIN']), async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;

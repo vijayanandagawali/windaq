@@ -22,7 +22,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const jwt = require('jsonwebtoken');
 
 const SERVER_URL = process.env.REALTIME_URL || 'http://localhost:4000';
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-fallback';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 function calculatePercentiles(latencies) {
   if (!latencies || latencies.length === 0) return { p50: 0, p95: 0, p99: 0, min: 0, max: 0, avg: 0 };

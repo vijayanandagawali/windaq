@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../config/security');
 
 const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -6,7 +7,7 @@ const requireAuth = (req, res, next) => {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     try {
-      const payload = jwt.verify(token, process.env.JWT_SECRET || 'super-secret-key-fallback');
+      const payload = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] });
       req.user = payload;
       req.headers['x-user-id'] = payload.userId;
       return next();
