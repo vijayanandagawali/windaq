@@ -123,3 +123,21 @@ test('suspending an account revokes all its sessions', async () => {
   assert.equal(me.status, 401);
   assert.equal(me.body.code, 'SESSION_REVOKED');
 });
+
+test('ADMIN_PHONES promotes only an OTP-verified owner number, and never other players', async () => {
+  process.env.ADMIN_PHONES = '9811100001, +91 98111 00002';
+  try {
+    const owner = await login('9811100001');
+    assert.equal(owner.user.role, 'SUPER_ADMIN');
+    const other = await login('9811100003');
+    assert.equal(other.user.role, 'USER');
+
+    // A wrong OTP for the owner number grants nothing.
+    await http.request('POST', '/api/auth/send-otp', { body: { phone: '9811100002' } });
+    const bad = await http.request('POST', '/api/auth/login', { body: { phone: '9811100002', otp: '0000' } });
+    assert.notEqual(bad.status, 200);
+    assert.equal(await h.prisma.user.count({ where: { phone: '+919811100002' } }), 0);
+  } finally {
+    delete process.env.ADMIN_PHONES;
+  }
+});

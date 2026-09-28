@@ -100,6 +100,14 @@ router.post('/send-otp', async (req, res) => {
   }
 });
 
+function isConfiguredAdminPhone(phone) {
+  return String(process.env.ADMIN_PHONES || '')
+    .split(',')
+    .map((p) => normalizePhone(p.trim()))
+    .filter(Boolean)
+    .includes(phone);
+}
+
 /**
  * Shared login/registration handler: verifies the OTP, then finds or creates the user.
  * New accounts start with a zero cash balance — no unbacked credit is ever minted here.
@@ -148,6 +156,13 @@ async function authenticateWithOtp(req, res, { mustBeNew }) {
       create: { userId, riskScore: 0, isSuspended: false },
       update: {}
     }).catch(() => {});
+  }
+
+  // Owner bootstrap: numbers listed in ADMIN_PHONES get the SUPER_ADMIN role once they prove
+  // ownership of the phone with a valid OTP. It only ever promotes; roles are never lowered here.
+  if (isConfiguredAdminPhone(phone) && user.role !== 'SUPER_ADMIN') {
+    user = await prisma.user.update({ where: { id: user.id }, data: { role: 'SUPER_ADMIN' } });
+    console.log(`[Auth] Promoted configured owner account ${user.id} to SUPER_ADMIN`);
   }
 
   const wallet = await prisma.wallet.findFirst({ where: { userId: user.id, currency: 'INR' } });
