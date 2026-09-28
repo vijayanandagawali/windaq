@@ -2,35 +2,41 @@ const { test, expect } = require('@playwright/test');
 const { E2E } = require('./support/constants');
 const { uniquePhone, loginViaUi, tokenFromPage, apiLogin, apiBalance } = require('./support/flows');
 
-async function submitDepositViaUi(page, utr) {
+/** Opens the deposit modal for ₹1,000 and returns the exact unique amount (e.g. "1000.37") shown to pay. */
+async function startDepositViaUi(page) {
   await page.getByRole('button', { name: /^DEPOSIT$/ }).first().click();
   await page.getByTestId('deposit-preset-1000').click();
   await page.getByRole('button', { name: /Continue to pay/ }).click();
   await expect(page.getByText(E2E.merchantUpi)).toBeVisible();
   await expect(page.getByAltText(/UPI QR code/)).toBeVisible();
-  await page.getByLabel('After paying, enter the 12-digit UTR').fill(utr);
-  await page.getByRole('button', { name: 'Submit' }).click();
+  const exact = await page.getByTestId('deposit-exact-amount').getAttribute('data-amount');
+  expect(Number(exact)).toBeGreaterThan(1000);
+  expect(Number(exact)).toBeLessThan(1001);
+  return exact;
 }
 
-test('a deposit is credited automatically when the bank credit SMS arrives', async ({ page, request }) => {
+const paiseOf = (exact) => String(Math.round(Number(exact) * 100));
+const inrText = (exact) => Number(exact).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+test('paying the unique amount is credited automatically from the bank SMS, with no UTR typed', async ({ page, request }) => {
   const phone = uniquePhone();
   await loginViaUi(page, phone);
   const playerToken = await tokenFromPage(page);
   const utr = `5${Date.now()}`.slice(0, 12);
 
-  await submitDepositViaUi(page, utr);
-  await expect(page.getByRole('heading', { name: 'Waiting for the bank to confirm' })).toBeVisible();
+  const exact = await startDepositViaUi(page);
+  await expect(page.getByText('Waiting for your payment')).toBeVisible();
   expect((await apiBalance(request, playerToken)).balancePaise).toBe('0');
 
-  // The merchant's phone forwards the bank SMS.
+  // The merchant's phone forwards the bank SMS for exactly that amount.
   const sms = await request.post(`${E2E.backendUrl}/api/payments/bank-sms`, {
     headers: { 'x-windaq-sms-token': E2E.bankSmsToken },
-    data: { from: 'AD-SBIUPI', text: `Dear UPI user A/C X1234 credited by Rs1000.00 on date 28Sep26 trf from E2E PLAYER Refno ${utr}. -SBI`, receivedStamp: Date.now() }
+    data: { from: 'AD-SBIUPI', text: `Dear UPI user A/C X1234 credited by Rs${exact} on date 28Sep26 trf from E2E PLAYER Refno ${utr}. -SBI`, receivedStamp: Date.now() }
   });
   expect((await sms.json()).matched).toBe(true);
 
-  await expect(page.getByRole('heading', { name: '₹1,000 added' })).toBeVisible({ timeout: 15000 });
-  expect((await apiBalance(request, playerToken)).balancePaise).toBe('100000');
+  await expect(page.getByRole('heading', { name: `₹${inrText(exact)} added` })).toBeVisible({ timeout: 15000 });
+  expect((await apiBalance(request, playerToken)).balancePaise).toBe(paiseOf(exact));
 });
 
 test('an unmatched deposit is credited only after finance verifies it, exactly once', async ({ page, browser, request }) => {
@@ -41,9 +47,12 @@ test('an unmatched deposit is credited only after finance verifies it, exactly o
   // New accounts start at zero — no unbacked credit.
   expect((await apiBalance(request, playerToken)).balancePaise).toBe('0');
 
-  // Player submits a deposit with a UTR through the deposit modal.
+  // No bank SMS arrives: the player uses the UTR backup in the deposit modal.
   const utr = `7${Date.now()}`.slice(0, 12);
-  await submitDepositViaUi(page, utr);
+  const exact = await startDepositViaUi(page);
+  await page.getByRole('button', { name: /Enter UTR/ }).click();
+  await page.getByLabel('Enter the 12-digit UTR').fill(utr);
+  await page.getByRole('button', { name: 'Submit' }).click();
   await expect(page.getByRole('heading', { name: 'Waiting for the bank to confirm' })).toBeVisible();
 
   // Still not credited.
@@ -61,7 +70,7 @@ test('an unmatched deposit is credited only after finance verifies it, exactly o
   await expect(financePage.getByText('No pending deposits to review.')).toBeVisible();
 
   const balance = await apiBalance(request, playerToken);
-  expect(balance.balancePaise).toBe('100000');
+  expect(balance.balancePaise).toBe(paiseOf(exact));
   expect(balance.pendingDeposit).toBe(0);
 
   // The request cannot be approved again.

@@ -79,7 +79,7 @@ router.get('/intent/:id', requireAuth, async (req, res) => {
     if (!intent || (intent.userId !== req.user.userId && !isStaff)) {
       return res.status(404).json({ success: false, message: 'Intent not found' });
     }
-    res.json({ success: true, data: { status: intent.status } });
+    res.json({ success: true, data: { status: intent.status, amount: Number(intent.amount) / 100, expiresAt: intent.metadata?.expiresAt || null } });
   } catch (error) {
     sendError(res, error, 'intent');
   }

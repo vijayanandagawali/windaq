@@ -71,6 +71,14 @@ async function startServer() {
       // 3. Initialize Core Socket Manager
       const coreManager = new CoreSocketManager(io);
 
+      // Unique-amount deposits nobody paid: free the amount and the pending balance.
+      const { PrismaClient } = require('@prisma/client');
+      const paymentsPrisma = new PrismaClient();
+      const { expireStaleDeposits } = require('./src/services/manualPaymentService');
+      setInterval(() => {
+        expireStaleDeposits(paymentsPrisma).catch((err) => console.error('[Deposits] expiry sweep failed:', err.message));
+      }, 5 * 60 * 1000).unref();
+
       // Start Game Engines
       console.log('✈️ Starting Aviator Engine loop...');
       const aviatorEngine = new AviatorEngine(io);

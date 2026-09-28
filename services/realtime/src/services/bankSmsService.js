@@ -10,7 +10,7 @@
 
 const crypto = require('crypto');
 const walletService = require('./walletService');
-const { PROVIDER } = require('./manualPaymentService');
+const { PROVIDER, AWAITING_STATUS, openAmountRef } = require('./manualPaymentService');
 
 const AUTO_REVIEWER = 'AUTO_BANK_SMS';
 // A UTR submitted by a player and the bank SMS for it must be within this window of each other.
@@ -124,6 +124,56 @@ async function tryMatchUtr(prisma, utr) {
   });
 }
 
+// A credit is matched by amount only if the bank received it after the deposit was started
+// (small allowance for the phone's clock).
+const AMOUNT_MATCH_CLOCK_SKEW_MS = 2 * 60 * 1000;
+
+/**
+ * Matches a bank credit to the waiting unique-amount deposit with exactly that amount, and credits
+ * the wallet, atomically. The credit's UTR is stored on the deposit so it can never be reused.
+ */
+async function tryMatchAmount(prisma, utr) {
+  return prisma.$transaction(async (tx) => {
+    const credit = await tx.bankCredit.findUnique({ where: { utr } });
+    if (!credit || credit.status !== 'UNMATCHED') return { matched: false };
+    const intent = await tx.paymentIntent.findUnique({ where: { providerReference: openAmountRef(credit.amount) } });
+    if (!intent || intent.type !== 'DEPOSIT' || intent.provider !== PROVIDER || intent.status !== AWAITING_STATUS) return { matched: false };
+    if (credit.amount !== intent.amount) return { matched: false };
+    if (credit.bankReceivedAt.getTime() < intent.createdAt.getTime() - AMOUNT_MATCH_CLOCK_SKEW_MS) {
+      return { matched: false, reason: 'CREDIT_BEFORE_DEPOSIT' };
+    }
+
+    const claimedCredit = await tx.bankCredit.updateMany({
+      where: { id: credit.id, status: 'UNMATCHED', matchedIntentId: null },
+      data: { status: 'MATCHED', matchedIntentId: intent.id }
+    });
+    const claimedIntent = await tx.paymentIntent.updateMany({
+      where: { id: intent.id, status: AWAITING_STATUS },
+      data: {
+        status: 'SUCCESS',
+        providerReference: `UTR:${credit.utr}`,
+        metadata: {
+          ...(intent.metadata || {}),
+          utr: credit.utr,
+          matchedBy: 'AMOUNT',
+          reviewedBy: AUTO_REVIEWER,
+          reviewedAt: new Date().toISOString(),
+          bankCreditId: credit.id
+        }
+      }
+    });
+    if (claimedCredit.count !== 1 || claimedIntent.count !== 1) {
+      throw Object.assign(new Error('Concurrent match'), { code: 'CONCURRENT_MATCH' });
+    }
+
+    const credited = await walletService.creditDeposit(tx, intent.userId, intent.amount, intent.id, PROVIDER, `dep-credit-${intent.id}`);
+    return { matched: true, intentId: intent.id, userId: intent.userId, amountPaise: intent.amount, transactionId: credited.transactionId };
+  }).catch((err) => {
+    if (err.code === 'CONCURRENT_MATCH' || err.code === 'P2002' || err.code === 'P2034') return { matched: false, reason: 'ALREADY_MATCHED' };
+    throw err;
+  });
+}
+
 /**
  * Records a forwarded bank SMS. Returns what happened, for the forwarder log.
  */
@@ -157,7 +207,12 @@ async function ingestBankSms(prisma, { sender, text, receivedAt }) {
     if (err.code !== 'P2002') throw err; // duplicate SMS for the same UTR: keep the first record
   }
 
-  const match = await tryMatchUtr(prisma, parsed.utr);
+  // A deposit the player already submitted with this UTR wins; otherwise match by unique amount.
+  let match = await tryMatchUtr(prisma, parsed.utr);
+  if (!match.matched && match.reason !== 'AMOUNT_MISMATCH') {
+    const byAmount = await tryMatchAmount(prisma, parsed.utr);
+    if (byAmount.matched) match = byAmount;
+  }
   return { accepted: true, utr: parsed.utr, amountPaise: parsed.amountPaise, ...match };
 }
 
@@ -168,5 +223,6 @@ module.exports = {
   isValidForwarderToken,
   parseBankSms,
   tryMatchUtr,
+  tryMatchAmount,
   ingestBankSms
 };

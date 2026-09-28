@@ -126,6 +126,154 @@ async function createWithdrawalRequest(prisma, user, { amount, upiId, idempotenc
   return { intent, duplicate: false };
 }
 
+// --- Unique-amount deposits -------------------------------------------------------------------
+//
+// The player picks whole rupees; the server adds 1–99 paise so the exact amount (e.g. ₹200.37)
+// identifies this deposit. The bank's credit SMS carries the amount, so the deposit can be matched
+// without the player typing a UTR. While a deposit waits for payment its providerReference is
+// `AMTOPEN:<paise>`: the unique index guarantees no two open deposits share an amount.
+
+const AWAITING_STATUS = 'AWAITING_PAYMENT';
+const AWAIT_TTL_MS = 30 * 60 * 1000;
+const MAX_OPEN_DEPOSITS_PER_USER = 3;
+const openAmountRef = (paise) => `AMTOPEN:${paise}`;
+
+function isUniqueViolation(err) {
+  return err && (err.code === 'P2002' || /Unique constraint/i.test(err.message || ''));
+}
+
+/** Expires waiting deposits older than the TTL, freeing their amount and pending balance. */
+async function expireStaleDeposits(prisma, now = new Date()) {
+  const stale = await prisma.paymentIntent.findMany({
+    where: { type: 'DEPOSIT', provider: PROVIDER, status: AWAITING_STATUS, createdAt: { lt: new Date(now.getTime() - AWAIT_TTL_MS) } },
+    select: { id: true },
+    take: 200
+  });
+  let expired = 0;
+  for (const { id } of stale) {
+    await prisma.$transaction(async (tx) => {
+      const intent = await tx.paymentIntent.findUnique({ where: { id } });
+      const claimed = await tx.paymentIntent.updateMany({
+        where: { id, status: AWAITING_STATUS },
+        data: { status: 'EXPIRED', providerReference: `AMTEXP:${id}` }
+      });
+      if (claimed.count === 1) {
+        await releasePendingDeposit(tx, intent.userId, intent.amount);
+        expired += 1;
+      }
+    });
+  }
+  return expired;
+}
+
+/**
+ * Starts a deposit: reserves a unique amount (requested rupees + 1–99 paise) for 30 minutes.
+ * Asking again for the same rupee amount returns the player's still-open deposit.
+ */
+async function startDeposit(prisma, user, { amount }) {
+  assertRealMoneyAccount(user);
+  const requestedPaise = toPaise(amount);
+  if (requestedPaise % 100n !== 0n) throw new PaymentRequestError('INVALID_AMOUNT', 'Enter a whole rupee amount.');
+  if (requestedPaise < MIN_DEPOSIT_PAISE) throw new PaymentRequestError('AMOUNT_TOO_LOW', `Minimum deposit is ₹${formatInr(MIN_DEPOSIT_PAISE)}.`);
+  if (requestedPaise > MAX_DEPOSIT_PAISE) throw new PaymentRequestError('AMOUNT_TOO_HIGH', `Maximum deposit is ₹${formatInr(MAX_DEPOSIT_PAISE)}.`);
+
+  await expireStaleDeposits(prisma);
+
+  const open = await prisma.paymentIntent.findMany({
+    where: { userId: user.userId, type: 'DEPOSIT', provider: PROVIDER, status: AWAITING_STATUS },
+    orderBy: { createdAt: 'desc' }
+  });
+  const same = open.find((i) => BigInt(i.metadata?.requestedPaise ?? -1) === requestedPaise);
+  if (same) return { intent: same, reused: true };
+  if (open.length >= MAX_OPEN_DEPOSITS_PER_USER) {
+    throw new PaymentRequestError('TOO_MANY_OPEN_DEPOSITS', 'You already have deposits waiting for payment. Complete or wait for them to expire.', 429);
+  }
+
+  await walletService.ensureUserAndWallet(prisma, user.userId, { initialPaise: 0n });
+
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const taken = await prisma.paymentIntent.findMany({
+      where: { status: AWAITING_STATUS, amount: { gt: requestedPaise, lt: requestedPaise + 100n } },
+      select: { amount: true }
+    });
+    const used = new Set(taken.map((t) => Number(t.amount - requestedPaise)));
+    const free = [];
+    for (let p = 1; p <= 99; p += 1) if (!used.has(p)) free.push(p);
+    if (free.length === 0) {
+      throw new PaymentRequestError('AMOUNT_BUSY', 'Many deposits of this amount are in progress. Try a slightly different amount.', 409);
+    }
+    const amountPaise = requestedPaise + BigInt(free[crypto.randomInt(free.length)]);
+    const expiresAt = new Date(Date.now() + AWAIT_TTL_MS);
+    try {
+      const intent = await prisma.$transaction(async (tx) => {
+        const created = await tx.paymentIntent.create({
+          data: {
+            userId: user.userId,
+            amount: amountPaise,
+            type: 'DEPOSIT',
+            provider: PROVIDER,
+            providerReference: openAmountRef(amountPaise),
+            status: AWAITING_STATUS,
+            metadata: { requestedPaise: requestedPaise.toString(), expiresAt: expiresAt.toISOString(), startedAt: new Date().toISOString() }
+          }
+        });
+        await tx.wallet.updateMany({ where: { userId: user.userId, currency: 'INR' }, data: { pendingDeposit: { increment: amountPaise } } });
+        return created;
+      });
+      return { intent, reused: false };
+    } catch (err) {
+      if (!isUniqueViolation(err)) throw err; // someone took this amount a moment ago: pick another
+    }
+  }
+  throw new PaymentRequestError('AMOUNT_BUSY', 'Could not reserve a deposit amount. Please try again.', 409);
+}
+
+/**
+ * Backup path: the player enters the UTR for a unique-amount deposit (e.g. the SMS never arrived
+ * or they paid late). The deposit then waits for the bank credit with that UTR, or for finance.
+ */
+async function attachDepositUtr(prisma, user, intentId, utr) {
+  assertRealMoneyAccount(user);
+  const cleanUtr = String(utr || '').trim().toUpperCase();
+  if (!UTR_PATTERN.test(cleanUtr)) {
+    throw new PaymentRequestError('UTR_REQUIRED', 'Enter the 12-digit UPI reference (UTR) from your payment app.');
+  }
+  const intent = await prisma.paymentIntent.findUnique({ where: { id: String(intentId || '') } });
+  if (!intent || intent.userId !== user.userId || intent.type !== 'DEPOSIT' || intent.provider !== PROVIDER) {
+    throw new PaymentRequestError('NOT_FOUND', 'Deposit not found.', 404);
+  }
+  if (intent.status === 'SUCCESS' || intent.status === 'PENDING_REVIEW') return { intent, duplicate: true };
+  if (![AWAITING_STATUS, 'EXPIRED'].includes(intent.status)) {
+    throw new PaymentRequestError('ALREADY_PROCESSED', 'This deposit has already been processed.', 409);
+  }
+
+  const usedBy = await prisma.paymentIntent.findUnique({ where: { providerReference: `UTR:${cleanUtr}` } });
+  if (usedBy) throw new PaymentRequestError('UTR_ALREADY_USED', 'This UTR has already been submitted.', 409);
+
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.paymentIntent.updateMany({
+        where: { id: intent.id, status: intent.status },
+        data: {
+          status: 'PENDING_REVIEW',
+          providerReference: `UTR:${cleanUtr}`,
+          metadata: { ...(intent.metadata || {}), utr: cleanUtr, submittedAt: new Date().toISOString() }
+        }
+      });
+      if (claimed.count !== 1) throw new PaymentRequestError('ALREADY_PROCESSED', 'This deposit changed while you were submitting. Please check your wallet.', 409);
+      // An expired deposit had released its pending amount; it is pending again now.
+      if (intent.status === 'EXPIRED') {
+        await tx.wallet.updateMany({ where: { userId: intent.userId, currency: 'INR' }, data: { pendingDeposit: { increment: intent.amount } } });
+      }
+      return tx.paymentIntent.findUnique({ where: { id: intent.id } });
+    });
+    return { intent: updated, duplicate: false };
+  } catch (err) {
+    if (isUniqueViolation(err)) throw new PaymentRequestError('UTR_ALREADY_USED', 'This UTR has already been submitted.', 409);
+    throw err;
+  }
+}
+
 /**
  * Atomically moves an intent out of PENDING_REVIEW. Returns the intent or throws if another
  * operator already processed it.
@@ -193,8 +341,14 @@ async function rejectWithdrawal(prisma, intentId, adminId, note) {
 module.exports = {
   PaymentRequestError,
   PROVIDER,
+  AWAITING_STATUS,
+  AWAIT_TTL_MS,
+  openAmountRef,
   toPaise,
   createDepositRequest,
+  startDeposit,
+  attachDepositUtr,
+  expireStaleDeposits,
   createWithdrawalRequest,
   approveDeposit,
   rejectDeposit,

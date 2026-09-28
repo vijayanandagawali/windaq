@@ -310,6 +310,48 @@ router.get('/transactions/:id', async (req, res) => {
   }
 });
 
+function depositView(intent) {
+  return {
+    intentId: intent.id,
+    amount: Number(intent.amount) / 100,
+    requestedAmount: intent.metadata?.requestedPaise ? Number(intent.metadata.requestedPaise) / 100 : Number(intent.amount) / 100,
+    status: intent.status,
+    expiresAt: intent.metadata?.expiresAt || null,
+    utr: intent.metadata?.utr || null
+  };
+}
+
+/**
+ * POST /api/ledger/deposit/start  { amount }  (whole rupees)
+ * Reserves a unique amount (e.g. ₹200.37) for this deposit. Paying exactly that amount lets the
+ * bank's credit SMS be matched automatically, with no UTR to type.
+ */
+router.post('/deposit/start', async (req, res) => {
+  if (rejectIfRealMoneyDisabled(res)) return;
+  try {
+    const { intent, reused } = await manualPayments.startDeposit(prisma, req.user, { amount: req.body?.amount });
+    res.status(reused ? 200 : 201).json({ success: true, data: { ...depositView(intent), reused } });
+  } catch (error) {
+    sendPaymentError(res, error, 'deposit start');
+  }
+});
+
+/**
+ * POST /api/ledger/deposit/:id/utr  { utr }
+ * Backup for a unique-amount deposit: attach the UTR so it can be matched by reference or reviewed.
+ */
+router.post('/deposit/:id/utr', async (req, res) => {
+  if (rejectIfRealMoneyDisabled(res)) return;
+  try {
+    const { intent } = await manualPayments.attachDepositUtr(prisma, req.user, req.params.id, req.body?.utr);
+    const match = intent.status === 'PENDING_REVIEW' ? await bankSms.tryMatchUtr(prisma, intent.metadata?.utr) : { matched: false };
+    const status = match.matched ? 'SUCCESS' : intent.status;
+    res.json({ success: true, data: { ...depositView(intent), status } });
+  } catch (error) {
+    sendPaymentError(res, error, 'deposit utr');
+  }
+});
+
 /**
  * POST /api/ledger/deposit/instant
  * Submits a deposit for verification. It NEVER credits the wallet directly: the player's UTR is
