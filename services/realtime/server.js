@@ -87,6 +87,9 @@ async function startServer() {
         casinoHoldem.recoverStuckCalls().catch((err) => console.error('[Holdem] recovery failed:', err.message));
       }, 60 * 1000).unref();
 
+      // Rummy practice games live in memory; drop the idle ones.
+      setInterval(() => require('./src/services/rummyPractice').sweep(), 10 * 60 * 1000).unref();
+
       // Start Game Engines
       console.log('✈️ Starting Aviator Engine loop...');
       const aviatorEngine = new AviatorEngine(io);

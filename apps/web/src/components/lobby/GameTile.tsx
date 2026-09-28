@@ -54,7 +54,7 @@ export default function GameTile({ game, priority = false }: { game: LobbyGame; 
       <div className="mt-2.5 px-0.5">
         <h3 className="truncate text-sm font-bold text-slate-900 sm:text-[15px]">{game.name}</h3>
         <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{game.tagline}</p>
-        {!comingSoon && <p className="mt-1 text-[11px] font-bold text-emerald-600">From ₹{game.minBet}</p>}
+        {!comingSoon && <p className="mt-1 text-[11px] font-bold text-emerald-600">{game.minBet > 0 ? `From ₹${game.minBet}` : 'Free to play'}</p>}
       </div>
     </>
   );

@@ -9,6 +9,7 @@ const { handleTableSockets } = require('./tableHandler');
 const { handleRouletteSockets } = require('./rouletteHandler');
 const { handleBlackjackSockets } = require('./blackjackHandler');
 const { handleHoldemSockets } = require('./holdemHandler');
+const { handleRummyPracticeSockets } = require('./rummyPracticeHandler');
 const { handleUniversalSockets } = require('./universalHandler');
 const CoreSocketManager = require('./CoreSocketManager');
 const { installRoomGuard, isAllowedClientRoom } = require('./roomGuard');
@@ -108,6 +109,7 @@ function initSockets(coreManager, io, engines = {}) {
     handleRouletteSockets(socket, io, engines);
     handleBlackjackSockets(socket, io, engines.blackjackEngine);
     handleHoldemSockets(socket);
+    handleRummyPracticeSockets(socket);
     // Multiplayer card tables (Teen Patti, Hold'em, Rummy) are not offered for real money until
     // real matchmaking exists: the previous tables seated house bots against players.
     for (const event of ['tp:join', 'tp:action', 'poker_join', 'poker_action', 'rm:join', 'rm:draw', 'rm:discard', 'rm:declare', 'rm:drop']) {

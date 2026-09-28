@@ -94,8 +94,8 @@ export const GAMES: LobbyGame[] = [
     accent: '#26F0B2', ...art('texas-holdem')
   },
   {
-    slug: 'rummy', name: 'Rummy', href: '/games/rummy', category: 'table', status: 'coming-soon',
-    tagline: 'Real-player tables are on the way', highlight: 'Coming soon', minBet: 10,
+    slug: 'rummy', name: 'Rummy', href: '/games/rummy', category: 'table', status: 'live',
+    tagline: '13-card Points Rummy against the Computer', highlight: 'Free practice', minBet: 0,
     accent: '#B46CFF', ...art('rummy')
   },
   {
