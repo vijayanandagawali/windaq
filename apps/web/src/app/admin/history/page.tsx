@@ -261,14 +261,14 @@ export default function AdminResultHistoryPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 border border-amber-500/20">
               <History className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-white uppercase">
+              <h1 className="text-xl font-black tracking-tight text-slate-900 uppercase">
                 Authoritative Result History & Audit Engine
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Immutable Round Outcomes • Cryptographic Provably Fair Commitments • Full Lifecycle Timelines
               </p>
             </div>
@@ -279,9 +279,9 @@ export default function AdminResultHistoryPage() {
           <button
             onClick={fetchAdminHistory}
             disabled={loading}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition-all active:scale-95"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-semibold text-xs transition-all active:scale-95"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-600' : ''}`} />
             <span>Refresh</span>
           </button>
         </div>
@@ -289,43 +289,43 @@ export default function AdminResultHistoryPage() {
 
       {/* Metrics Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-          <span className="text-[10px] font-bold text-slate-400 uppercase">Total Rounds Recorded</span>
-          <div className="text-2xl font-black text-white mt-1">{totalCount}</div>
-          <span className="text-[10px] text-emerald-400 flex items-center gap-1 mt-1">
+        <div className="p-4 rounded-xl bg-white/90 border border-slate-200">
+          <span className="text-[10px] font-bold text-slate-500 uppercase">Total Rounds Recorded</span>
+          <div className="text-2xl font-black text-slate-900 mt-1">{totalCount}</div>
+          <span className="text-[10px] text-emerald-600 flex items-center gap-1 mt-1">
             <CheckCircle2 className="w-3 h-3" /> Authoritative DB Backed
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-          <span className="text-[10px] font-bold text-slate-400 uppercase">Pre-Commitment Integrity</span>
-          <div className="text-2xl font-black text-emerald-400 mt-1">100%</div>
-          <span className="text-[10px] text-slate-400 mt-1 block">SHA-256 Before Lock</span>
+        <div className="p-4 rounded-xl bg-white/90 border border-slate-200">
+          <span className="text-[10px] font-bold text-slate-500 uppercase">Pre-Commitment Integrity</span>
+          <div className="text-2xl font-black text-emerald-600 mt-1">100%</div>
+          <span className="text-[10px] text-slate-500 mt-1 block">SHA-256 Before Lock</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-          <span className="text-[10px] font-bold text-slate-400 uppercase">Settlement Status</span>
-          <div className="text-2xl font-black text-amber-400 mt-1">SETTLED</div>
-          <span className="text-[10px] text-slate-400 mt-1 block">Atomic Ledger Payouts</span>
+        <div className="p-4 rounded-xl bg-white/90 border border-slate-200">
+          <span className="text-[10px] font-bold text-slate-500 uppercase">Settlement Status</span>
+          <div className="text-2xl font-black text-amber-600 mt-1">SETTLED</div>
+          <span className="text-[10px] text-slate-500 mt-1 block">Atomic Ledger Payouts</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-          <span className="text-[10px] font-bold text-slate-400 uppercase">Audited Corrections</span>
-          <div className="text-2xl font-black text-slate-300 mt-1">
+        <div className="p-4 rounded-xl bg-white/90 border border-slate-200">
+          <span className="text-[10px] font-bold text-slate-500 uppercase">Audited Corrections</span>
+          <div className="text-2xl font-black text-slate-600 mt-1">
             {records.filter(r => r.isCorrected).length}
           </div>
-          <span className="text-[10px] text-slate-400 mt-1 block">Strict Non-Destructive Log</span>
+          <span className="text-[10px] text-slate-500 mt-1 block">Strict Non-Destructive Log</span>
         </div>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      <div className="p-4 rounded-xl bg-white/90 border border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           {/* Game Selector */}
           <select
             value={selectedGame}
             onChange={(e) => { setSelectedGame(e.target.value); setPage(1); }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-semibold focus:outline-none focus:border-amber-500"
+            className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700 font-semibold focus:outline-none focus:border-amber-500"
           >
             <option value="ALL">All Games</option>
             <option value="roulette">Roulette (European / Auto)</option>
@@ -341,7 +341,7 @@ export default function AdminResultHistoryPage() {
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-semibold focus:outline-none focus:border-amber-500"
+            className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700 font-semibold focus:outline-none focus:border-amber-500"
           >
             <option value="ALL">All Statuses</option>
             <option value="SETTLED">Settled</option>
@@ -356,19 +356,19 @@ export default function AdminResultHistoryPage() {
               placeholder="Search Round ID or Hash..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-              className="bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-52 sm:w-64"
+              className="bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-700 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-52 sm:w-64"
             />
           </div>
         </div>
 
         {/* Limit Selector */}
-        <div className="flex items-center gap-2 text-xs text-slate-400">
+        <div className="flex items-center gap-2 text-xs text-slate-500">
           <span>Show:</span>
           {[10, 25, 50, 100].map(lim => (
             <button
               key={lim}
               onClick={() => { setLimit(lim); setPage(1); }}
-              className={`px-2 py-1 rounded ${limit === lim ? 'bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30' : 'hover:text-white'}`}
+              className={`px-2 py-1 rounded ${limit === lim ? 'bg-amber-500/20 text-amber-600 font-bold border border-amber-500/30' : 'hover:text-slate-900'}`}
             >
               {lim}
             </button>
@@ -377,10 +377,10 @@ export default function AdminResultHistoryPage() {
       </div>
 
       {/* Main Table */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+      <div className="bg-white/90 border border-slate-200 rounded-xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950/80 text-slate-400 uppercase font-black tracking-wider border-b border-slate-800">
+            <thead className="bg-white/90 text-slate-500 uppercase font-black tracking-wider border-b border-slate-200">
               <tr>
                 <th className="py-3 px-4">Game / Variant</th>
                 <th className="py-3 px-4">Table</th>
@@ -392,11 +392,11 @@ export default function AdminResultHistoryPage() {
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono">
+            <tbody className="divide-y divide-slate-200 font-mono">
               {loading && records.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-500 font-sans italic">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-amber-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-amber-600" />
                     Querying authoritative result records...
                   </td>
                 </tr>
@@ -408,17 +408,17 @@ export default function AdminResultHistoryPage() {
                 </tr>
               ) : (
                 records.map((r) => (
-                  <tr key={r.resultId} className="hover:bg-slate-800/40 transition-colors">
+                  <tr key={r.resultId} className="hover:bg-slate-100 transition-colors">
                     <td className="py-3 px-4 font-sans">
-                      <div className="font-bold text-white uppercase">{r.gameId}</div>
-                      <div className="text-[11px] text-slate-400">{r.variantId || 'Standard'}</div>
+                      <div className="font-bold text-slate-900 uppercase">{r.gameId}</div>
+                      <div className="text-[11px] text-slate-500">{r.variantId || 'Standard'}</div>
                     </td>
 
-                    <td className="py-3 px-4 text-slate-300">
+                    <td className="py-3 px-4 text-slate-600">
                       {r.tableId || `${r.gameId}-01`}
                     </td>
 
-                    <td className="py-3 px-4 font-bold text-amber-300">
+                    <td className="py-3 px-4 font-bold text-amber-700">
                       <span className="truncate max-w-[120px] block" title={r.roundId}>
                         {r.roundId}
                       </span>
@@ -426,11 +426,11 @@ export default function AdminResultHistoryPage() {
 
                     <td className="py-3 px-4 font-sans">
                       <div className="flex items-center gap-2">
-                        <span className="font-black text-sm text-white px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
+                        <span className="font-black text-sm text-slate-900 px-2 py-0.5 rounded bg-white border border-slate-200">
                           {r.resultValue}
                         </span>
                         {r.isCorrected && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 uppercase font-bold">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-600 border border-rose-500/30 uppercase font-bold">
                             Corrected
                           </span>
                         )}
@@ -438,12 +438,12 @@ export default function AdminResultHistoryPage() {
                     </td>
 
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-600 border border-emerald-500/30">
                         {r.settlementStatus || 'SETTLED'}
                       </span>
                     </td>
 
-                    <td className="py-3 px-4 text-slate-400 text-[11px]">
+                    <td className="py-3 px-4 text-slate-500 text-[11px]">
                       {r.resultTimestamp ? new Date(r.resultTimestamp).toLocaleTimeString() : 'Recent'}
                     </td>
 
@@ -457,19 +457,19 @@ export default function AdminResultHistoryPage() {
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => openTimeline(r.roundId)}
-                          className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1 transition-colors"
+                          className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 text-xs font-semibold flex items-center gap-1 transition-colors"
                           title="Inspect Lifecycle Timeline"
                         >
-                          <Clock className="w-3 h-3 text-amber-400" />
+                          <Clock className="w-3 h-3 text-amber-600" />
                           <span>Timeline</span>
                         </button>
 
                         <button
                           onClick={() => verifyResult(r)}
-                          className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1 transition-colors"
+                          className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 text-xs font-semibold flex items-center gap-1 transition-colors"
                           title="Verify Cryptographic Proof"
                         >
-                          <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                          <ShieldCheck className="w-3 h-3 text-emerald-600" />
                           <span>Verify</span>
                         </button>
 
@@ -479,7 +479,7 @@ export default function AdminResultHistoryPage() {
                             setNewResultValue(r.resultValue);
                             setCorrectionReason('');
                           }}
-                          className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 text-xs font-semibold transition-colors"
+                          className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-amber-600 text-xs font-semibold transition-colors"
                           title="Audited Result Correction Workflow"
                         >
                           <Edit3 className="w-3 h-3" />
@@ -494,7 +494,7 @@ export default function AdminResultHistoryPage() {
         </div>
 
         {/* Pagination Bar */}
-        <div className="p-4 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+        <div className="p-4 bg-white/90 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
           <span>
             Showing {records.length} of {totalCount} records
           </span>
@@ -502,15 +502,15 @@ export default function AdminResultHistoryPage() {
             <button
               disabled={page <= 1}
               onClick={() => setPage(p => Math.max(1, p - 1))}
-              className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200"
+              className="px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700"
             >
               Previous
             </button>
-            <span className="font-mono text-white">Page {page}</span>
+            <span className="font-mono text-slate-900">Page {page}</span>
             <button
               disabled={records.length < limit}
               onClick={() => setPage(p => p + 1)}
-              className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200"
+              className="px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700"
             >
               Next
             </button>
@@ -520,25 +520,25 @@ export default function AdminResultHistoryPage() {
 
       {/* Lifecycle Timeline Drawer / Modal (Prompt #65 Section 14) */}
       {inspectingRoundId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl text-slate-100 flex flex-col max-h-[85vh]">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-2xl text-slate-800 flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 border border-amber-500/20">
                   <Clock className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-black text-sm uppercase tracking-wider text-white">
+                  <h3 className="font-black text-sm uppercase tracking-wider text-slate-900">
                     Round Canonical Lifecycle Timeline
                   </h3>
-                  <p className="font-mono text-xs text-slate-400">
-                    Round ID: <span className="text-amber-400">{inspectingRoundId}</span>
+                  <p className="font-mono text-xs text-slate-500">
+                    Round ID: <span className="text-amber-600">{inspectingRoundId}</span>
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setInspectingRoundId(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -547,7 +547,7 @@ export default function AdminResultHistoryPage() {
             <div className="p-6 overflow-y-auto space-y-4">
               {loadingTimeline ? (
                 <div className="py-12 text-center text-slate-500 text-sm">
-                  <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-amber-400" />
+                  <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-amber-600" />
                   Loading chronological events from audit log...
                 </div>
               ) : timelineEvents.length === 0 ? (
@@ -555,24 +555,24 @@ export default function AdminResultHistoryPage() {
                   No chronological events recorded yet for this round.
                 </div>
               ) : (
-                <div className="relative border-l-2 border-slate-800 ml-4 pl-6 space-y-6">
+                <div className="relative border-l-2 border-slate-200 ml-4 pl-6 space-y-6">
                   {timelineEvents.map((evt, idx) => (
                     <div key={evt.eventId || idx} className="relative group">
                       {/* Timeline dot */}
-                      <span className="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-amber-400 ring-4 ring-slate-900" />
+                      <span className="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-amber-400 ring-4 ring-slate-200" />
                       
                       <div className="flex items-center justify-between">
-                        <div className="font-black text-xs uppercase tracking-wider text-white">
+                        <div className="font-black text-xs uppercase tracking-wider text-slate-900">
                           {evt.eventType}
                         </div>
-                        <span className="font-mono text-[11px] text-slate-400">
+                        <span className="font-mono text-[11px] text-slate-500">
                           {new Date(evt.timestamp).toLocaleTimeString()}
                         </span>
                       </div>
 
-                      <div className="mt-1 p-2.5 rounded-lg bg-slate-950 border border-slate-800/80 font-mono text-xs text-slate-300">
+                      <div className="mt-1 p-2.5 rounded-lg bg-white border border-slate-200 font-mono text-xs text-slate-600">
                         {evt.details && Object.keys(evt.details).length > 0 ? (
-                          <pre className="text-[11px] text-slate-400 whitespace-pre-wrap">
+                          <pre className="text-[11px] text-slate-500 whitespace-pre-wrap">
                             {JSON.stringify(evt.details, null, 2)}
                           </pre>
                         ) : (
@@ -585,10 +585,10 @@ export default function AdminResultHistoryPage() {
               )}
             </div>
 
-            <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
+            <div className="p-4 border-t border-slate-200 bg-white flex justify-end">
               <button
                 onClick={() => setInspectingRoundId(null)}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs"
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold text-xs"
               >
                 Close Timeline
               </button>
@@ -599,42 +599,42 @@ export default function AdminResultHistoryPage() {
 
       {/* Audited Result Correction Modal (Prompt #65 Section 3 & 24) */}
       {correctingRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl text-slate-100 p-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-              <div className="flex items-center gap-2.5 text-amber-400">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl text-slate-800 p-6">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+              <div className="flex items-center gap-2.5 text-amber-600">
                 <AlertTriangle className="w-5 h-5" />
-                <h3 className="font-black text-sm uppercase tracking-wider text-white">
+                <h3 className="font-black text-sm uppercase tracking-wider text-slate-900">
                   Audited Result Correction Workflow
                 </h3>
               </div>
               <button
                 onClick={() => setCorrectingRecord(null)}
-                className="p-1 text-slate-400 hover:text-white"
+                className="p-1 text-slate-500 hover:text-slate-900"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleCorrectionSubmit} className="space-y-4 mt-4">
-              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1 text-xs">
+              <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-1 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Round ID:</span>
-                  <span className="font-mono text-white">{correctingRecord.roundId}</span>
+                  <span className="text-slate-500">Round ID:</span>
+                  <span className="font-mono text-slate-900">{correctingRecord.roundId}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Game:</span>
-                  <span className="font-bold text-amber-400 uppercase">{correctingRecord.gameId}</span>
+                  <span className="text-slate-500">Game:</span>
+                  <span className="font-bold text-amber-600 uppercase">{correctingRecord.gameId}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Original Result:</span>
-                  <span className="font-mono text-rose-400 font-bold">{correctingRecord.resultValue}</span>
+                  <span className="text-slate-500">Original Result:</span>
+                  <span className="font-mono text-rose-600 font-bold">{correctingRecord.resultValue}</span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase mb-1">
-                  New Authoritative Outcome <span className="text-rose-400">*</span>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                  New Authoritative Outcome <span className="text-rose-600">*</span>
                 </label>
                 <input
                   type="text"
@@ -642,13 +642,13 @@ export default function AdminResultHistoryPage() {
                   value={newResultValue}
                   onChange={(e) => setNewResultValue(e.target.value)}
                   placeholder="e.g. 17 RED or DRAGON"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 font-mono focus:outline-none focus:border-amber-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase mb-1">
-                  Mandatory Audit Correction Reason <span className="text-rose-400">*</span>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                  Mandatory Audit Correction Reason <span className="text-rose-600">*</span>
                 </label>
                 <textarea
                   required
@@ -656,18 +656,18 @@ export default function AdminResultHistoryPage() {
                   value={correctionReason}
                   onChange={(e) => setCorrectionReason(e.target.value)}
                   placeholder="Explain why this authoritative result is being corrected (minimum 5 characters)..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-white border border-slate-200 rounded-lg p-3 text-xs text-slate-900 focus:outline-none focus:border-amber-500"
                 />
                 <span className="text-[10px] text-slate-500 block mt-1">
                   This action creates an immutable audit record linking the original and new result.
                 </span>
               </div>
 
-              <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+              <div className="pt-3 border-t border-slate-200 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setCorrectingRecord(null)}
-                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                  className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold"
                 >
                   Cancel
                 </button>
@@ -687,16 +687,16 @@ export default function AdminResultHistoryPage() {
 
       {/* Verification Inspection Modal */}
       {verifyingRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl text-slate-100 p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm uppercase">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-2xl text-slate-800 p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm uppercase">
                 <ShieldCheck className="w-5 h-5" />
                 Provably Fair Proof Verification
               </div>
               <button
                 onClick={() => setVerifyingRecord(null)}
-                className="p-1 text-slate-400 hover:text-white"
+                className="p-1 text-slate-500 hover:text-slate-900"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -704,39 +704,39 @@ export default function AdminResultHistoryPage() {
 
             {verificationResult ? (
               <div className="space-y-3 font-mono text-xs">
-                <div className={`p-3 rounded-lg border flex items-center gap-2 ${verificationResult.commitmentValid || verificationResult.isVerified ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-rose-950/40 border-rose-500/40 text-rose-300'}`}>
+                <div className={`p-3 rounded-lg border flex items-center gap-2 ${verificationResult.commitmentValid || verificationResult.isVerified ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-700' : 'bg-rose-950/40 border-rose-500/40 text-rose-700'}`}>
                   <CheckCircle2 className="w-4 h-4" />
                   <span className="font-bold">
                     {verificationResult.commitmentValid || verificationResult.isVerified ? 'SHA-256 PRE-COMMITMENT VERIFIED' : 'VERIFICATION FAILED'}
                   </span>
                 </div>
 
-                <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 space-y-2 text-[11px]">
+                <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-2 text-[11px]">
                   <div>
                     <span className="text-slate-500 block">Pre-Commitment Hash:</span>
-                    <span className="text-amber-300 break-all">{verificationResult.commitmentHash || verifyingRecord.commitmentHash}</span>
+                    <span className="text-amber-700 break-all">{verificationResult.commitmentHash || verifyingRecord.commitmentHash}</span>
                   </div>
                   <div>
                     <span className="text-slate-500 block">Revealed Server Seed:</span>
-                    <span className="text-slate-200 break-all">{verificationResult.serverSeed || verifyingRecord.serverSeed}</span>
+                    <span className="text-slate-700 break-all">{verificationResult.serverSeed || verifyingRecord.serverSeed}</span>
                   </div>
                   <div>
                     <span className="text-slate-500 block">Client Entropy / Seed:</span>
-                    <span className="text-slate-200 break-all">{verificationResult.clientSeed || verifyingRecord.clientSeed || 'WinDaq-ClientSeed-v1'}</span>
+                    <span className="text-slate-700 break-all">{verificationResult.clientSeed || verifyingRecord.clientSeed || 'WinDaq-ClientSeed-v1'}</span>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="py-8 text-center text-slate-500">
-                <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-emerald-400" />
+                <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-emerald-600" />
                 Computing cryptographic proofs...
               </div>
             )}
 
-            <div className="pt-3 border-t border-slate-800 flex justify-end">
+            <div className="pt-3 border-t border-slate-200 flex justify-end">
               <button
                 onClick={() => setVerifyingRecord(null)}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold"
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 text-xs font-semibold"
               >
                 Close
               </button>

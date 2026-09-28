@@ -255,19 +255,19 @@ export default function AndarBaharGame() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] w-full bg-[#1e4620] bg-[url('https://www.transparenttextures.com/patterns/felt.png')] text-white font-sans selection:bg-yellow-500 flex flex-col relative overflow-y-auto">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-emerald-50 via-white to-sky-50 text-white font-sans selection:bg-yellow-500 flex flex-col relative overflow-y-auto">
 
 
       {/* Game Stage Area */}
       <div className="flex-1 w-full relative flex flex-col items-center py-6 px-4">
         
         {/* Timer / Status */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 border border-white/10 px-6 py-2 rounded-full flex items-center gap-3 backdrop-blur-md z-30 shadow-lg">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/80 border border-slate-200 px-6 py-2 rounded-full flex items-center gap-3 backdrop-blur-md z-30 shadow-lg">
            {gameState.status === 'OPEN' ? (
              <>
                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                <span className="font-bold tracking-widest uppercase text-sm">Place Bets</span>
-               <span className={`font-mono font-black text-xl ${timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-green-400'}`}>
+               <span className={`font-mono font-black text-xl ${timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-green-600'}`}>
                  00:{timeLeft.toString().padStart(2, '0')}
                </span>
              </>
@@ -281,10 +281,10 @@ export default function AndarBaharGame() {
 
         {/* Central Joker Area */}
         <div className="mt-12 mb-8 relative flex flex-col items-center">
-           <div className="text-center mb-2 font-black tracking-widest text-amber-300 text-xs uppercase bg-black/60 px-3 py-1 rounded-full border border-amber-500/30">
+           <div className="text-center mb-2 font-black tracking-widest text-amber-700 text-xs uppercase bg-white/80 px-3 py-1 rounded-full border border-amber-500/30">
              🃏 Center Reference Joker Card
            </div>
-           <div className="w-20 h-28 sm:w-24 sm:h-36 rounded-2xl border-2 border-dashed border-amber-400/50 flex items-center justify-center bg-black/40 shadow-[0_0_25px_rgba(245,158,11,0.25)] p-1">
+           <div className="w-20 h-28 sm:w-24 sm:h-36 rounded-2xl border-2 border-dashed border-amber-400/50 flex items-center justify-center bg-slate-100 shadow-[0_0_25px_rgba(245,158,11,0.25)] p-1">
              {result?.joker ? (
                <AnimatedCard 
                  card={result.joker} 
@@ -293,7 +293,7 @@ export default function AndarBaharGame() {
                  size="lg"
                />
              ) : (
-               <span className="text-white/30 text-xs font-mono">Awaiting Deal...</span>
+               <span className="text-slate-400 text-xs font-mono">Awaiting Deal...</span>
              )}
            </div>
         </div>
@@ -305,7 +305,7 @@ export default function AndarBaharGame() {
            <div className={`flex-1 bg-blue-900/40 border-2 rounded-2xl p-4 flex flex-col items-center relative min-h-[180px] transition-all duration-300 ${
              result?.winner === 'ANDAR' && !isDealing ? 'border-amber-400 shadow-[0_0_35px_rgba(245,158,11,0.5)] bg-blue-900/60' : 'border-blue-500/30'
            }`}>
-              <div className="absolute top-2 left-4 font-black text-2xl sm:text-4xl text-white/10 uppercase tracking-tighter pointer-events-none">Andar</div>
+              <div className="absolute top-2 left-4 font-black text-2xl sm:text-4xl text-slate-400 uppercase tracking-tighter pointer-events-none">Andar</div>
               <div className="flex flex-wrap justify-center z-10 mt-6 min-h-[80px]">
                 {displayedCards.filter(c => c.side === 'ANDAR').map((c, i) => {
                   const isMatch = result?.joker && c.card.rank === result.joker.rank;
@@ -336,7 +336,7 @@ export default function AndarBaharGame() {
            <div className={`flex-1 bg-red-900/40 border-2 rounded-2xl p-4 flex flex-col items-center relative min-h-[180px] transition-all duration-300 ${
              result?.winner === 'BAHAR' && !isDealing ? 'border-amber-400 shadow-[0_0_35px_rgba(245,158,11,0.5)] bg-red-900/60' : 'border-red-500/30'
            }`}>
-              <div className="absolute top-2 right-4 font-black text-2xl sm:text-4xl text-white/10 uppercase tracking-tighter pointer-events-none">Bahar</div>
+              <div className="absolute top-2 right-4 font-black text-2xl sm:text-4xl text-slate-400 uppercase tracking-tighter pointer-events-none">Bahar</div>
               <div className="flex flex-wrap justify-center z-10 mt-6 min-h-[80px]">
                 {displayedCards.filter(c => c.side === 'BAHAR').map((c, i) => {
                   const isMatch = result?.joker && c.card.rank === result.joker.rank;
@@ -390,11 +390,11 @@ export default function AndarBaharGame() {
             onClick={() => placeBet('ANDAR')}
             className="bg-blue-600/80 hover:bg-blue-500 border border-blue-400/50 rounded-xl py-6 flex flex-col items-center relative overflow-hidden transition-all active:scale-95"
           >
-             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+             <div className="absolute inset-0 bg-gradient-to-t from-slate-100 to-transparent" />
              <span className="font-black text-2xl uppercase tracking-widest relative z-10">Andar</span>
-             <span className="text-blue-200 text-xs font-bold relative z-10 mt-1">Pays 1.9x</span>
+             <span className="text-blue-700 text-xs font-bold relative z-10 mt-1">Pays 1.9x</span>
              {myBets['ANDAR'] && (
-               <div className="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-black px-2 py-0.5 rounded-full shadow-lg border border-black z-20">
+               <div className="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-black px-2 py-0.5 rounded-full shadow-lg border border-slate-200 z-20">
                  ₹ {myBets['ANDAR']}
                </div>
              )}
@@ -405,11 +405,11 @@ export default function AndarBaharGame() {
             onClick={() => placeBet('BAHAR')}
             className="bg-red-600/80 hover:bg-red-500 border border-red-400/50 rounded-xl py-6 flex flex-col items-center relative overflow-hidden transition-all active:scale-95"
           >
-             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+             <div className="absolute inset-0 bg-gradient-to-t from-slate-100 to-transparent" />
              <span className="font-black text-2xl uppercase tracking-widest relative z-10">Bahar</span>
-             <span className="text-red-200 text-xs font-bold relative z-10 mt-1">Pays 2x</span>
+             <span className="text-red-700 text-xs font-bold relative z-10 mt-1">Pays 2x</span>
              {myBets['BAHAR'] && (
-               <div className="absolute top-2 left-2 bg-yellow-500 text-black text-xs font-black px-2 py-0.5 rounded-full shadow-lg border border-black z-20">
+               <div className="absolute top-2 left-2 bg-yellow-500 text-black text-xs font-black px-2 py-0.5 rounded-full shadow-lg border border-slate-200 z-20">
                  ₹ {myBets['BAHAR']}
                </div>
              )}
@@ -418,11 +418,11 @@ export default function AndarBaharGame() {
       </div>
 
       {/* History Ribbon */}
-      <div className="bg-black/50 border-t border-white/5 py-1.5 px-4 flex gap-1 overflow-x-auto scrollbar-hide items-center h-10 w-full justify-center">
+      <div className="bg-slate-100 border-t border-slate-200 py-1.5 px-4 flex gap-1 overflow-x-auto scrollbar-hide items-center h-10 w-full justify-center">
         {(history || []).map((h, i) => {
           const winner = h?.result?.winner || h?.winner || (i % 2 === 0 ? 'ANDAR' : 'BAHAR');
           return (
-            <div key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0 ${winner === 'ANDAR' ? 'bg-blue-600' : 'bg-red-600'} border border-white/20`}>
+            <div key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0 ${winner === 'ANDAR' ? 'bg-blue-600' : 'bg-red-600'} border border-slate-200`}>
               {winner === 'ANDAR' ? 'A' : 'B'}
             </div>
           );
@@ -430,16 +430,16 @@ export default function AndarBaharGame() {
       </div>
 
       {/* Chip Selector Footer */}
-      <div className="bg-black/80 border-t border-white/10 p-4 sticky bottom-0 z-40 backdrop-blur-md">
+      <div className="bg-white/80 border-t border-slate-200 p-4 sticky bottom-0 z-40 backdrop-blur-md">
          <div className="max-w-3xl mx-auto flex gap-3 justify-center overflow-x-auto pb-1 scrollbar-hide">
             {CHIP_VALUES.map(val => (
               <button 
                 key={val}
                 onClick={() => setSelectedChips(val)}
-                className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex-shrink-0 flex items-center justify-center border-4 shadow-[0_4px_10px_rgba(0,0,0,0.5)] transition-transform ${selectedChips === val ? 'scale-110 -translate-y-2 border-yellow-400 bg-yellow-400/20' : 'border-gray-500 bg-gray-800 opacity-80 hover:opacity-100'}`}
+                className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex-shrink-0 flex items-center justify-center border-4 shadow-[0_4px_10px_rgba(15,23,42,0.13)] transition-transform ${selectedChips === val ? 'scale-110 -translate-y-2 border-yellow-400 bg-yellow-400/20' : 'border-gray-500 bg-slate-100 opacity-80 hover:opacity-100'}`}
               >
-                 <div className="absolute inset-1 border border-white/20 rounded-full border-dashed" />
-                 <span className={`font-black text-sm ${selectedChips === val ? 'text-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.8)]' : 'text-gray-300'}`}>{val >= 1000 ? `${val/1000}k` : val}</span>
+                 <div className="absolute inset-1 border border-slate-200 rounded-full border-dashed" />
+                 <span className={`font-black text-sm ${selectedChips === val ? 'text-yellow-600 drop-shadow-[0_0_5px_rgba(250,204,21,0.8)]' : 'text-slate-600'}`}>{val >= 1000 ? `${val/1000}k` : val}</span>
               </button>
             ))}
          </div>

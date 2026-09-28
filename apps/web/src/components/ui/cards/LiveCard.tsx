@@ -42,7 +42,7 @@ export default function LiveCard({
         whileTap={{ scale: 0.98 }}
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
-        className={`${width} aspect-[16/9] relative rounded-xl overflow-hidden group border border-white/10 bg-ocean-card cursor-pointer hover:border-neon-mint/50 hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all duration-300`}
+        className={`${width} aspect-[16/9] relative rounded-xl overflow-hidden group border border-slate-200 bg-ocean-card cursor-pointer hover:border-neon-mint/50 hover:shadow-[0_10px_30px_rgba(15,23,42,0.13)] transition-all duration-300`}
       >
         {/* Background Image */}
         <div className="absolute inset-0 bg-deep-ocean">
@@ -57,7 +57,7 @@ export default function LiveCard({
         </div>
 
         {/* Gradients */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/40 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-100 via-slate-100 to-slate-100 pointer-events-none" />
         
         {/* Top Header */}
         <div className="absolute top-3 left-3 right-3 flex justify-between items-start pointer-events-none">
@@ -67,28 +67,28 @@ export default function LiveCard({
           
           <button 
             onClick={handleFavorite} 
-            className="pointer-events-auto p-2 rounded-full bg-black/40 backdrop-blur hover:bg-black/60 transition-colors"
+            className="pointer-events-auto p-2 rounded-full bg-slate-100 backdrop-blur hover:bg-white/80 transition-colors"
           >
-            <Heart size={16} className={isFavorite ? 'fill-pink-500 text-pink-500' : 'text-white'} />
+            <Heart size={16} className={isFavorite ? 'fill-pink-500 text-pink-500' : 'text-slate-900'} />
           </button>
         </div>
 
         {/* Bottom Details */}
         <div className="absolute bottom-0 left-0 right-0 p-3 transform transition-transform duration-300 flex justify-between items-end">
           <div>
-            <h3 className="text-white font-black text-sm md:text-base drop-shadow-md mb-0.5">{title}</h3>
+            <h3 className="text-slate-900 font-black text-sm md:text-base drop-shadow-md mb-0.5">{title}</h3>
             <p className="text-neon-mint text-[10px] font-bold uppercase tracking-wider">{dealer}</p>
           </div>
           
           {players !== undefined && (
-            <div className="flex items-center gap-1 text-gray-300 bg-black/40 px-2 py-1 rounded backdrop-blur text-[10px] font-bold">
+            <div className="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-1 rounded backdrop-blur text-[10px] font-bold">
               <Users size={12} /> {players}
             </div>
           )}
         </div>
 
         {/* Hover Play Button Overlay */}
-        <div className={`absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`absolute inset-0 bg-slate-100 backdrop-blur-[2px] flex items-center justify-center transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }}
             animate={isHovered ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}

@@ -40,10 +40,10 @@ export default function SupportPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#061625] font-sans selection:bg-[#26F0B2] text-[#F4FBFF] max-w-lg mx-auto pb-12 shadow-2xl">
+    <main className="min-h-screen bg-white font-sans selection:bg-[#26F0B2] text-[#F4FBFF] max-w-lg mx-auto pb-12 shadow-2xl">
       {/* Page Title Banner */}
-      <div className="px-4 py-3 bg-[#0B2236]/90 border-b border-white/10 flex items-center justify-between">
-        <h1 className="font-black text-sm tracking-wider uppercase text-white">24/7 HELP & SUPPORT</h1>
+      <div className="px-4 py-3 bg-white/90 border-b border-slate-200 flex items-center justify-between">
+        <h1 className="font-black text-sm tracking-wider uppercase text-slate-900">24/7 HELP & SUPPORT</h1>
       </div>
 
       <div className="p-4 space-y-4">
@@ -53,10 +53,10 @@ export default function SupportPage() {
             href="https://t.me/windaq_support"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-[#0B2236] border border-[#5BB8FF]/30 p-3 rounded-2xl flex flex-col items-center justify-center text-center gap-1.5 hover:border-[#5BB8FF] transition-all shadow-md group"
+            className="bg-white border border-[#5BB8FF]/30 p-3 rounded-2xl flex flex-col items-center justify-center text-center gap-1.5 hover:border-[#5BB8FF] transition-all shadow-md group"
           >
             <Send size={24} className="text-[#5BB8FF] group-hover:scale-110 transition-transform" />
-            <span className="font-black text-xs text-white">TELEGRAM VIP</span>
+            <span className="font-black text-xs text-slate-900">TELEGRAM VIP</span>
             <span className="text-[10px] text-[#8EA8B8]">Instant 1-on-1 Help</span>
           </a>
 
@@ -64,24 +64,24 @@ export default function SupportPage() {
             href="https://wa.me/919876543210?text=Hi%20WinDaq%20Support"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-[#0B2236] border border-[#26F0B2]/30 p-3 rounded-2xl flex flex-col items-center justify-center text-center gap-1.5 hover:border-[#26F0B2] transition-all shadow-md group"
+            className="bg-white border border-[#26F0B2]/30 p-3 rounded-2xl flex flex-col items-center justify-center text-center gap-1.5 hover:border-[#26F0B2] transition-all shadow-md group"
           >
             <MessageCircle size={24} className="text-[#26F0B2] group-hover:scale-110 transition-transform" />
-            <span className="font-black text-xs text-white">WHATSAPP DESK</span>
+            <span className="font-black text-xs text-slate-900">WHATSAPP DESK</span>
             <span className="text-[10px] text-[#8EA8B8]">24/7 Live Agent</span>
           </a>
         </div>
 
         {/* Support Ticket Form */}
-        <div className="bg-[#0B2236] border border-white/10 rounded-2xl p-4 shadow-lg">
-          <h2 className="font-black text-sm text-white mb-1 uppercase tracking-wide">OPEN A SUPPORT TICKET</h2>
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-lg">
+          <h2 className="font-black text-sm text-slate-900 mb-1 uppercase tracking-wide">OPEN A SUPPORT TICKET</h2>
           <p className="text-xs text-[#8EA8B8] mb-3">Our dedicated financial resolution team is online 24/7.</p>
 
           {submitted ? (
             <div className="bg-[#26F0B2]/10 border border-[#26F0B2] p-4 rounded-xl text-center">
               <span className="text-2xl mb-1 block">✅</span>
               <h3 className="font-black text-sm text-[#26F0B2]">TICKET #WDQ-84920 CREATED</h3>
-              <p className="text-xs text-gray-300 mt-1">We are reviewing your query. A response will be sent via SMS / Notification.</p>
+              <p className="text-xs text-slate-600 mt-1">We are reviewing your query. A response will be sent via SMS / Notification.</p>
             </div>
           ) : (
             <form onSubmit={handleSubmitTicket} className="space-y-3">
@@ -90,7 +90,7 @@ export default function SupportPage() {
                 <select
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  className="w-full bg-[#061625] border border-white/15 rounded-xl px-3 py-2.5 text-white font-bold text-sm outline-none focus:border-[#26F0B2]"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 font-bold text-sm outline-none focus:border-[#26F0B2]"
                 >
                   <option value="deposit">Deposit & UTR Verification</option>
                   <option value="withdrawal">Withdrawal & Payout Status</option>
@@ -107,7 +107,7 @@ export default function SupportPage() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Describe your issue or provide 12-digit UTR number..."
-                  className="w-full bg-[#061625] border border-white/15 rounded-xl p-3 text-white text-xs outline-none focus:border-[#26F0B2] resize-none"
+                  className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 text-xs outline-none focus:border-[#26F0B2] resize-none"
                 />
               </div>
 
@@ -122,15 +122,15 @@ export default function SupportPage() {
         </div>
 
         {/* FAQs */}
-        <div className="bg-[#0B2236] border border-white/10 rounded-2xl p-4 shadow-lg space-y-3">
-          <h2 className="font-black text-sm text-white flex items-center gap-2 uppercase">
-            <HelpCircle size={18} className="text-yellow-400" /> FREQUENTLY ASKED QUESTIONS
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-lg space-y-3">
+          <h2 className="font-black text-sm text-slate-900 flex items-center gap-2 uppercase">
+            <HelpCircle size={18} className="text-yellow-600" /> FREQUENTLY ASKED QUESTIONS
           </h2>
 
           <div className="space-y-2">
             {FAQS.map((faq, idx) => (
-              <div key={idx} className="bg-[#061625] border border-white/5 rounded-xl p-3">
-                <h4 className="font-bold text-xs text-white mb-1">{faq.q}</h4>
+              <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3">
+                <h4 className="font-bold text-xs text-slate-900 mb-1">{faq.q}</h4>
                 <p className="text-[11px] text-[#8EA8B8] leading-relaxed">{faq.a}</p>
               </div>
             ))}

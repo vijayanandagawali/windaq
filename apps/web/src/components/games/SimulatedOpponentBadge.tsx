@@ -26,14 +26,14 @@ export const SimulatedOpponentBadge: React.FC<SimulatedOpponentProps> = ({
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="flex items-center gap-2 bg-zinc-900/80 border border-white/10 rounded-xl px-2.5 py-1.5 shadow-md backdrop-blur-sm"
+      className="flex items-center gap-2 bg-white/90 border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-md backdrop-blur-sm"
       data-testid={`simulated-bot-seat-${seatIndex}`}
       data-seat={seatIndex}
     >
       <span data-testid="simulated-opponent-badge" className="sr-only">simulated-opponent-badge</span>
       {/* Bot Icon with AI Badge */}
       <div className="relative">
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-950 to-zinc-900 border border-indigo-400/40 flex items-center justify-center text-indigo-300">
+        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-950 to-white border border-indigo-400/40 flex items-center justify-center text-indigo-700">
           <Bot size={14} />
         </div>
         <span className="absolute -bottom-1 -right-1 bg-indigo-600 text-[8px] font-black px-1 rounded text-white uppercase tracking-tighter">
@@ -52,11 +52,11 @@ export const SimulatedOpponentBadge: React.FC<SimulatedOpponentProps> = ({
 
         {/* Clear Non-Human Status */}
         <div className="flex items-center gap-1">
-          <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-wider">
+          <span className="text-[8px] font-bold text-indigo-600 uppercase tracking-wider">
             [SIMULATED BOT]
           </span>
           {activeBet && (
-            <span className="text-[9px] font-mono text-amber-400">
+            <span className="text-[9px] font-mono text-amber-600">
               {activeBet.market}: ₹{activeBet.amount}
             </span>
           )}

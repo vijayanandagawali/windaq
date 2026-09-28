@@ -2,9 +2,9 @@
   <defs>
     <!-- Background Gradients -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#051c14"/>
-      <stop offset="50%" stop-color="#0a2f22"/>
-      <stop offset="100%" stop-color="#104734"/>
+      <stop offset="0%" stop-color="#5EEAD4"/>
+      <stop offset="50%" stop-color="#14B8A6"/>
+      <stop offset="100%" stop-color="#0F766E"/>
     </linearGradient>
     <linearGradient id="curveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#10B981" stop-opacity="0.6"/>

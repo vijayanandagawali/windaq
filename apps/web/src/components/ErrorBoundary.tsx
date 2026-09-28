@@ -37,12 +37,12 @@ export default class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center bg-[#070a14] text-white">
-          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-6 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+        <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center bg-white text-slate-900">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-600 mb-6 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
             <AlertTriangle size={36} />
           </div>
           <h2 className="text-2xl font-black uppercase tracking-wider mb-2">Something went wrong</h2>
-          <p className="text-gray-400 text-xs sm:text-sm max-w-md mb-6">
+          <p className="text-slate-500 text-xs sm:text-sm max-w-md mb-6">
             An unexpected error occurred in this view. Our high-availability engine has isolated the issue so your wallet balance remains completely safe.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -56,7 +56,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             <Link
               href="/"
               onClick={() => this.setState({ hasError: false, error: null })}
-              className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-extrabold text-xs flex items-center gap-2 hover:bg-white/10 active:scale-95 transition-all"
+              className="px-5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-extrabold text-xs flex items-center gap-2 hover:bg-slate-100 active:scale-95 transition-all"
             >
               <Home size={14} />
               Return to Lobby

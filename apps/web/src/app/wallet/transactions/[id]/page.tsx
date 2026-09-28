@@ -103,19 +103,19 @@ export default function TransactionDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b12] text-white flex flex-col font-sans pb-16">
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans pb-16">
       {/* Header Bar */}
-      <header className="px-4 py-4 border-b border-white/10 bg-[#0d1424]/80 backdrop-blur-md sticky top-0 z-20">
+      <header className="px-4 py-4 border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-20">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <Link
             href="/wallet"
-            className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
           >
             <ArrowLeft size={16} />
             <span>BACK TO WALLET</span>
           </Link>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/20">
+            <span className="text-[10px] bg-emerald-500/10 text-emerald-600 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/20">
               IMMUTABLE AUDIT RECORD
             </span>
           </div>
@@ -126,16 +126,16 @@ export default function TransactionDetailPage() {
         {loading ? (
           <div className="text-center py-20 space-y-4">
             <RefreshCw className="animate-spin text-neon-mint mx-auto" size={32} />
-            <p className="text-xs text-gray-400 font-mono">Retrieving authoritative ledger record...</p>
+            <p className="text-xs text-slate-500 font-mono">Retrieving authoritative ledger record...</p>
           </div>
         ) : error ? (
           <div className="bg-red-500/10 border border-red-500/20 rounded-3xl p-8 text-center max-w-md mx-auto my-12">
-            <AlertCircle size={40} className="text-red-400 mx-auto mb-3" />
-            <h3 className="text-lg font-black text-white">Record Unavailable</h3>
-            <p className="text-xs text-gray-400 mt-2">{error}</p>
+            <AlertCircle size={40} className="text-red-600 mx-auto mb-3" />
+            <h3 className="text-lg font-black text-slate-900">Record Unavailable</h3>
+            <p className="text-xs text-slate-500 mt-2">{error}</p>
             <Link
               href="/wallet"
-              className="mt-6 inline-block px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white font-bold text-xs rounded-xl transition-all"
+              className="mt-6 inline-block px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs rounded-xl transition-all"
             >
               Return to Wallet
             </Link>
@@ -143,17 +143,17 @@ export default function TransactionDetailPage() {
         ) : tx ? (
           <div className="space-y-6">
             {/* Top Status & Amount Banner */}
-            <div className="bg-gradient-to-b from-[#0d1627] to-[#070e1c] border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div className="bg-gradient-to-b from-white to-slate-50 border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-black uppercase tracking-wider text-gray-400">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-500">
                       {tx.type} RECEIPT
                     </span>
                     <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
-                      tx.status === 'COMPLETED' || tx.status === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-                      tx.status === 'PENDING' || tx.status === 'PROCESSING' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-                      'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                      tx.status === 'COMPLETED' || tx.status === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-700 border-emerald-500/40' :
+                      tx.status === 'PENDING' || tx.status === 'PROCESSING' ? 'bg-amber-500/20 text-amber-700 border-amber-500/40' :
+                      'bg-rose-500/20 text-rose-700 border-rose-500/40'
                     }`}>
                       {tx.status}
                     </span>
@@ -161,18 +161,18 @@ export default function TransactionDetailPage() {
 
                   <div className="flex items-baseline gap-2">
                     <span className={`text-3xl sm:text-4xl font-mono font-black ${
-                      tx.amount > 0 ? 'text-emerald-400' : 'text-rose-400'
+                      tx.amount > 0 ? 'text-emerald-600' : 'text-rose-600'
                     }`}>
                       {tx.amount > 0 ? '+' : ''}₹{Math.abs(tx.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
 
-                  <p className="text-xs text-gray-400 mt-2">{tx.description}</p>
+                  <p className="text-xs text-slate-500 mt-2">{tx.description}</p>
                 </div>
 
-                <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 border-white/10 pt-4 sm:pt-0">
+                <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 border-slate-200 pt-4 sm:pt-0">
                   <TransactionStatusAnimation status={tx.status} size="md" />
-                  <span className="text-[11px] text-gray-400 font-mono mt-2">
+                  <span className="text-[11px] text-slate-500 font-mono mt-2">
                     {new Date(tx.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
@@ -180,42 +180,42 @@ export default function TransactionDetailPage() {
             </div>
 
             {/* Financial Details Grid */}
-            <div className="bg-[#0b101c] border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
-              <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xl space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
                 <FileText size={14} className="text-neon-mint" />
                 Ledger Settlement Metadata
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="bg-white/5 p-3.5 rounded-2xl border border-white/5">
-                  <span className="text-[10px] text-gray-400 uppercase font-bold block">Internal Transaction ID</span>
-                  <span className="text-white font-mono font-bold text-xs select-all break-all">{tx.id}</span>
+                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Internal Transaction ID</span>
+                  <span className="text-slate-900 font-mono font-bold text-xs select-all break-all">{tx.id}</span>
                 </div>
 
-                <div className="bg-white/5 p-3.5 rounded-2xl border border-white/5">
-                  <span className="text-[10px] text-gray-400 uppercase font-bold block">Authoritative Balance After</span>
+                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Authoritative Balance After</span>
                   <span className="text-neon-mint font-mono font-bold text-sm">
                     {tx.balanceAfter !== undefined ? `₹${tx.balanceAfter.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'N/A'}
                   </span>
                 </div>
 
                 {tx.reference && (
-                  <div className="bg-white/5 p-3.5 rounded-2xl border border-white/5">
-                    <span className="text-[10px] text-gray-400 uppercase font-bold block">External Payment Reference</span>
-                    <span className="text-white font-mono text-xs select-all break-all">{tx.reference}</span>
+                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                    <span className="text-[10px] text-slate-500 uppercase font-bold block">External Payment Reference</span>
+                    <span className="text-slate-900 font-mono text-xs select-all break-all">{tx.reference}</span>
                   </div>
                 )}
 
-                <div className="bg-white/5 p-3.5 rounded-2xl border border-white/5">
-                  <span className="text-[10px] text-gray-400 uppercase font-bold block">Created Timestamp</span>
-                  <span className="text-gray-300 font-mono text-xs">{new Date(tx.date).toISOString()}</span>
+                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Created Timestamp</span>
+                  <span className="text-slate-600 font-mono text-xs">{new Date(tx.date).toISOString()}</span>
                 </div>
               </div>
 
               {/* Idempotency Key */}
-              <div className="bg-black/50 p-3.5 rounded-2xl border border-white/5">
+              <div className="bg-slate-100 p-3.5 rounded-2xl border border-slate-200">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] text-gray-400 uppercase font-bold">Unique Idempotency Key</span>
+                  <span className="text-[10px] text-slate-500 uppercase font-bold">Unique Idempotency Key</span>
                   <button
                     onClick={() => copyToClipboard(tx.idempotencyKey || tx.id)}
                     className="text-[11px] text-neon-mint hover:underline flex items-center gap-1 cursor-pointer"
@@ -224,7 +224,7 @@ export default function TransactionDetailPage() {
                     <span>{copiedKey ? 'Copied' : 'Copy'}</span>
                   </button>
                 </div>
-                <div className="font-mono text-xs text-emerald-300 break-all select-all">
+                <div className="font-mono text-xs text-emerald-700 break-all select-all">
                   {tx.idempotencyKey || tx.id}
                 </div>
               </div>
@@ -233,31 +233,31 @@ export default function TransactionDetailPage() {
             {/* Double-Entry Ledger Verification Card */}
             <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-3xl p-6 shadow-xl space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-emerald-400 font-black text-sm">
+                <div className="flex items-center gap-2 text-emerald-600 font-black text-sm">
                   <ShieldCheck size={18} />
                   <span>Double-Entry Ledger Proof</span>
                 </div>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-md border border-emerald-500/30">
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-700 font-bold px-2 py-0.5 rounded-md border border-emerald-500/30">
                   BALANCED (₹0.00 DISCREPANCY)
                 </span>
               </div>
 
-              <div className="bg-black/40 rounded-2xl p-4 border border-white/5 text-xs font-mono space-y-2">
-                <div className="flex justify-between items-center text-gray-300">
-                  <span className="text-gray-400">Debit Account:</span>
-                  <span className="text-white font-bold">{tx.ledger?.debitAccountId || (tx.amount > 0 ? 'RESERVE:GATEWAY_CLEARING' : 'USER:AVAILABLE_WALLET')}</span>
+              <div className="bg-slate-100 rounded-2xl p-4 border border-slate-200 text-xs font-mono space-y-2">
+                <div className="flex justify-between items-center text-slate-600">
+                  <span className="text-slate-500">Debit Account:</span>
+                  <span className="text-slate-900 font-bold">{tx.ledger?.debitAccountId || (tx.amount > 0 ? 'RESERVE:GATEWAY_CLEARING' : 'USER:AVAILABLE_WALLET')}</span>
                 </div>
-                <div className="flex justify-between items-center text-gray-300">
-                  <span className="text-gray-400">Credit Account:</span>
-                  <span className="text-white font-bold">{tx.ledger?.creditAccountId || (tx.amount > 0 ? 'USER:AVAILABLE_WALLET' : 'RESERVE:BANK_PAYOUT')}</span>
+                <div className="flex justify-between items-center text-slate-600">
+                  <span className="text-slate-500">Credit Account:</span>
+                  <span className="text-slate-900 font-bold">{tx.ledger?.creditAccountId || (tx.amount > 0 ? 'USER:AVAILABLE_WALLET' : 'RESERVE:BANK_PAYOUT')}</span>
                 </div>
-                <div className="flex justify-between items-center text-gray-300 pt-2 border-t border-white/10">
-                  <span className="text-gray-400">Authoritative Ledger Status:</span>
-                  <span className="text-emerald-400 font-bold">RECONCILED & IMMUTABLE</span>
+                <div className="flex justify-between items-center text-slate-600 pt-2 border-t border-slate-200">
+                  <span className="text-slate-500">Authoritative Ledger Status:</span>
+                  <span className="text-emerald-600 font-bold">RECONCILED & IMMUTABLE</span>
                 </div>
               </div>
 
-              <p className="text-[11px] text-gray-400 leading-relaxed">
+              <p className="text-[11px] text-slate-500 leading-relaxed">
                 Every movement of funds on WinDaq is recorded in an append-only double-entry ledger with PostgreSQL transaction atomicity. Historical records cannot be rewritten or mutated.
               </p>
             </div>

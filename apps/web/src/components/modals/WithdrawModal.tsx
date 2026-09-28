@@ -53,11 +53,11 @@ export default function WithdrawModal() {
 
   if (paymentsOpen === false) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" onClick={() => setWithdrawing(false)}>
-        <div role="dialog" aria-modal="true" className="w-full max-w-sm space-y-3 rounded-3xl bg-[#0d1b2a] p-6 text-center ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
-          <h4 className="text-lg font-black text-white">Withdrawals are closed right now</h4>
-          <p className="text-sm text-white/60">Withdrawals are temporarily unavailable. Your balance is safe. Please check back later.</p>
-          <button onClick={() => setWithdrawing(false)} className="w-full rounded-2xl bg-white/10 py-3 text-sm font-bold text-white">Close</button>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-md" onClick={() => setWithdrawing(false)}>
+        <div role="dialog" aria-modal="true" className="w-full max-w-sm space-y-3 rounded-3xl bg-white p-6 text-center ring-1 ring-slate-200" onClick={(e) => e.stopPropagation()}>
+          <h4 className="text-lg font-black text-slate-900">Withdrawals are closed right now</h4>
+          <p className="text-sm text-slate-600">Withdrawals are temporarily unavailable. Your balance is safe. Please check back later.</p>
+          <button onClick={() => setWithdrawing(false)} className="w-full rounded-2xl bg-slate-100 py-3 text-sm font-bold text-slate-900">Close</button>
         </div>
       </div>
     );
@@ -115,28 +115,28 @@ export default function WithdrawModal() {
           onClick={() => {
             if (!loading) setWithdrawing(false);
           }}
-          className="fixed inset-0 bg-black/80 backdrop-blur-md"
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-md"
         />
 
         <motion.div
           initial={{ scale: 0.88, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.88, opacity: 0, y: 20 }}
-          className="relative z-10 w-full max-w-sm max-h-[90dvh] overflow-y-auto overscroll-contain bg-gradient-to-b from-[#181326] via-[#101322] to-[#070a12] border border-red-500/40 rounded-3xl p-5 shadow-[0_0_50px_rgba(239,68,68,0.25)] text-left pb-safe"
+          className="relative z-10 w-full max-w-sm max-h-[90dvh] overflow-y-auto overscroll-contain bg-gradient-to-b from-white via-white to-slate-50 border border-red-500/40 rounded-3xl p-5 shadow-[0_0_50px_rgba(239,68,68,0.25)] text-left pb-safe"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-4 sticky -top-5 bg-[#181326]/95 backdrop-blur-md pt-1 pb-2 z-10 border-b border-white/5">
+          <div className="flex items-center justify-between mb-4 sticky -top-5 bg-white/90 backdrop-blur-md pt-1 pb-2 z-10 border-b border-slate-200">
             <div className="flex items-center gap-2">
               <span className="text-xl">💸</span>
               <div>
-                <h3 className="text-white font-black text-sm tracking-wide uppercase">UPI Withdrawal</h3>
-                <p className="text-[10px] text-gray-400 font-semibold">Authoritative Ledger Settlements</p>
+                <h3 className="text-slate-900 font-black text-sm tracking-wide uppercase">UPI Withdrawal</h3>
+                <p className="text-[10px] text-slate-500 font-semibold">Authoritative Ledger Settlements</p>
               </div>
             </div>
             <button 
               onClick={() => !loading && setWithdrawing(false)}
               disabled={loading}
-              className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white cursor-pointer disabled:opacity-30"
+              className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-900 cursor-pointer disabled:opacity-30"
               aria-label="Close Withdrawal Modal"
             >
               <X size={16} />
@@ -146,11 +146,11 @@ export default function WithdrawModal() {
           {step === 'INPUT' && (
             <>
               {/* Balance Card with Available vs Locked */}
-              <div className="bg-ocean-card/90 border border-white/10 rounded-2xl p-3.5 mb-4 space-y-2">
+              <div className="bg-white/90 border border-slate-200 rounded-2xl p-3.5 mb-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Available for Payout</span>
-                    <div className="text-xl font-black text-white">
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Available for Payout</span>
+                    <div className="text-xl font-black text-slate-900">
                       ₹{currentAvailable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
@@ -160,7 +160,7 @@ export default function WithdrawModal() {
                 </div>
 
                 {lockedBalance > 0 && (
-                  <div className="flex items-center gap-1.5 pt-2 border-t border-white/10 text-[11px] text-amber-400 font-medium">
+                  <div className="flex items-center gap-1.5 pt-2 border-t border-slate-200 text-[11px] text-amber-600 font-medium">
                     <Lock size={12} />
                     <span>₹{lockedBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })} locked in pending operations</span>
                   </div>
@@ -169,7 +169,7 @@ export default function WithdrawModal() {
 
               {/* UPI ID Input */}
               <div className="mb-3">
-                <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest block mb-1.5">
+                <label className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest block mb-1.5">
                   Receiving UPI ID / VPA
                 </label>
                 <input
@@ -177,14 +177,14 @@ export default function WithdrawModal() {
                   value={upiId}
                   onChange={(e) => setUpiId(e.target.value)}
                   placeholder="e.g. mobile@paytm or name@okaxis"
-                  className="w-full bg-deep-ocean border border-white/15 rounded-xl py-2.5 px-3 text-white font-bold text-sm outline-none focus:border-red-400 transition-colors"
+                  className="w-full bg-deep-ocean border border-slate-200 rounded-xl py-2.5 px-3 text-slate-900 font-bold text-sm outline-none focus:border-red-400 transition-colors"
                 />
               </div>
 
               {/* Amount Input */}
               <div className="mb-3">
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest block">
+                  <label className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest block">
                     Withdraw Amount (INR)
                   </label>
                   <button
@@ -203,7 +203,7 @@ export default function WithdrawModal() {
                     onChange={(e) => setAmount(Number(e.target.value))}
                     min={200}
                     max={currentAvailable}
-                    className="w-full bg-deep-ocean border border-white/15 rounded-xl py-2.5 pl-8 pr-3 text-white font-black text-base outline-none focus:border-red-400"
+                    className="w-full bg-deep-ocean border border-slate-200 rounded-xl py-2.5 pl-8 pr-3 text-slate-900 font-black text-base outline-none focus:border-red-400"
                   />
                 </div>
               </div>
@@ -218,8 +218,8 @@ export default function WithdrawModal() {
                     disabled={amt > currentAvailable}
                     className={`py-1.5 rounded-lg text-xs font-black transition-all border ${
                       amount === amt 
-                        ? 'bg-red-500/20 text-red-300 border-red-500/50 shadow-sm'
-                        : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 disabled:opacity-30'
+                        ? 'bg-red-500/20 text-red-700 border-red-500/50 shadow-sm'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 disabled:opacity-30'
                     }`}
                   >
                     ₹{amt >= 1000 ? `${amt / 1000}k` : amt}
@@ -229,7 +229,7 @@ export default function WithdrawModal() {
 
               {/* Trust Badge */}
               <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2.5 mb-4 flex items-center justify-between text-[10px]">
-                <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
                   <ShieldCheck size={14} />
                   <span>Verified Double-Entry Ledger</span>
                 </div>
@@ -255,17 +255,17 @@ export default function WithdrawModal() {
             <div className="py-8 text-center space-y-4">
               <TransactionStatusAnimation status="PROCESSING" size="lg" />
               <div>
-                <h4 className="text-white font-black text-base">Processing Atomic Settlement</h4>
-                <p className="text-xs text-gray-400 mt-1">Acquiring row-level PostgreSQL lock & executing payout...</p>
+                <h4 className="text-slate-900 font-black text-base">Processing Atomic Settlement</h4>
+                <p className="text-xs text-slate-500 mt-1">Acquiring row-level PostgreSQL lock & executing payout...</p>
               </div>
-              <div className="bg-white/5 rounded-xl p-3 border border-white/10 text-xs space-y-1 text-left">
-                <div className="flex justify-between text-gray-400">
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-1 text-left">
+                <div className="flex justify-between text-slate-500">
                   <span>Amount:</span>
-                  <span className="text-white font-bold">₹{amount.toLocaleString('en-IN')}</span>
+                  <span className="text-slate-900 font-bold">₹{amount.toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between text-gray-400">
+                <div className="flex justify-between text-slate-500">
                   <span>Destination:</span>
-                  <span className="text-white font-mono">{upiId}</span>
+                  <span className="text-slate-900 font-mono">{upiId}</span>
                 </div>
               </div>
             </div>
@@ -275,30 +275,30 @@ export default function WithdrawModal() {
             <div className="py-6 text-center space-y-4">
               <TransactionStatusAnimation status="PENDING_REVIEW" size="lg" />
               <div>
-                <h4 className="text-amber-400 font-black text-lg">Withdrawal Requested</h4>
-                <p className="text-xs text-gray-300 mt-1">
+                <h4 className="text-amber-600 font-black text-lg">Withdrawal Requested</h4>
+                <p className="text-xs text-slate-600 mt-1">
                   ₹{amount.toLocaleString('en-IN')} is on hold and will be sent to your UPI after review.
                 </p>
               </div>
 
-              <div className="bg-white/5 rounded-xl p-3.5 border border-white/10 text-xs space-y-2 text-left">
-                <div className="flex justify-between text-gray-400">
+              <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 text-xs space-y-2 text-left">
+                <div className="flex justify-between text-slate-500">
                   <span>Transaction ID:</span>
                   <span className="text-neon-mint font-mono font-bold text-[11px]">{lastTxId}</span>
                 </div>
-                <div className="flex justify-between text-gray-400">
+                <div className="flex justify-between text-slate-500">
                   <span>Target UPI:</span>
-                  <span className="text-white font-mono">{upiId}</span>
+                  <span className="text-slate-900 font-mono">{upiId}</span>
                 </div>
-                <div className="flex justify-between text-gray-400">
+                <div className="flex justify-between text-slate-500">
                   <span>Ledger Status:</span>
-                  <span className="text-emerald-400 font-bold">COMPLETED / RECONCILED</span>
+                  <span className="text-emerald-600 font-bold">COMPLETED / RECONCILED</span>
                 </div>
               </div>
 
               <button
                 onClick={() => setWithdrawing(false)}
-                className="w-full py-3 bg-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-xl transition-all cursor-pointer"
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-sm rounded-xl transition-all cursor-pointer"
               >
                 Close & Return
               </button>
@@ -309,9 +309,9 @@ export default function WithdrawModal() {
             <div className="py-6 text-center space-y-4">
               <TransactionStatusAnimation status="FAILED" size="lg" />
               <div>
-                <h4 className="text-rose-400 font-black text-lg">Payout Unsuccessful</h4>
-                <p className="text-xs text-rose-300 mt-1">{errorMessage}</p>
-                <p className="text-[11px] text-gray-400 mt-1">No funds were deducted. Your balance remains safe.</p>
+                <h4 className="text-rose-600 font-black text-lg">Payout Unsuccessful</h4>
+                <p className="text-xs text-rose-700 mt-1">{errorMessage}</p>
+                <p className="text-[11px] text-slate-500 mt-1">No funds were deducted. Your balance remains safe.</p>
               </div>
 
               <button

@@ -51,20 +51,20 @@ export default function KYCReviewPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <ShieldCheck className="w-6 h-6 text-emerald-500" />
             KYC & Compliance Verification
           </h1>
-          <p className="text-sm text-slate-400 mt-1">Review encrypted user identity documents and jurisdiction eligibility.</p>
+          <p className="text-sm text-slate-500 mt-1">Review encrypted user identity documents and jurisdiction eligibility.</p>
         </div>
       </div>
 
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-white/90 border border-slate-200 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-slate-300">
-            <thead className="text-xs text-slate-400 uppercase bg-slate-900 border-b border-slate-800">
+          <table className="w-full text-sm text-left text-slate-600">
+            <thead className="text-xs text-slate-500 uppercase bg-white border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4">User</th>
                 <th className="px-6 py-4">Jurisdiction</th>
@@ -75,20 +75,20 @@ export default function KYCReviewPage() {
             </thead>
             <tbody>
               {profiles.map((profile) => (
-                <tr key={profile.id} className="border-b border-slate-800/50 hover:bg-slate-800/20">
-                  <td className="px-6 py-4 font-mono text-sm text-white">
+                <tr key={profile.id} className="border-b border-slate-200 hover:bg-slate-100">
+                  <td className="px-6 py-4 font-mono text-sm text-slate-900">
                     {profile.user?.phone || profile.userId.substring(0,8)}
                   </td>
                   <td className="px-6 py-4">
-                    <span className="bg-slate-800 text-slate-300 px-2 py-1 rounded text-xs font-mono border border-slate-700">
+                    <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-mono border border-slate-200">
                       {profile.jurisdiction}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-slate-400">
+                  <td className="px-6 py-4 text-slate-500">
                     {new Date(profile.dob).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded p-2 text-xs font-mono text-emerald-400/80">
+                    <div className="flex items-center gap-2 bg-white border border-slate-200 rounded p-2 text-xs font-mono text-emerald-600">
                       <FileText className="w-4 h-4 text-emerald-500" />
                       <span className="truncate max-w-[200px]">{profile.decryptedDoc || 'N/A'}</span>
                     </div>
@@ -96,13 +96,13 @@ export default function KYCReviewPage() {
                   <td className="px-6 py-4 text-right space-x-2">
                     <button 
                       onClick={() => handleReview(profile.id, 'APPROVED')}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded transition"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/30 rounded transition"
                     >
                       <CheckCircle2 className="w-4 h-4" /> Approve
                     </button>
                     <button 
                       onClick={() => handleReview(profile.id, 'REJECTED')}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded transition"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/30 rounded transition"
                     >
                       <XCircle className="w-4 h-4" /> Reject
                     </button>

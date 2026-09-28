@@ -17,7 +17,7 @@ export default function DemoModeBanner() {
     <div
       role="status"
       data-testid="demo-mode-banner"
-      className="w-full bg-amber-500/15 border-b border-amber-500/40 text-amber-200 text-[11px] sm:text-xs font-bold px-4 py-1.5 flex items-center justify-center gap-2 text-center"
+      className="w-full bg-amber-50 border-b border-amber-200 text-amber-800 text-[11px] sm:text-xs font-bold px-4 py-1.5 flex items-center justify-center gap-2 text-center"
     >
       <Icon size={14} className="shrink-0" aria-hidden="true" />
       <span>{message}</span>

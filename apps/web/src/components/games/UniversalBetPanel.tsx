@@ -202,25 +202,25 @@ export default function UniversalBetPanel({
   };
 
   return (
-    <div className={`relative bg-[#0c121e]/90 border border-white/10 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-2xl transition-all ${className}`}>
+    <div className={`relative bg-white/90 border border-slate-200 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-2xl transition-all ${className}`}>
       
       {/* Top Header: Title, Market, Balance */}
-      <div className="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-white/10">
+      <div className="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-slate-200">
         <div className="flex items-center gap-2">
           {title && (
-            <span className="font-black text-xs uppercase tracking-wider text-white">
+            <span className="font-black text-xs uppercase tracking-wider text-slate-900">
               {title}
             </span>
           )}
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-white/80">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-700">
             {marketName} ({odds.toFixed(2)}x)
           </span>
         </div>
 
         {/* Live Wallet Balance */}
         <div className="flex items-center gap-1.5 text-xs font-mono">
-          <span className="text-white/40 text-[10px] uppercase font-bold">Bal:</span>
-          <span className={`font-black ${amount > balance ? 'text-red-400 animate-pulse' : 'text-emerald-400'}`}>
+          <span className="text-slate-500 text-[10px] uppercase font-bold">Bal:</span>
+          <span className={`font-black ${amount > balance ? 'text-red-600 animate-pulse' : 'text-emerald-600'}`}>
             ₹{balance.toFixed(2)}
           </span>
           {amount > balance && (
@@ -237,9 +237,9 @@ export default function UniversalBetPanel({
 
       {/* Crash Mode: Auto Cashout Multiplier */}
       {variant === 'crash' && (
-        <div className="mb-3 bg-black/40 border border-white/10 rounded-xl p-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-white/70">
-            <Zap size={14} className="text-amber-400" />
+        <div className="mb-3 bg-slate-100 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+            <Zap size={14} className="text-amber-600" />
             <span>Auto Cashout:</span>
           </div>
           <div className="flex items-center gap-1">
@@ -250,23 +250,23 @@ export default function UniversalBetPanel({
               max="1000"
               value={autoCashout}
               onChange={(e) => setAutoCashout(parseFloat(e.target.value) || 1.01)}
-              className="w-16 bg-black/60 border border-white/15 rounded-lg px-2 py-1 text-white text-base sm:text-xs font-mono font-bold text-center outline-none focus:border-amber-400"
+              className="w-16 bg-white/80 border border-slate-200 rounded-lg px-2 py-1 text-slate-900 text-base sm:text-xs font-mono font-bold text-center outline-none focus:border-amber-400"
               disabled={statusState === 'ACCEPTED'}
             />
-            <span className="text-xs font-mono font-bold text-amber-400">x</span>
+            <span className="text-xs font-mono font-bold text-amber-600">x</span>
           </div>
         </div>
       )}
 
       {/* Stake Amount Input with Stepper */}
-      <div className="bg-black/50 border border-white/10 rounded-xl p-1.5 sm:p-2 flex items-center justify-between gap-1 sm:gap-2 mb-2.5">
+      <div className="bg-slate-100 border border-slate-200 rounded-xl p-1.5 sm:p-2 flex items-center justify-between gap-1 sm:gap-2 mb-2.5">
         <div className="flex items-center gap-1">
           <button
             type="button"
             data-testid="btn-stepper-minus"
             onClick={() => handleStepper(-10)}
             disabled={amount <= minBet || isLoading}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 flex items-center justify-center text-white font-bold transition-colors cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-slate-50 hover:bg-slate-200 disabled:opacity-30 flex items-center justify-center text-slate-900 font-bold transition-colors cursor-pointer"
             title="Decrease by ₹10"
           >
             <Minus size={14} />
@@ -276,7 +276,7 @@ export default function UniversalBetPanel({
             data-testid="btn-half"
             onClick={() => handleMultiplier(0.5)}
             disabled={amount <= minBet || isLoading}
-            className="px-2 h-8 sm:h-9 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 text-[11px] font-bold text-white/70 hover:text-white transition-colors cursor-pointer"
+            className="px-2 h-8 sm:h-9 rounded-lg bg-slate-50 hover:bg-slate-200 disabled:opacity-30 text-[11px] font-bold text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
             title="Half Bet"
           >
             ½
@@ -295,11 +295,11 @@ export default function UniversalBetPanel({
               step="10"
               value={amount}
               onChange={(e) => setAmount(Math.max(0, parseInt(e.target.value) || 0))}
-              className="w-24 text-center bg-transparent font-mono font-black text-base sm:text-lg text-white outline-none"
+              className="w-24 text-center bg-transparent font-mono font-black text-base sm:text-lg text-slate-900 outline-none"
               disabled={isLoading}
             />
           </div>
-          <div className="text-[9px] font-mono text-white/40">
+          <div className="text-[9px] font-mono text-slate-500">
             Min: ₹{minBet} • Max: ₹{maxBet >= 1000 ? `${maxBet/1000}k` : maxBet}
           </div>
         </div>
@@ -310,7 +310,7 @@ export default function UniversalBetPanel({
             data-testid="btn-double"
             onClick={() => handleMultiplier(2)}
             disabled={amount * 2 > maxBet || isLoading}
-            className="px-2 h-8 sm:h-9 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 text-[11px] font-bold text-white/70 hover:text-white transition-colors cursor-pointer"
+            className="px-2 h-8 sm:h-9 rounded-lg bg-slate-50 hover:bg-slate-200 disabled:opacity-30 text-[11px] font-bold text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
             title="Double Bet"
           >
             2x
@@ -320,7 +320,7 @@ export default function UniversalBetPanel({
             data-testid="btn-stepper-plus"
             onClick={() => handleStepper(10)}
             disabled={amount >= maxBet || isLoading}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 flex items-center justify-center text-white font-bold transition-colors cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-slate-50 hover:bg-slate-200 disabled:opacity-30 flex items-center justify-center text-slate-900 font-bold transition-colors cursor-pointer"
             title="Increase by ₹10"
           >
             <Plus size={14} />
@@ -330,7 +330,7 @@ export default function UniversalBetPanel({
             data-testid="btn-max"
             onClick={handleSetMax}
             disabled={isLoading}
-            className="px-1.5 sm:px-2 h-8 sm:h-9 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-[10px] font-black text-amber-400 transition-colors cursor-pointer"
+            className="px-1.5 sm:px-2 h-8 sm:h-9 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-[10px] font-black text-amber-600 transition-colors cursor-pointer"
             title="Maximum Bet"
           >
             MAX
@@ -350,7 +350,7 @@ export default function UniversalBetPanel({
             className={`py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition-all border cursor-pointer min-h-[36px] flex items-center justify-center ${
               amount === chip
                 ? 'bg-neon-mint/20 border-neon-mint text-neon-mint shadow-[0_0_10px_rgba(0,255,163,0.3)]'
-                : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
+                : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
             {chip >= 1000 ? `${chip / 1000}k` : chip}
@@ -359,26 +359,26 @@ export default function UniversalBetPanel({
       </div>
 
       {/* Potential Payout & Profit Breakdown */}
-      <div className="bg-black/30 border border-white/5 rounded-xl px-3 py-2 flex items-center justify-between text-xs mb-3 font-mono">
+      <div className="bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 flex items-center justify-between text-xs mb-3 font-mono">
         <div>
-          <span className="text-white/40 text-[10px] block uppercase">Potential Win</span>
-          <span data-testid="potential-payout" className="text-emerald-400 font-black text-sm">₹{potentialPayout.toFixed(2)}</span>
+          <span className="text-slate-500 text-[10px] block uppercase">Potential Win</span>
+          <span data-testid="potential-payout" className="text-emerald-600 font-black text-sm">₹{potentialPayout.toFixed(2)}</span>
         </div>
         <div className="text-right">
-          <span className="text-white/40 text-[10px] block uppercase">Net Profit</span>
-          <span data-testid="net-profit" className="text-white/90 font-bold text-xs">+₹{netProfit.toFixed(2)}</span>
+          <span className="text-slate-500 text-[10px] block uppercase">Net Profit</span>
+          <span data-testid="net-profit" className="text-slate-800 font-bold text-xs">+₹{netProfit.toFixed(2)}</span>
         </div>
       </div>
 
       {/* Status Overlay / Badges: Accepted, Rejected, Settled */}
       {statusState === 'ACCEPTED' && (
         <div data-testid="badge-accepted" className="mb-2.5 px-3 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-between animate-fadeIn">
-          <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
-            <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-700">
+            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
             <span>{statusMessage || 'Bet Accepted!'}</span>
           </div>
           {betReceiptId && (
-            <span className="text-[10px] font-mono text-emerald-300/60 truncate max-w-[80px]">
+            <span className="text-[10px] font-mono text-emerald-700 truncate max-w-[80px]">
               #{betReceiptId.slice(-4)}
             </span>
           )}
@@ -386,8 +386,8 @@ export default function UniversalBetPanel({
       )}
 
       {statusState === 'REJECTED' && (
-        <div data-testid="badge-rejected" className="mb-2.5 px-3 py-2 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center gap-2 text-xs font-bold text-red-300 animate-shake">
-          <XCircle size={16} className="text-red-400 shrink-0" />
+        <div data-testid="badge-rejected" className="mb-2.5 px-3 py-2 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center gap-2 text-xs font-bold text-red-700 animate-shake">
+          <XCircle size={16} className="text-red-600 shrink-0" />
           <span>{statusMessage || 'Bet Rejected'}</span>
         </div>
       )}
@@ -396,10 +396,10 @@ export default function UniversalBetPanel({
       {settlement && (
         <div data-testid="settlement-banner" className={`mb-2.5 p-2.5 rounded-xl border flex items-center justify-between ${
           settlement.status === 'WON' 
-            ? 'bg-emerald-600/20 border-emerald-400 text-emerald-300' 
+            ? 'bg-emerald-600/20 border-emerald-400 text-emerald-700' 
             : settlement.status === 'LOST' 
-            ? 'bg-red-600/20 border-red-400 text-red-300'
-            : 'bg-white/10 border-white/20 text-white'
+            ? 'bg-red-600/20 border-red-400 text-red-700'
+            : 'bg-slate-100 border-slate-200 text-slate-900'
         }`}>
           <div className="flex items-center gap-1.5 text-xs font-bold">
             <Sparkles size={15} />
@@ -435,9 +435,9 @@ export default function UniversalBetPanel({
           disabled={!isValid || isLoading || !isOpen}
           className={`w-full py-3.5 rounded-xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg ${
             !isOpen
-              ? 'bg-gray-800 text-gray-400 border border-white/5 cursor-not-allowed'
+              ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed'
               : !isValid
-              ? 'bg-red-950/40 border border-red-500/30 text-red-300 cursor-not-allowed'
+              ? 'bg-red-950/40 border border-red-500/30 text-red-700 cursor-not-allowed'
               : 'bg-gradient-to-r from-neon-mint to-emerald-400 hover:from-emerald-400 hover:to-neon-mint text-deep-ocean shadow-[0_0_20px_rgba(0,255,163,0.35)] active:scale-98'
           }`}
         >
@@ -465,9 +465,9 @@ export default function UniversalBetPanel({
       )}
 
       {/* Bottom Footer Details */}
-      <div className="mt-2.5 flex items-center justify-between text-[10px] text-white/40 px-1">
+      <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-500 px-1">
         <span className="flex items-center gap-1">
-          <ShieldCheck size={11} className="text-emerald-400" /> Server-Authoritative
+          <ShieldCheck size={11} className="text-emerald-600" /> Server-Authoritative
         </span>
         <span className="font-mono">Odds: {odds.toFixed(2)}x</span>
       </div>

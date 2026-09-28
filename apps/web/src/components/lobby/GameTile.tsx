@@ -4,15 +4,15 @@ import type { LobbyGame } from '@/lib/games';
 
 /**
  * Lobby game tile. The artwork is a plain <img>: it is visible as soon as it paints, with no
- * JS-driven fade that could leave a black box when the load event fires before hydration.
+ * JS-driven fade that could leave an empty box when the load event fires before hydration.
  */
 export default function GameTile({ game, priority = false }: { game: LobbyGame; priority?: boolean }) {
   const comingSoon = game.status === 'coming-soon';
 
   const body = (
     <>
-      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-ocean-surface ring-1 ring-white/10 transition duration-300 group-hover:ring-2 group-focus-visible:ring-2"
-        style={{ ['--tile-accent' as string]: game.accent, boxShadow: '0 10px 30px rgba(0,0,0,0.35)' }}>
+      <div className="relative aspect-[4/5] overflow-hidden rounded-[22px] bg-slate-100 ring-1 ring-slate-200/80 transition duration-300 group-hover:-translate-y-1.5 group-hover:shadow-[0_22px_44px_-12px_var(--tile-glow)] group-focus-visible:ring-2 group-focus-visible:ring-emerald-500"
+        style={{ ['--tile-glow' as string]: `${game.accent}66`, boxShadow: '0 8px 24px -10px rgba(15,23,42,0.18)' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={game.cardImage}
@@ -21,18 +21,16 @@ export default function GameTile({ game, priority = false }: { game: LobbyGame; 
           height={500}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
-          className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.06] ${comingSoon ? 'grayscale-[60%] opacity-60' : ''}`}
+          className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.06] ${comingSoon ? 'grayscale opacity-60' : ''}`}
         />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
-        <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition duration-300 group-hover:opacity-100"
-          style={{ boxShadow: `inset 0 0 0 2px ${game.accent}, 0 0 28px ${game.accent}55` }} />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
 
         {comingSoon ? (
-          <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/80 ring-1 ring-white/15">
+          <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600 shadow-sm backdrop-blur">
             <Lock size={10} aria-hidden="true" /> Coming soon
           </span>
         ) : (
-          <span className="absolute left-2.5 top-2.5 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ring-1 ring-white/10"
+          <span className="absolute left-2.5 top-2.5 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow-sm backdrop-blur"
             style={{ color: game.accent }}>
             {game.highlight}
           </span>
@@ -40,20 +38,18 @@ export default function GameTile({ game, priority = false }: { game: LobbyGame; 
 
         {!comingSoon && (
           <span className="absolute inset-0 flex items-center justify-center opacity-0 transition duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-neon-mint text-deep-ocean shadow-[0_0_30px_rgba(38,240,178,0.55)] transition duration-300 group-hover:scale-100 scale-75">
-              <Play size={24} fill="currentColor" aria-hidden="true" />
+            <span className="flex h-14 w-14 scale-75 items-center justify-center rounded-full bg-white text-slate-900 shadow-[0_10px_30px_rgba(15,23,42,0.3)] transition duration-300 group-hover:scale-100">
+              <Play size={22} fill="currentColor" className="ml-0.5" aria-hidden="true" />
             </span>
           </span>
         )}
-
-        <div className="absolute inset-x-0 bottom-0 p-3">
-          <h3 className="text-sm font-extrabold leading-tight text-white sm:text-base">{game.name}</h3>
-          <p className="mt-0.5 line-clamp-1 text-[11px] text-white/65 sm:text-xs">{game.tagline}</p>
-        </div>
       </div>
-      {!comingSoon && (
-        <p className="mt-1.5 px-0.5 text-[11px] font-semibold text-white/45">From ₹{game.minBet}</p>
-      )}
+
+      <div className="mt-2.5 px-0.5">
+        <h3 className="truncate text-sm font-bold text-slate-900 sm:text-[15px]">{game.name}</h3>
+        <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{game.tagline}</p>
+        {!comingSoon && <p className="mt-1 text-[11px] font-bold text-emerald-600">From ₹{game.minBet}</p>}
+      </div>
     </>
   );
 
@@ -66,7 +62,7 @@ export default function GameTile({ game, priority = false }: { game: LobbyGame; 
   }
 
   return (
-    <Link href={game.href} className="group block rounded-2xl outline-none" aria-label={`Play ${game.name}`}>
+    <Link href={game.href} className="group block rounded-[22px] outline-none" aria-label={`Play ${game.name}`}>
       {body}
     </Link>
   );

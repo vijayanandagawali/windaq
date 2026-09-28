@@ -8,6 +8,9 @@ import { useWalletStore } from '@/store/walletStore';
 import { useAuthStore } from '@/store/authStore';
 import { useAudioStore } from '@/store/audioStore';
 
+const TABLE_PATHS = ['/european-roulette', '/dragon-tiger', '/andar-bahar', '/blackjack'];
+const DRAW_PATHS = ['/color-prediction', '/colour-prediction', '/dice', '/lotto'];
+
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
@@ -21,12 +24,6 @@ export default function Header() {
     fetchBalance();
   }, [fetchBalance, isAuthenticated]);
 
-  const handleDepositClick = () => {
-    setDepositing(true);
-  };
-
-  const TABLE_PATHS = ['/european-roulette', '/dragon-tiger', '/andar-bahar', '/blackjack'];
-  const DRAW_PATHS = ['/color-prediction', '/colour-prediction', '/dice', '/lotto'];
   const navLinks = [
     { name: 'Lobby', href: '/', icon: Flame, match: pathname === '/' },
     { name: 'Aviator', href: '/games/aviator', icon: Rocket, match: pathname.includes('/aviator') },
@@ -35,162 +32,103 @@ export default function Header() {
     { name: 'Slots', href: '/?cat=instant', icon: Trophy, match: pathname.includes('/slots') || pathname.includes('/scratch') },
   ];
 
+  const iconButton = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:shadow-sm transition cursor-pointer';
+
   return (
-    <header className="sticky top-0 z-40 bg-[#0c101c]/95 backdrop-blur-md border-b border-white/10 px-3 sm:px-4 py-2.5 flex items-center justify-between shadow-[0_4px_25px_rgba(0,0,0,0.6)]">
-      {/* Brand & Back Button */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        {!isHome && (
-          <button
-            onClick={() => router.back()}
-            className="p-1.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            title="Go Back"
-            aria-label="Back"
-          >
-            <ChevronLeft size={18} />
-          </button>
-        )}
-
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-tr from-neon-mint via-emerald-400 to-blue-500 rounded-xl flex items-center justify-center font-black text-deep-ocean text-base sm:text-lg shadow-[0_0_15px_rgba(0,255,163,0.4)] group-hover:scale-105 transition-transform">
-            W
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-base sm:text-xl font-black text-white leading-none tracking-tight brand-title">WINDAQ</span>
-              <span className="text-[9px] sm:text-[10px] font-bold text-neon-mint hidden min-[340px]:inline">विन डैक</span>
-            </div>
-            <div className="flex items-center gap-1 text-[8px] sm:text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">
-              <ShieldCheck size={10} className="text-neon-mint" />
-              <span>Provably Fair</span>
-            </div>
-          </div>
-        </Link>
-
-        {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-1 ml-4 pl-4 border-l border-white/10">
-          {navLinks.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all ${
-                  item.match
-                    ? 'bg-neon-mint/15 text-neon-mint border border-neon-mint/30 shadow-[0_0_10px_rgba(0,255,163,0.2)]'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <Icon size={14} />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Header Right Controls */}
-      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-
-        {/* Notification Bell */}
-        <button
-          onClick={() => setNotifOpen(true)}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center relative hover:bg-white/10 transition-colors cursor-pointer"
-          title="Notifications"
-          aria-label="Notifications"
-        >
-          <Bell size={14} className="text-gray-300" />
-        </button>
-
-        {/* Sound & Haptics Control Button */}
-        <button
-          onClick={() => setControlsOpen(true)}
-          data-testid="header-sound-btn"
-          role="button"
-          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center relative hover:scale-105 transition-all cursor-pointer ${
-            soundEnabled
-              ? 'bg-neon-mint/10 border-neon-mint/30 text-neon-mint shadow-[0_0_8px_rgba(0,255,163,0.2)]'
-              : 'bg-red-500/10 border-red-500/30 text-red-400'
-          }`}
-          title={soundEnabled ? `Sound: ON (${Math.round(volume * 100)}%) - Click for settings` : 'Sound: MUTED - Click to configure'}
-          aria-label={soundEnabled ? 'Sound Settings (Active)' : 'Sound Settings (Muted)'}
-        >
-          {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
-        </button>
-
-        {!isAuthenticated ? (
-          /* Visitor State: Login / Register / Guest */
-          <div className="flex items-center gap-1 sm:gap-2">
-            <button
-              data-testid="header-guest-btn"
-              onClick={() => loginAsGuest()}
-              className="px-2 sm:px-2.5 py-1 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-[10px] sm:text-xs font-bold rounded-xl hover:bg-yellow-400/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1"
-              title="Play as Sandbox Guest"
-            >
-              <Sparkles size={11} />
-              <span>GUEST</span>
+    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 px-3 py-2.5 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 sm:px-5">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2">
+        {/* Brand & back */}
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          {!isHome && (
+            <button onClick={() => router.back()} className={iconButton} title="Go back" aria-label="Back">
+              <ChevronLeft size={18} />
             </button>
+          )}
 
-            <button
-              data-testid="header-login-btn"
-              onClick={() => openAuthModal('LOGIN')}
-              className="px-2.5 sm:px-3 py-1 bg-white/5 border border-white/15 text-white text-[11px] sm:text-xs font-bold rounded-xl hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-            >
-              LOGIN
-            </button>
-
-            <button
-              data-testid="header-register-btn"
-              onClick={() => openAuthModal('REGISTER')}
-              className="px-3 sm:px-3.5 py-1 bg-neon-mint text-deep-ocean text-[11px] sm:text-xs font-black rounded-xl shadow-[0_0_10px_rgba(0,255,163,0.3)] hover:bg-[#1ed49c] active:scale-95 transition-all cursor-pointer"
-            >
-              REGISTER
-            </button>
-          </div>
-        ) : (
-          /* Authenticated State: Profile & Logout */
-          <div className="flex items-center gap-1 sm:gap-1.5">
-            <Link
-              href="/profile"
-              data-testid="header-profile-link"
-              className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white/5 border border-white/10 hover:border-white/25 transition-all"
-              title="My Profile"
-            >
-              <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-cyan-500 to-neon-mint flex items-center justify-center text-[10px] font-black text-deep-ocean">
-                {user?.isGuest ? 'G' : (user?.phone ? user.phone.slice(-2) : 'U')}
-              </div>
-              <span className="hidden sm:inline text-xs font-bold text-gray-200">
-                {user?.isGuest ? 'Guest' : (user?.phone ? user.phone.slice(-4) : 'Profile')}
+          <Link href="/" className="group flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-sky-500 text-base font-black text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transition-transform group-hover:scale-105 group-hover:rotate-3">
+              W
+            </span>
+            <span className="leading-none">
+              <span className="block text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">WinDaq</span>
+              <span className="mt-0.5 hidden items-center gap-1 text-[10px] font-semibold text-slate-500 min-[380px]:flex">
+                <ShieldCheck size={11} className="text-emerald-600" /> Provably fair
               </span>
-            </Link>
+            </span>
+          </Link>
 
-            <button
-              data-testid="header-logout-btn"
-              onClick={() => logout()}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-red-400 hover:border-red-400/30 transition-colors cursor-pointer"
-              title="Log Out"
-              aria-label="Log Out"
-            >
-              <LogOut size={13} />
-            </button>
-          </div>
-        )}
+          <nav className="ml-4 hidden items-center gap-1 border-l border-slate-200 pl-4 lg:flex" aria-label="Main">
+            {navLinks.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link key={item.name} href={item.href}
+                  className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold transition ${
+                    item.match ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}>
+                  <Icon size={15} />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
 
-        {/* Balance Chip / 1-Tap Deposit Trigger */}
-        <button
-          data-testid="header-deposit-btn"
-          role="button"
-          aria-label="Deposit Funds"
-          onClick={handleDepositClick}
-          className="bg-ocean-card/90 border border-neon-mint/30 py-0.5 sm:py-1 pl-2 sm:pl-2.5 pr-1 rounded-full flex items-center gap-1.5 sm:gap-2 cursor-pointer hover:border-neon-mint transition-all shadow-[0_0_12px_rgba(0,255,163,0.15)] group shrink-0"
-        >
-          <span className="text-neon-mint text-xs font-black">₹</span>
-          <span className="font-extrabold text-white text-[11px] sm:text-xs tracking-tight">
-            {balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-          <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-neon-mint text-deep-ocean font-black text-xs sm:text-sm flex items-center justify-center shadow-[0_0_10px_rgba(0,255,163,0.5)] group-hover:scale-110 transition-transform">
-            <Plus size={13} strokeWidth={3} />
-          </div>
-        </button>
+        {/* Right controls */}
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <button onClick={() => setNotifOpen(true)} className={`${iconButton} hidden min-[400px]:flex`} title="Notifications" aria-label="Notifications">
+            <Bell size={15} />
+          </button>
+
+          <button onClick={() => setControlsOpen(true)} data-testid="header-sound-btn" role="button"
+            className={`${iconButton} ${soundEnabled ? '' : 'text-rose-500'}`}
+            title={soundEnabled ? `Sound on (${Math.round(volume * 100)}%)` : 'Sound muted'}
+            aria-label={soundEnabled ? 'Sound Settings (Active)' : 'Sound Settings (Muted)'}>
+            {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+          </button>
+
+          {!isAuthenticated ? (
+            <div className="flex items-center gap-1.5">
+              <button data-testid="header-guest-btn" onClick={() => loginAsGuest()}
+                className="hidden items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100 min-[420px]:flex"
+                title="Play with play money">
+                <Sparkles size={12} /> Guest
+              </button>
+              <button data-testid="header-login-btn" onClick={() => openAuthModal('LOGIN')}
+                className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 transition hover:border-slate-300 hover:text-slate-900">
+                Log in
+              </button>
+              <button data-testid="header-register-btn" onClick={() => openAuthModal('REGISTER')}
+                className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-[0_6px_16px_rgba(16,185,129,0.35)] transition hover:brightness-105">
+                Sign up
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <Link href="/profile" data-testid="header-profile-link" title="My profile"
+                className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-2.5 transition hover:border-slate-300">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-emerald-500 text-[10px] font-black text-white">
+                  {user?.isGuest ? 'G' : (user?.phone ? user.phone.slice(-2) : 'U')}
+                </span>
+                <span className="hidden text-xs font-bold text-slate-700 sm:inline">
+                  {user?.isGuest ? 'Guest' : (user?.phone ? user.phone.slice(-4) : 'Profile')}
+                </span>
+              </Link>
+              <button data-testid="header-logout-btn" onClick={() => logout()} className={`${iconButton} hover:text-rose-600`} title="Log out" aria-label="Log Out">
+                <LogOut size={14} />
+              </button>
+            </div>
+          )}
+
+          <button data-testid="header-deposit-btn" role="button" aria-label="Deposit Funds" onClick={() => setDepositing(true)}
+            className="group flex shrink-0 items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 py-1 pl-3 pr-1 text-white shadow-[0_6px_18px_rgba(5,150,105,0.35)] transition hover:shadow-[0_8px_24px_rgba(5,150,105,0.45)]">
+            <span className="text-xs font-extrabold tabular-nums tracking-tight sm:text-[13px]">
+              ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-emerald-600 transition-transform group-hover:rotate-90 sm:h-7 sm:w-7">
+              <Plus size={14} strokeWidth={3} />
+            </span>
+          </button>
+        </div>
       </div>
     </header>
   );

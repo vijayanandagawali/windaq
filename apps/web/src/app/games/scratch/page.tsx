@@ -222,15 +222,15 @@ export default function ScratchGame() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] bg-[#0a0f1a] font-sans selection:bg-neon-mint flex flex-col pb-safe overflow-y-auto">
+    <div className="h-[calc(100dvh-58px)] bg-white font-sans selection:bg-neon-mint flex flex-col pb-safe overflow-y-auto">
 
 
       <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center pb-24 relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-deep-ocean to-[#0a0f1a] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-deep-ocean to-slate-50 pointer-events-none" />
 
         {/* Balance Display */}
-        <div className="bg-black/50 border border-white/10 rounded-full px-6 py-2 mb-8 z-10">
-          <span className="text-gray-400 text-sm mr-2">Balance:</span>
+        <div className="bg-slate-100 border border-slate-200 rounded-full px-6 py-2 mb-8 z-10">
+          <span className="text-slate-500 text-sm mr-2">Balance:</span>
           <span className="text-neon-mint font-bold text-lg">₹{balance.toFixed(2)}</span>
         </div>
 
@@ -244,12 +244,12 @@ export default function ScratchGame() {
                 whileTap={{ scale: 0.98 }}
                 className={`p-[2px] rounded-2xl bg-gradient-to-br ${tier.color} shadow-lg`}
               >
-                <div className="bg-black/90 p-5 rounded-[14px] flex justify-between items-center h-full">
+                <div className="bg-white/80 p-5 rounded-[14px] flex justify-between items-center h-full">
                   <div>
                     <h3 className={`text-xl font-black uppercase bg-gradient-to-r ${tier.color} text-transparent bg-clip-text`}>
                       {tier.name}
                     </h3>
-                    <p className="text-gray-400 text-sm mt-1">Win up to ₹{tier.maxWin}!</p>
+                    <p className="text-slate-500 text-sm mt-1">Win up to ₹{tier.maxWin}!</p>
                   </div>
                   <button 
                     disabled={buying || balance < tier.price}
@@ -272,22 +272,22 @@ export default function ScratchGame() {
             <div className={`w-full p-[3px] rounded-2xl bg-gradient-to-br ${TIERS.find(t=>t.id===activeTier)?.color} shadow-2xl mb-6 relative`}>
               
               {/* The Ticket Itself */}
-              <div className="bg-gradient-to-b from-gray-900 to-black p-4 rounded-xl min-h-[300px] flex flex-col relative overflow-hidden">
+              <div className="bg-gradient-to-b from-white to-slate-100 p-4 rounded-xl min-h-[300px] flex flex-col relative overflow-hidden">
                 <div className="text-center mb-4">
                   <h2 className={`text-2xl font-black uppercase tracking-widest bg-gradient-to-r ${TIERS.find(t=>t.id===activeTier)?.color} text-transparent bg-clip-text`}>
                     {activeTier} TICKET
                   </h2>
-                  <p className="text-xs text-gray-400 mt-1">Match 3 amounts to win!</p>
+                  <p className="text-xs text-slate-500 mt-1">Match 3 amounts to win!</p>
                 </div>
 
                 {/* 3x3 Grid Area */}
-                <div className="relative flex-1 bg-white/5 rounded-xl border border-white/10 p-2">
+                <div className="relative flex-1 bg-slate-50 rounded-xl border border-slate-200 p-2">
                   
                   {/* Hidden Result Grid */}
                   <div className="grid grid-cols-3 grid-rows-3 gap-2 h-full absolute inset-2">
                     {grid.map((sym, i) => (
-                       <div key={i} className="bg-black rounded-lg flex items-center justify-center border border-white/5 shadow-inner">
-                         <span className="text-lg font-black text-white">{formatSymbol(sym)}</span>
+                       <div key={i} className="bg-white rounded-lg flex items-center justify-center border border-slate-200 shadow-inner">
+                         <span className="text-lg font-black text-slate-900">{formatSymbol(sym)}</span>
                        </div>
                     ))}
                   </div>
@@ -313,7 +313,7 @@ export default function ScratchGame() {
             {!isRevealed ? (
               <button 
                 onClick={handleRevealAll}
-                className="flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold transition-colors"
+                className="flex items-center gap-2 px-6 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold transition-colors"
               >
                 <Eraser size={20} />
                 Reveal All

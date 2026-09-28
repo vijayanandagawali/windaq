@@ -21,8 +21,8 @@ export default function AndroidStatusBar() {
   }, []);
 
   return (
-    <div className="bg-[#05070d] text-gray-400 text-[11px] font-bold px-4 py-1.5 flex items-center justify-between border-b border-white/5 select-none z-50">
-      <div className="flex items-center gap-1.5 text-white font-extrabold tracking-wide">
+    <div className="bg-white text-slate-500 text-[11px] font-bold px-4 py-1.5 flex items-center justify-between border-b border-slate-200 select-none z-50">
+      <div className="flex items-center gap-1.5 text-slate-900 font-extrabold tracking-wide">
         <span>{time}</span>
       </div>
       <div className="flex items-center gap-2.5">
@@ -32,10 +32,10 @@ export default function AndroidStatusBar() {
           title={soundEnabled ? "Mute Sound" : "Unmute Sound"}
           aria-label={soundEnabled ? "Mute Sound" : "Unmute Sound"}
         >
-          {soundEnabled ? <Volume2 size={13} className="text-neon-mint" /> : <VolumeX size={13} className="text-red-400" />}
+          {soundEnabled ? <Volume2 size={13} className="text-neon-mint" /> : <VolumeX size={13} className="text-red-600" />}
         </button>
-        <span className="text-[10px] text-gray-300 font-black tracking-wider">5G</span>
-        <Wifi size={12} className="text-gray-300" />
+        <span className="text-[10px] text-slate-600 font-black tracking-wider">5G</span>
+        <Wifi size={12} className="text-slate-600" />
         <span className="text-[10px] text-neon-mint font-extrabold">98% 🔋</span>
       </div>
     </div>

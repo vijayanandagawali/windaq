@@ -177,10 +177,10 @@ export const VirtualDealerStage: React.FC<VirtualDealerProps> = ({
       {/* 1. Prominent Clear Designation Badge (Section 2 Compliance) */}
       <div 
         data-testid="virtual-dealer-badge"
-        className="mb-1.5 flex items-center gap-1.5 bg-zinc-900/90 border border-amber-500/40 px-3 py-0.5 rounded-full shadow-lg backdrop-blur-md"
+        className="mb-1.5 flex items-center gap-1.5 bg-white/90 border border-amber-500/40 px-3 py-0.5 rounded-full shadow-lg backdrop-blur-md"
       >
         <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-amber-300">
+        <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">
           SIMULATED DEALER • WINDAQ ORIGINAL TABLE
         </span>
       </div>
@@ -193,9 +193,9 @@ export const VirtualDealerStage: React.FC<VirtualDealerProps> = ({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -4, scale: 0.96 }}
           transition={{ duration: 0.25 }}
-          className="mb-2 max-w-md bg-black/85 border border-amber-500/40 shadow-[0_6px_24px_rgba(0,0,0,0.7)] px-4 py-1.5 rounded-2xl flex items-center gap-2 backdrop-blur-md"
+          className="mb-2 max-w-md bg-white/80 border border-amber-500/40 shadow-[0_6px_24px_rgba(15,23,42,0.17)] px-4 py-1.5 rounded-2xl flex items-center gap-2 backdrop-blur-md"
         >
-          <Sparkles size={14} className="text-amber-400 shrink-0 animate-pulse" />
+          <Sparkles size={14} className="text-amber-600 shrink-0 animate-pulse" />
           <span 
             data-testid="dealer-speech-text"
             className="text-xs sm:text-sm font-medium text-amber-100 text-center"
@@ -220,7 +220,7 @@ export const VirtualDealerStage: React.FC<VirtualDealerProps> = ({
           className="relative flex flex-col items-center"
         >
           {/* Circular Glowing Podium */}
-          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-b from-amber-500/20 via-zinc-900 to-black border-2 border-amber-500/60 p-1 shadow-[0_0_30px_rgba(245,158,11,0.3)] flex items-center justify-center overflow-hidden">
+          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-b from-amber-500/20 via-white to-slate-100 border-2 border-amber-500/60 p-1 shadow-[0_0_30px_rgba(245,158,11,0.3)] flex items-center justify-center overflow-hidden">
             {renderAvatarGraphic()}
 
             {/* Subtle Active Dealer Motion Ring */}
@@ -238,15 +238,15 @@ export const VirtualDealerStage: React.FC<VirtualDealerProps> = ({
           </div>
 
           {/* Dealer Nameplate with Action Status */}
-          <div className="mt-1 bg-black/95 border border-amber-500/50 px-3 py-0.5 rounded-full text-[10px] font-black tracking-widest text-amber-300 uppercase shadow-md flex items-center gap-1.5">
+          <div className="mt-1 bg-white/80 border border-amber-500/50 px-3 py-0.5 rounded-full text-[10px] font-black tracking-widest text-amber-700 uppercase shadow-md flex items-center gap-1.5">
             <span 
               data-testid="dealer-display-name"
-              className="text-white"
+              className="text-slate-900"
             >
               {name}
             </span>
             <span className="text-amber-500">•</span>
-            <span className="text-amber-400/90">{action.replace(/_/g, ' ')}</span>
+            <span className="text-amber-600">{action.replace(/_/g, ' ')}</span>
           </div>
         </motion.div>
       </div>

@@ -101,10 +101,10 @@ export default function AuthModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-md animate-fade-in">
       {/* Sleek, cleanly proportioned card with zero browser scrollbars */}
       <div 
-        className="relative w-full max-w-md bg-[#0a0f1d] border border-white/15 rounded-3xl p-6 sm:p-7 shadow-[0_20px_70px_rgba(0,0,0,0.9)] overflow-hidden"
+        className="relative w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-[0_20px_70px_rgba(15,23,42,0.18)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Glow ambient background */}
@@ -115,7 +115,7 @@ export default function AuthModal() {
         <button
           onClick={closeAuthModal}
           data-testid="auth-close-btn"
-          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10 cursor-pointer"
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors z-10 cursor-pointer"
           aria-label="Close modal"
         >
           <X size={18} />
@@ -126,8 +126,8 @@ export default function AuthModal() {
           <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-tr from-neon-mint via-emerald-400 to-blue-500 rounded-2xl shadow-[0_0_20px_rgba(0,255,163,0.3)] mb-2">
             <span className="font-black text-deep-ocean text-2xl">W</span>
           </div>
-          <h2 className="text-xl font-black text-white tracking-tight">WINDAQ ACCESS</h2>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <h2 className="text-xl font-black text-slate-900 tracking-tight">WINDAQ ACCESS</h2>
+          <p className="text-xs text-slate-500 mt-0.5">
             {activeTab === 'GUEST'
               ? 'Instant sandbox session with test currency'
               : activeTab === 'REGISTER'
@@ -137,7 +137,7 @@ export default function AuthModal() {
         </div>
 
         {/* Tab Switcher */}
-        <div className="grid grid-cols-3 bg-white/5 p-1 rounded-2xl border border-white/10 mb-5">
+        <div className="grid grid-cols-3 bg-slate-50 p-1 rounded-2xl border border-slate-200 mb-5">
           <button
             type="button"
             data-testid="auth-tab-login"
@@ -145,7 +145,7 @@ export default function AuthModal() {
             className={`py-2 text-xs font-black rounded-xl transition-all ${
               activeTab === 'LOGIN'
                 ? 'bg-neon-mint text-deep-ocean shadow-md'
-                : 'text-gray-400 hover:text-white'
+                : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             LOGIN
@@ -157,7 +157,7 @@ export default function AuthModal() {
             className={`py-2 text-xs font-black rounded-xl transition-all ${
               activeTab === 'REGISTER'
                 ? 'bg-neon-mint text-deep-ocean shadow-md'
-                : 'text-gray-400 hover:text-white'
+                : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             REGISTER
@@ -169,7 +169,7 @@ export default function AuthModal() {
             className={`py-2 text-xs font-black rounded-xl transition-all ${
               activeTab === 'GUEST'
                 ? 'bg-amber-400 text-deep-ocean shadow-md'
-                : 'text-yellow-400/80 hover:text-yellow-300'
+                : 'text-yellow-600 hover:text-yellow-700'
             }`}
           >
             🧪 GUEST
@@ -178,8 +178,8 @@ export default function AuthModal() {
 
         {/* Error Banner */}
         {error && (
-          <div className="mb-4 p-3 bg-red-500/15 border border-red-500/30 rounded-2xl flex items-center gap-2.5 text-xs text-red-300 animate-shake">
-            <AlertCircle size={16} className="text-red-400 shrink-0" />
+          <div className="mb-4 p-3 bg-red-500/15 border border-red-500/30 rounded-2xl flex items-center gap-2.5 text-xs text-red-700 animate-shake">
+            <AlertCircle size={16} className="text-red-600 shrink-0" />
             <span className="leading-snug">{error}</span>
           </div>
         )}
@@ -188,13 +188,13 @@ export default function AuthModal() {
         {activeTab === 'GUEST' ? (
           <div className="space-y-4">
             <div className="p-4 bg-yellow-500/10 border border-yellow-500/25 rounded-2xl">
-              <div className="flex items-center gap-2 text-yellow-400 font-black text-xs uppercase mb-1">
+              <div className="flex items-center gap-2 text-yellow-600 font-black text-xs uppercase mb-1">
                 <Sparkles size={16} />
                 <span>Sandbox Test Environment</span>
               </div>
-              <p className="text-xs text-gray-300 leading-relaxed">
+              <p className="text-xs text-slate-600 leading-relaxed">
                 Test the platform with a synthetic sandbox account. Automatically provisioned with{' '}
-                <strong className="text-yellow-400">₹10,000 test credits</strong>. Zero SMS or real money required.
+                <strong className="text-yellow-600">₹50,000 play money</strong>. It cannot be deposited or withdrawn.
               </p>
             </div>
 
@@ -221,11 +221,11 @@ export default function AuthModal() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Phone Input */}
             <div>
-              <label className="block text-[11px] font-black uppercase text-gray-400 mb-1.5">
+              <label className="block text-[11px] font-black uppercase text-slate-500 mb-1.5">
                 MOBILE NUMBER
               </label>
               <div className="relative flex items-center">
-                <div className="absolute left-3.5 flex items-center gap-1.5 text-gray-400 font-bold text-xs pointer-events-none">
+                <div className="absolute left-3.5 flex items-center gap-1.5 text-slate-500 font-bold text-xs pointer-events-none">
                   <Smartphone size={15} className="text-neon-mint" />
                   <span>+91</span>
                 </div>
@@ -237,7 +237,7 @@ export default function AuthModal() {
                   placeholder="9876543210"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-white/5 border border-white/15 focus:border-neon-mint rounded-2xl py-3 pl-16 pr-4 text-white font-mono text-sm tracking-wide outline-none transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-neon-mint rounded-2xl py-3 pl-16 pr-4 text-slate-900 font-mono text-sm tracking-wide outline-none transition-colors"
                 />
               </div>
             </div>
@@ -246,7 +246,7 @@ export default function AuthModal() {
             {(activeTab === 'LOGIN' || activeTab === 'REGISTER') && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-black uppercase text-gray-400">
+                  <label className="text-[11px] font-black uppercase text-slate-500">
                     VERIFICATION CODE (OTP)
                   </label>
                   <button
@@ -276,7 +276,7 @@ export default function AuthModal() {
                     placeholder="Enter 6-digit OTP"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    className="w-full bg-white/5 border border-white/15 focus:border-neon-mint rounded-2xl py-3 pl-10 pr-4 text-white font-mono text-sm tracking-widest outline-none transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-neon-mint rounded-2xl py-3 pl-10 pr-4 text-slate-900 font-mono text-sm tracking-widest outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -285,17 +285,17 @@ export default function AuthModal() {
             {/* Register: Referral Code & Welcome Bonus Badge */}
             {activeTab === 'REGISTER' && (
               <div>
-                <label className="block text-[11px] font-black uppercase text-gray-400 mb-1.5">
+                <label className="block text-[11px] font-black uppercase text-slate-500 mb-1.5">
                   REFERRAL CODE (OPTIONAL)
                 </label>
                 <div className="relative flex items-center">
-                  <Gift size={16} className="absolute left-3.5 text-yellow-400 pointer-events-none" />
+                  <Gift size={16} className="absolute left-3.5 text-yellow-600 pointer-events-none" />
                   <input
                     type="text"
                     placeholder="WIN500 (Optional)"
                     value={referralCode}
                     onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                    className="w-full bg-white/5 border border-white/15 focus:border-neon-mint rounded-2xl py-3 pl-10 pr-4 text-white font-mono text-xs uppercase outline-none transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-neon-mint rounded-2xl py-3 pl-10 pr-4 text-slate-900 font-mono text-xs uppercase outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -324,7 +324,7 @@ export default function AuthModal() {
         )}
 
         {/* Security Footer */}
-        <div className="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+        <div className="mt-5 pt-3.5 border-t border-slate-200 flex items-center justify-center gap-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
           <ShieldCheck size={13} className="text-neon-mint" />
           <span>256-Bit Encrypted • Fast2SMS Verified OTP</span>
         </div>

@@ -203,7 +203,7 @@ export default function DiceGame() {
           scale: diceResult ? 1 : 0 
         }}
         transition={{ type: "spring", duration: 1.5, bounce: 0.5, delay: key * 0.1 }}
-        className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.5)] border-t border-white/50 border-b-4 border-gray-300 relative flex items-center justify-center m-2"
+        className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-xl shadow-[0_4px_15px_rgba(15,23,42,0.13)] border-t border-slate-200 border-b-4 border-gray-300 relative flex items-center justify-center m-2"
       >
         {dots[value]?.map((pos: string) => {
           let posClass = "";
@@ -224,17 +224,17 @@ export default function DiceGame() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] w-full bg-[#0a0f1a] text-white font-sans selection:bg-neon-mint flex flex-col overflow-y-auto">
+    <div className="h-[calc(100dvh-58px)] w-full bg-white text-white font-sans selection:bg-neon-mint flex flex-col overflow-y-auto">
 
 
       {/* Game Stage Area */}
-      <div className="w-full h-48 sm:h-64 bg-gradient-to-b from-[#1a1235] to-[#0a0f1a] relative flex flex-col items-center justify-center overflow-hidden border-b border-white/10">
+      <div className="w-full h-48 sm:h-64 bg-gradient-to-b from-white to-slate-50 relative flex flex-col items-center justify-center overflow-hidden border-b border-slate-200">
         
         {/* Background Gradients */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/30 via-transparent to-transparent opacity-60" />
         
         {/* Timer / Status */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 border border-white/10 px-6 py-2 rounded-full flex items-center gap-3 backdrop-blur-md z-10 shadow-lg">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/80 border border-slate-200 px-6 py-2 rounded-full flex items-center gap-3 backdrop-blur-md z-10 shadow-lg">
            {gameState.status === 'OPEN' ? (
              <>
                <div className="w-2 h-2 rounded-full bg-neon-mint animate-pulse" />
@@ -303,9 +303,9 @@ export default function DiceGame() {
                    selectedMarket === 'SMALL' ? 'border-neon-mint ring-2 ring-neon-mint/50 scale-102' : 'border-blue-500/30'
                  }`}
                >
-                 <div className="text-lg font-black tracking-widest text-blue-400 group-hover:text-blue-300">SMALL</div>
-                 <div className="text-xs text-blue-200/50 font-bold tracking-widest">4 TO 10</div>
-                 <div className="text-[10px] text-gray-400 mt-1">1:1</div>
+                 <div className="text-lg font-black tracking-widest text-blue-600 group-hover:text-blue-700">SMALL</div>
+                 <div className="text-xs text-blue-700 font-bold tracking-widest">4 TO 10</div>
+                 <div className="text-[10px] text-slate-500 mt-1">1:1</div>
                  {myBets['SMALL'] && (
                    <div className="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">₹{myBets['SMALL']}</div>
                  )}
@@ -317,8 +317,8 @@ export default function DiceGame() {
                    selectedMarket === 'TRIPLE_ANY' ? 'border-neon-mint ring-2 ring-neon-mint/50 scale-102' : 'border-yellow-500/50'
                  }`}
                >
-                 <div className="text-sm font-black tracking-widest text-yellow-500 group-hover:text-yellow-400 uppercase text-center leading-tight">ANY<br/>TRIPLE</div>
-                 <div className="text-[10px] text-gray-400 mt-1">24:1</div>
+                 <div className="text-sm font-black tracking-widest text-yellow-500 group-hover:text-yellow-600 uppercase text-center leading-tight">ANY<br/>TRIPLE</div>
+                 <div className="text-[10px] text-slate-500 mt-1">24:1</div>
                  {myBets['TRIPLE_ANY'] && (
                    <div className="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">₹{myBets['TRIPLE_ANY']}</div>
                  )}
@@ -330,9 +330,9 @@ export default function DiceGame() {
                    selectedMarket === 'BIG' ? 'border-neon-mint ring-2 ring-neon-mint/50 scale-102' : 'border-red-500/30'
                  }`}
                >
-                 <div className="text-lg font-black tracking-widest text-red-400 group-hover:text-red-300">BIG</div>
-                 <div className="text-xs text-red-200/50 font-bold tracking-widest">11 TO 17</div>
-                 <div className="text-[10px] text-gray-400 mt-1">1:1</div>
+                 <div className="text-lg font-black tracking-widest text-red-600 group-hover:text-red-700">BIG</div>
+                 <div className="text-xs text-red-700 font-bold tracking-widest">11 TO 17</div>
+                 <div className="text-[10px] text-slate-500 mt-1">1:1</div>
                  {myBets['BIG'] && (
                    <div className="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">₹{myBets['BIG']}</div>
                  )}
@@ -340,8 +340,8 @@ export default function DiceGame() {
             </div>
 
             {/* Row 2: Specific Sums */}
-            <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
-              <div className="text-xs text-gray-400 font-bold tracking-widest uppercase mb-3 text-center">Specific Sums</div>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4">
+              <div className="text-xs text-slate-500 font-bold tracking-widest uppercase mb-3 text-center">Specific Sums</div>
               <div className="grid grid-cols-7 gap-1 sm:gap-2">
                  {[4,5,6,7,8,9,10,11,12,13,14,15,16,17].map(sum => {
                     const odds: any = { 4:50, 17:50, 5:18, 16:18, 6:14, 15:14, 7:12, 14:12, 8:8, 13:8, 9:6, 12:6, 10:6, 11:6 };
@@ -351,14 +351,14 @@ export default function DiceGame() {
                       <button 
                         key={sum}
                         onClick={() => { setSelectedMarket(market); setSelectedOdds(odds[sum] + 1); }}
-                        className={`relative bg-black/40 hover:bg-white/10 border rounded-lg py-2 flex flex-col items-center justify-center group cursor-pointer transition-all ${
-                          isSelected ? 'border-neon-mint ring-2 ring-neon-mint/50 bg-neon-mint/10' : 'border-white/5'
+                        className={`relative bg-slate-100 hover:bg-slate-100 border rounded-lg py-2 flex flex-col items-center justify-center group cursor-pointer transition-all ${
+                          isSelected ? 'border-neon-mint ring-2 ring-neon-mint/50 bg-neon-mint/10' : 'border-slate-200'
                         }`}
                       >
-                         <div className="font-black text-white text-lg">{sum}</div>
-                         <div className="text-[9px] text-gray-500">{odds[sum]}:1</div>
+                         <div className="font-black text-slate-900 text-lg">{sum}</div>
+                         <div className="text-[9px] text-slate-500">{odds[sum]}:1</div>
                          {myBets[market] && (
-                           <div className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[9px] font-bold px-1 rounded-full shadow-lg border border-black z-10">₹{myBets[market]}</div>
+                           <div className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[9px] font-bold px-1 rounded-full shadow-lg border border-slate-200 z-10">₹{myBets[market]}</div>
                          )}
                       </button>
                     )
@@ -370,7 +370,7 @@ export default function DiceGame() {
       </div>
 
       {/* Universal Bet Panel Footer */}
-      <div className="bg-black/90 border-t border-white/10 p-3 sm:p-4 sticky bottom-0 z-40 backdrop-blur-md">
+      <div className="bg-white/80 border-t border-slate-200 p-3 sm:p-4 sticky bottom-0 z-40 backdrop-blur-md">
          <div className="max-w-3xl mx-auto">
             <UniversalBetPanel
               title="Dice Bet Engine"

@@ -192,16 +192,16 @@ export default function ColorPrediction() {
 
 
       {/* Tabs */}
-      <div className="flex bg-ocean-card/50 p-1 m-4 rounded-xl border border-white/10">
+      <div className="flex bg-ocean-card/50 p-1 m-4 rounded-xl border border-slate-200">
         <button 
           onClick={() => setActiveTab('1min')} 
-          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === '1min' ? 'bg-neon-mint text-deep-ocean' : 'text-gray-400'}`}
+          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === '1min' ? 'bg-neon-mint text-deep-ocean' : 'text-slate-500'}`}
         >
           1 Min Draw
         </button>
         <button 
           onClick={() => setActiveTab('3min')} 
-          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === '3min' ? 'bg-neon-mint text-deep-ocean' : 'text-gray-400'}`}
+          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === '3min' ? 'bg-neon-mint text-deep-ocean' : 'text-slate-500'}`}
         >
           3 Min Draw
         </button>
@@ -210,11 +210,11 @@ export default function ColorPrediction() {
       {/* Timer Section */}
       <div className="mx-4 mb-4 glass-card p-4 rounded-2xl flex items-center justify-between">
          <div>
-           <p className="text-gray-400 text-xs font-bold uppercase mb-1 flex items-center gap-1"><Clock size={12}/> Period</p>
-           <h3 className="text-white font-black text-xl">{period}</h3>
+           <p className="text-slate-500 text-xs font-bold uppercase mb-1 flex items-center gap-1"><Clock size={12}/> Period</p>
+           <h3 className="text-slate-900 font-black text-xl">{period}</h3>
          </div>
          <div className="text-right">
-           <p className="text-gray-400 text-xs font-bold uppercase mb-1">Count Down</p>
+           <p className="text-slate-500 text-xs font-bold uppercase mb-1">Count Down</p>
            <div className="flex items-center gap-1">
              <span className={`text-3xl font-black tabular-nums ${gameState === 'LOCKED' ? 'text-red-500 animate-pulse' : 'text-neon-mint'}`}>
                 {Math.floor(countdown / 60).toString().padStart(2, '0')}:{(countdown % 60).toString().padStart(2, '0')}
@@ -224,7 +224,7 @@ export default function ColorPrediction() {
       </div>
 
       {/* 3D Mystery Result Chamber / Oracle Orb */}
-      <div className="mx-4 mb-6 relative flex flex-col items-center justify-center p-5 rounded-2xl bg-gradient-to-b from-ocean-card/90 to-black/80 border border-white/10 shadow-[0_10px_35px_rgba(0,0,0,0.8)] overflow-hidden">
+      <div className="mx-4 mb-6 relative flex flex-col items-center justify-center p-5 rounded-2xl bg-gradient-to-b from-ocean-card/90 to-slate-100 border border-slate-200 shadow-[0_10px_35px_rgba(15,23,42,0.18)] overflow-hidden">
         {/* Ambient glow behind orb */}
         <div className={`absolute w-44 h-44 rounded-full blur-3xl opacity-40 transition-colors duration-500 pointer-events-none ${
           lastResult?.color === 'red' ? 'bg-red-500' :
@@ -234,7 +234,7 @@ export default function ColorPrediction() {
 
         <div className="relative flex flex-col items-center">
           {/* Chamber Header Tag */}
-          <div className="mb-3 px-3 py-0.5 rounded-full bg-black/60 border border-white/15 text-[11px] font-mono tracking-widest uppercase text-white/70 flex items-center gap-1.5">
+          <div className="mb-3 px-3 py-0.5 rounded-full bg-white/80 border border-slate-200 text-[11px] font-mono tracking-widest uppercase text-slate-700 flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${
               gameState === 'LOCKED' ? 'bg-red-500 animate-ping' :
               gameState === 'RESULT' ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'
@@ -263,7 +263,7 @@ export default function ColorPrediction() {
               lastResult?.color === 'red' ? 'bg-gradient-to-br from-red-500 to-red-950 border-2 border-red-400 shadow-[0_0_35px_rgba(239,68,68,0.8)]' :
               lastResult?.color === 'green' ? 'bg-gradient-to-br from-emerald-500 to-emerald-950 border-2 border-emerald-400 shadow-[0_0_35px_rgba(34,197,94,0.8)]' :
               lastResult?.color === 'violet' ? 'bg-gradient-to-br from-purple-500 to-purple-950 border-2 border-purple-400 shadow-[0_0_35px_rgba(168,85,247,0.8)]' :
-              'bg-gradient-to-br from-cyan-600/40 via-blue-950 to-black border-2 border-cyan-400/40'
+              'bg-gradient-to-br from-cyan-600/40 via-blue-950 to-slate-100 border-2 border-cyan-400/40'
             }`}>
               {lastResult ? (
                 <motion.div
@@ -271,10 +271,10 @@ export default function ColorPrediction() {
                   animate={{ scale: 1, rotate: 0 }}
                   className="flex flex-col items-center justify-center"
                 >
-                  <span className="text-3xl sm:text-4xl font-black text-white drop-shadow-md">
+                  <span className="text-3xl sm:text-4xl font-black text-slate-900 drop-shadow-md">
                     {lastResult.number}
                   </span>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-white/90">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-800">
                     {lastResult.color}
                   </span>
                 </motion.div>
@@ -282,12 +282,12 @@ export default function ColorPrediction() {
                 <motion.div 
                   animate={{ scale: [0.9, 1.15, 0.9] }}
                   transition={{ repeat: Infinity, duration: 0.8 }}
-                  className="text-amber-400 font-black text-xl tracking-tighter"
+                  className="text-amber-600 font-black text-xl tracking-tighter"
                 >
                   ???
                 </motion.div>
               ) : (
-                <span className="text-white/40 font-mono font-bold text-lg">?</span>
+                <span className="text-slate-500 font-mono font-bold text-lg">?</span>
               )}
             </div>
           </div>
@@ -297,7 +297,7 @@ export default function ColorPrediction() {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-3 px-4 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-black uppercase tracking-wider text-amber-300"
+              className="mt-3 px-4 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-black uppercase tracking-wider text-amber-700"
             >
               Winner: {lastResult.color} • Number {lastResult.number}
             </motion.div>
@@ -314,7 +314,7 @@ export default function ColorPrediction() {
       {/* Betting Area */}
       <div className="mx-4 mb-6 relative">
         {(gameState === 'LOCKED' || gameState === 'RESULT') && (
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10 rounded-xl flex items-center justify-center border border-red-500/50">
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] z-10 rounded-xl flex items-center justify-center border border-red-500/50">
             <span className="text-red-500 font-black tracking-widest text-lg uppercase shadow-black drop-shadow-lg">
               {gameState === 'RESULT' ? 'Calculating...' : 'Locked'}
             </span>
@@ -327,7 +327,7 @@ export default function ColorPrediction() {
             <button 
               key={c.id}
               onClick={() => handleOpenBet('color', c.id, c.bg)}
-              className={`flex-1 py-4 rounded-xl ${c.bg} ${c.shadow} flex flex-col items-center justify-center transform active:scale-95 transition-transform text-white border-2 border-white/20`}
+              className={`flex-1 py-4 rounded-xl ${c.bg} ${c.shadow} flex flex-col items-center justify-center transform active:scale-95 transition-transform text-slate-900 border-2 border-slate-200`}
             >
               <span className="font-black text-sm uppercase tracking-wide drop-shadow-md">{c.label}</span>
               <span className="text-[10px] font-bold mt-1 opacity-90">{c.multiplier}x</span>
@@ -336,7 +336,7 @@ export default function ColorPrediction() {
         </div>
 
         {/* Numbers Grid */}
-        <div className="bg-ocean-card/30 border border-white/5 rounded-2xl p-4">
+        <div className="bg-ocean-card/30 border border-slate-200 rounded-2xl p-4">
           <div className="grid grid-cols-5 gap-3">
             {NUMBERS.map(n => {
               let bg = 'bg-blue-500';
@@ -348,26 +348,26 @@ export default function ColorPrediction() {
                 <button 
                   key={n}
                   onClick={() => handleOpenBet('number', n, bg)}
-                  className={`aspect-square rounded-full ${bg} flex items-center justify-center text-white font-black text-xl border-2 border-white/20 shadow-lg transform active:scale-90 transition-transform`}
+                  className={`aspect-square rounded-full ${bg} flex items-center justify-center text-slate-900 font-black text-xl border-2 border-slate-200 shadow-lg transform active:scale-90 transition-transform`}
                 >
                   {n}
                 </button>
               )
             })}
           </div>
-          <p className="text-center text-gray-500 text-[10px] font-bold uppercase mt-4">Number Win: 9x Payout</p>
+          <p className="text-center text-slate-500 text-[10px] font-bold uppercase mt-4">Number Win: 9x Payout</p>
         </div>
       </div>
 
       {/* Roadmap / History */}
-      <div className="flex-1 bg-ocean-card/80 rounded-t-3xl border-t border-white/10 p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-         <h3 className="text-white font-bold mb-4 flex items-center gap-2"><History size={16} className="text-neon-mint"/> Trend History</h3>
+      <div className="flex-1 bg-ocean-card/80 rounded-t-3xl border-t border-slate-200 p-4 shadow-[0_-10px_30px_rgba(15,23,42,0.13)]">
+         <h3 className="text-slate-900 font-bold mb-4 flex items-center gap-2"><History size={16} className="text-neon-mint"/> Trend History</h3>
          
          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
             {history.map((h, i) => (
               <div key={i} className="flex flex-col items-center flex-none">
-                 <span className="text-[10px] text-gray-500 mb-1">{h.period.toString().slice(-3)}</span>
-                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-white/20
+                 <span className="text-[10px] text-slate-500 mb-1">{h.period.toString().slice(-3)}</span>
+                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-slate-900 font-bold text-sm border-2 border-slate-200
                     ${h.resultColor === 'red' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]' : 
                       h.resultColor === 'green' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 
                       'bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)]'}
@@ -383,14 +383,14 @@ export default function ColorPrediction() {
       <AnimatePresence>
         {betModalOpen && selectedBet && (
           <>
-            <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={() => setBetModalOpen(false)} />
+            <div className="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-sm" onClick={() => setBetModalOpen(false)} />
             <motion.div 
               initial={{ y: 200, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 200, opacity: 0 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-ocean-card rounded-t-3xl border-t border-white/10 p-6"
+              className="fixed bottom-0 left-0 right-0 z-50 bg-ocean-card rounded-t-3xl border-t border-slate-200 p-6"
             >
-               <h3 className={`text-xl font-black text-white mb-4 ${selectedBet.color.replace('bg-', 'text-')}`}>
+               <h3 className={`text-xl font-black text-slate-900 mb-4 ${selectedBet.color.replace('bg-', 'text-')}`}>
                  Bet on {selectedBet.type === 'color' ? selectedBet.val.toString().toUpperCase() : `Number ${selectedBet.val}`}
                </h3>
                
@@ -399,7 +399,7 @@ export default function ColorPrediction() {
                    <button 
                      key={amt}
                      onClick={() => setBetAmount(amt)}
-                     className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-colors ${betAmount === amt ? 'bg-white/20 border-white text-white' : 'bg-black/30 border-white/5 text-gray-400'}`}
+                     className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-colors ${betAmount === amt ? 'bg-slate-200 border-white text-slate-900' : 'bg-slate-100 border-slate-200 text-slate-500'}`}
                    >
                      ₹{amt}
                    </button>
@@ -407,8 +407,8 @@ export default function ColorPrediction() {
                </div>
                
                <div className="flex gap-3">
-                 <button disabled={placingBet} onClick={() => setBetModalOpen(false)} className="flex-1 py-4 rounded-xl border border-white/10 text-white font-bold">Cancel</button>
-                 <button disabled={placingBet} onClick={handlePlaceBet} className={`flex-[2] py-4 rounded-xl font-black text-white ${selectedBet.color} shadow-lg disabled:opacity-50`}>
+                 <button disabled={placingBet} onClick={() => setBetModalOpen(false)} className="flex-1 py-4 rounded-xl border border-slate-200 text-slate-900 font-bold">Cancel</button>
+                 <button disabled={placingBet} onClick={handlePlaceBet} className={`flex-[2] py-4 rounded-xl font-black text-slate-900 ${selectedBet.color} shadow-lg disabled:opacity-50`}>
                    {placingBet ? 'Confirming...' : `Confirm ₹${betAmount}`}
                  </button>
                </div>

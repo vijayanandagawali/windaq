@@ -59,24 +59,24 @@ export default function WalletAdjustmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Manual Wallet Adjustments</h1>
-          <p className="text-sm text-slate-400">Strict dual-authorization workflow for manual credits/debits.</p>
+          <h1 className="text-2xl font-bold text-slate-900">Manual Wallet Adjustments</h1>
+          <p className="text-sm text-slate-500">Strict dual-authorization workflow for manual credits/debits.</p>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-950/50 border border-red-900 text-red-400 px-4 py-3 rounded-lg flex items-center gap-3">
+        <div className="bg-red-950/50 border border-red-900 text-red-600 px-4 py-3 rounded-lg flex items-center gap-3">
           <ShieldAlert className="w-5 h-5" />
           <span>{error}</span>
         </div>
       )}
 
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-white/90 border border-slate-200 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-slate-300">
-            <thead className="text-xs text-slate-400 uppercase bg-slate-900 border-b border-slate-800">
+          <table className="w-full text-sm text-left text-slate-600">
+            <thead className="text-xs text-slate-500 uppercase bg-white border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4">ID</th>
                 <th className="px-6 py-4">Wallet ID</th>
@@ -88,16 +88,16 @@ export default function WalletAdjustmentsPage() {
             </thead>
             <tbody>
               {adjustments.map((adj) => (
-                <tr key={adj.id} className="border-b border-slate-800/50 hover:bg-slate-800/20">
+                <tr key={adj.id} className="border-b border-slate-200 hover:bg-slate-100">
                   <td className="px-6 py-4 font-mono text-xs">{adj.id.substring(0,8)}...</td>
                   <td className="px-6 py-4 font-mono text-xs">{adj.walletId.substring(0,8)}...</td>
-                  <td className={`px-6 py-4 text-right font-medium ${Number(adj.amount) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <td className={`px-6 py-4 text-right font-medium ${Number(adj.amount) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                     ₹ {(Number(adj.amount) / 100).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 max-w-[200px] truncate">{adj.reason}</td>
                   <td className="px-6 py-4">
-                    {adj.status === 'PENDING' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20"><Clock className="w-3.5 h-3.5" /> Pending</span>}
-                    {adj.status === 'APPROVED' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><CheckCircle2 className="w-3.5 h-3.5" /> Approved</span>}
+                    {adj.status === 'PENDING' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 border border-amber-500/20"><Clock className="w-3.5 h-3.5" /> Pending</span>}
+                    {adj.status === 'APPROVED' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"><CheckCircle2 className="w-3.5 h-3.5" /> Approved</span>}
                   </td>
                   <td className="px-6 py-4">
                     {adj.status === 'PENDING' ? (
@@ -105,7 +105,7 @@ export default function WalletAdjustmentsPage() {
                         <input 
                           type="password" 
                           placeholder="MFA PIN"
-                          className="w-24 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white"
+                          className="w-24 bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-900"
                           value={mfaToken}
                           onChange={(e) => setMfaToken(e.target.value)}
                         />

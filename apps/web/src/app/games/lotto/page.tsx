@@ -202,29 +202,29 @@ export default function LottoGame() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] bg-[#0a0f1a] font-sans selection:bg-neon-mint flex flex-col pb-safe overflow-y-auto">
+    <div className="h-[calc(100dvh-58px)] bg-white font-sans selection:bg-neon-mint flex flex-col pb-safe overflow-y-auto">
 
 
       <div className="flex-1 overflow-y-auto flex flex-col relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#0a0f1a] to-[#0a0f1a] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-white to-slate-50 pointer-events-none" />
 
         {/* Top Info Panel with 3D Blower Sphere */}
-        <div className="bg-black/70 border-b border-white/10 px-4 py-6 z-10 flex flex-col items-center backdrop-blur-md">
-           <div className="text-cyan-400 font-bold tracking-widest text-xs uppercase mb-1">Next Draw In</div>
+        <div className="bg-white/80 border-b border-slate-200 px-4 py-6 z-10 flex flex-col items-center backdrop-blur-md">
+           <div className="text-cyan-600 font-bold tracking-widest text-xs uppercase mb-1">Next Draw In</div>
            
            {status === 'OPEN' ? (
-             <div className="text-5xl md:text-6xl font-black text-white tracking-tighter drop-shadow-[0_0_20px_rgba(34,211,238,0.5)] font-mono">
+             <div className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter drop-shadow-[0_0_20px_rgba(34,211,238,0.5)] font-mono">
                {formatTime(timeRemaining)}
              </div>
            ) : (
-             <div className="text-2xl md:text-3xl font-black text-yellow-400 tracking-widest animate-pulse">
+             <div className="text-2xl md:text-3xl font-black text-yellow-600 tracking-widest animate-pulse">
                {status === 'LOCKED' ? '🎰 MIXING BALLS...' : '✨ LIVE DRAW IN PROGRESS!'}
              </div>
            )}
 
            {/* Lottery Blower Sphere (Tumbling Balls Animation) */}
-           <div className="relative w-36 h-36 mt-4 rounded-full border-4 border-cyan-500/40 bg-gradient-to-b from-cyan-950/40 via-black/80 to-blue-950/60 shadow-[0_0_40px_rgba(34,211,238,0.3)_inset,0_0_30px_rgba(0,0,0,0.8)] flex items-center justify-center overflow-hidden">
-             <div className="absolute inset-2 rounded-full border border-white/10 pointer-events-none" />
+           <div className="relative w-36 h-36 mt-4 rounded-full border-4 border-cyan-500/40 bg-gradient-to-b from-cyan-950/40 via-slate-100 to-blue-950/60 shadow-[0_0_40px_rgba(34,211,238,0.3)_inset,0_0_30px_rgba(15,23,42,0.18)] flex items-center justify-center overflow-hidden">
+             <div className="absolute inset-2 rounded-full border border-slate-200 pointer-events-none" />
              {/* Swirling Balls inside blower */}
              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
                <motion.div
@@ -242,7 +242,7 @@ export default function LottoGame() {
                    repeat: Infinity,
                    ease: "easeInOut"
                  }}
-                 className={`absolute w-6 h-6 rounded-full shadow-md flex items-center justify-center text-[9px] font-black text-white ${
+                 className={`absolute w-6 h-6 rounded-full shadow-md flex items-center justify-center text-[9px] font-black text-slate-900 ${
                    n % 4 === 0 ? 'bg-red-500' : n % 4 === 1 ? 'bg-amber-400 text-black' : n % 4 === 2 ? 'bg-blue-500' : 'bg-emerald-500'
                  }`}
                >
@@ -256,7 +256,7 @@ export default function LottoGame() {
             {/* Drawn Numbers Display Chute */}
             <div className="mt-5 flex flex-col items-center justify-center">
               {status === 'RESULT' && (
-                <div className="mb-2 text-[11px] font-mono uppercase tracking-widest text-amber-300 font-bold bg-black/60 px-3 py-0.5 rounded-full border border-amber-500/30">
+                <div className="mb-2 text-[11px] font-mono uppercase tracking-widest text-amber-700 font-bold bg-white/80 px-3 py-0.5 rounded-full border border-amber-500/30">
                   {(revealedBalls?.length || 0) < 6 
                     ? `Extracting Ball ${(revealedBalls?.length || 0) + 1} of 6...` 
                     : 'Draw Complete • Official Winning Numbers'}
@@ -285,7 +285,7 @@ export default function LottoGame() {
                    );
                  })}
                   {(revealedBalls?.length || 0) === 0 && status === 'RESULT' && (
-                   <span className="text-cyan-400 font-bold uppercase tracking-widest text-xs animate-pulse">
+                   <span className="text-cyan-600 font-bold uppercase tracking-widest text-xs animate-pulse">
                      Pneumatic chamber extracting balls...
                    </span>
                  )}
@@ -299,17 +299,17 @@ export default function LottoGame() {
           {/* Main Grid */}
           <div className="flex-1">
              <div className="flex justify-between items-center mb-4">
-               <h2 className="text-white font-bold text-lg">Pick 6 Numbers</h2>
+               <h2 className="text-slate-900 font-bold text-lg">Pick 6 Numbers</h2>
                <button 
                  onClick={quickPick}
                  disabled={status !== 'OPEN'}
-                 className="flex items-center gap-1 text-neon-mint hover:text-white transition-colors disabled:opacity-50"
+                 className="flex items-center gap-1 text-neon-mint hover:text-slate-900 transition-colors disabled:opacity-50"
                >
                  <RefreshCw size={16} /> <span className="text-sm font-bold uppercase tracking-wider">Quick Pick</span>
                </button>
              </div>
 
-             <div className="grid grid-cols-7 gap-2 md:gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
+             <div className="grid grid-cols-7 gap-2 md:gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 {Array.from({length: 49}, (_, i) => i + 1).map(num => {
                   const isSelected = selectedNumbers.includes(num);
                   return (
@@ -321,7 +321,7 @@ export default function LottoGame() {
                         aspect-square rounded-full flex items-center justify-center font-bold text-sm md:text-base transition-all
                         ${isSelected 
                           ? 'bg-neon-mint text-black shadow-[0_0_15px_rgba(45,212,191,0.6)] scale-110' 
-                          : 'bg-white/10 text-white hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-white/10'
+                          : 'bg-slate-100 text-slate-900 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-slate-100'
                         }
                       `}
                     >
@@ -331,15 +331,15 @@ export default function LottoGame() {
                 })}
              </div>
 
-             <div className="mt-6 flex flex-col md:flex-row items-center justify-between bg-black/50 p-4 rounded-xl border border-white/10">
+             <div className="mt-6 flex flex-col md:flex-row items-center justify-between bg-slate-100 p-4 rounded-xl border border-slate-200">
                 <div className="flex flex-col mb-4 md:mb-0 text-center md:text-left">
-                   <span className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Ticket Price</span>
-                   <span className="text-white font-black text-2xl">₹{TICKET_PRICE}</span>
+                   <span className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Ticket Price</span>
+                   <span className="text-slate-900 font-black text-2xl">₹{TICKET_PRICE}</span>
                 </div>
                 
                 <div className="flex gap-2">
                    {Array.from({length: 6}).map((_, i) => (
-                     <div key={i} className={`w-8 h-8 rounded-full flex items-center justify-center border-2 font-bold text-sm ${selectedNumbers[i] ? 'bg-neon-mint text-black border-transparent' : 'bg-transparent border-white/20 text-gray-500'}`}>
+                     <div key={i} className={`w-8 h-8 rounded-full flex items-center justify-center border-2 font-bold text-sm ${selectedNumbers[i] ? 'bg-neon-mint text-black border-transparent' : 'bg-transparent border-slate-200 text-slate-500'}`}>
                        {selectedNumbers[i] || '?'}
                      </div>
                    ))}
@@ -358,18 +358,18 @@ export default function LottoGame() {
           {/* Sidebar: Tickets & History */}
           <div className="w-full lg:w-80 flex flex-col gap-4">
               {/* My Tickets */}
-              <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-                <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+                <h3 className="text-slate-900 font-bold mb-4 flex items-center gap-2">
                   <Ticket size={18} className="text-neon-mint" /> Active Tickets ({myTickets?.length || 0})
                 </h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {(myTickets?.length || 0) === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4">No tickets for this draw.</p>
+                    <p className="text-sm text-slate-500 text-center py-4">No tickets for this draw.</p>
                   ) : (
                     (myTickets || []).map(t => (
-                      <div key={t.id} className="bg-black/50 rounded-lg p-3 border border-white/5 flex gap-1 justify-center">
+                      <div key={t.id} className="bg-slate-100 rounded-lg p-3 border border-slate-200 flex gap-1 justify-center">
                         {(t?.numbers || []).map(n => (
-                          <div key={n} className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white">
+                          <div key={n} className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-900">
                             {n}
                           </div>
                         ))}
@@ -380,17 +380,17 @@ export default function LottoGame() {
               </div>
 
              {/* History */}
-             <div className="bg-white/5 rounded-2xl p-4 border border-white/10 flex-1">
-               <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                 <Clock size={18} className="text-gray-400" /> Recent Results
+             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex-1">
+               <h3 className="text-slate-900 font-bold mb-4 flex items-center gap-2">
+                 <Clock size={18} className="text-slate-500" /> Recent Results
                </h3>
                 <div className="space-y-3">
                   {(history?.length || 0) === 0 ? (
-                    <p className="text-sm text-gray-500">Loading history...</p>
+                    <p className="text-sm text-slate-500">Loading history...</p>
                   ) : (
                     (history || []).map((draw: any, idx: number) => (
-                      <div key={draw?.id || idx} className="flex flex-col gap-1 border-b border-white/5 pb-2">
-                        <span className="text-xs text-gray-400">{draw?.resultTime ? new Date(draw.resultTime).toLocaleTimeString() : 'Recent Draw'}</span>
+                      <div key={draw?.id || idx} className="flex flex-col gap-1 border-b border-slate-200 pb-2">
+                        <span className="text-xs text-slate-500">{draw?.resultTime ? new Date(draw.resultTime).toLocaleTimeString() : 'Recent Draw'}</span>
                         <div className="flex gap-1">
                           {(draw?.winningNumbers || []).map((n: number) => (
                             <div key={n} className="w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center text-xs font-bold border border-yellow-500/30">

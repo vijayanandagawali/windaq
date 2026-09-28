@@ -75,13 +75,13 @@ export default function GlobalBetSlip() {
         animate={{ y: 0 }} 
         exit={{ y: "100%" }}
         className={`fixed bottom-0 left-0 right-0 md:left-auto md:right-4 md:bottom-4 md:w-96 z-50 rounded-t-3xl md:rounded-3xl border shadow-[0_-10px_30px_rgba(0,0,0,0.8)] md:shadow-2xl overflow-hidden
-          ${isBack ? 'bg-[#0f172a] border-blue-500/30' : 'bg-[#1e1115] border-pink-500/30'}
+          ${isBack ? 'bg-white border-blue-500/30' : 'bg-white border-pink-500/30'}
         `}
       >
         {/* Header */}
         <div className={`p-3 flex justify-between items-center border-b ${isBack ? 'border-blue-500/20 bg-blue-900/20' : 'border-pink-500/20 bg-pink-900/20'}`}>
-          <h3 className="text-white font-bold tracking-widest text-sm uppercase">Bet Slip</h3>
-          <button onClick={close} className="text-gray-400 hover:text-white transition-colors">
+          <h3 className="text-slate-900 font-bold tracking-widest text-sm uppercase">Bet Slip</h3>
+          <button onClick={close} className="text-slate-500 hover:text-slate-900 transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -89,14 +89,14 @@ export default function GlobalBetSlip() {
         {status === 'SUCCESS' ? (
           <div className="p-8 flex flex-col items-center justify-center text-center gap-4">
             <CheckCircle size={48} className="text-green-500" />
-            <h4 className="text-white font-black text-xl uppercase tracking-widest">Bet Placed!</h4>
-            <p className="text-gray-400 text-sm">Your wager has been confirmed and locked.</p>
+            <h4 className="text-slate-900 font-black text-xl uppercase tracking-widest">Bet Placed!</h4>
+            <p className="text-slate-500 text-sm">Your wager has been confirmed and locked.</p>
           </div>
         ) : (
           <div className="p-4">
             {/* Error Banner */}
             {status === 'ERROR' && (
-              <div className="mb-4 bg-red-900/50 border border-red-500/50 rounded p-2 flex items-start gap-2 text-red-200 text-xs">
+              <div className="mb-4 bg-red-900/50 border border-red-500/50 rounded p-2 flex items-start gap-2 text-red-700 text-xs">
                 <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
                 <span>{errorMessage}</span>
               </div>
@@ -105,8 +105,8 @@ export default function GlobalBetSlip() {
             {/* Selection Info */}
             <div className="flex justify-between items-start mb-4">
                <div>
-                  <h4 className="text-white font-black uppercase text-sm mb-1">{selection.market}</h4>
-                  <p className="text-gray-400 text-xs font-bold">{selection.type} - {selection.selection}</p>
+                  <h4 className="text-slate-900 font-black uppercase text-sm mb-1">{selection.market}</h4>
+                  <p className="text-slate-500 text-xs font-bold">{selection.type} - {selection.selection}</p>
                </div>
                <div className="text-right">
                   <span className={`font-black text-2xl text-${color}-400`}>{selection.odds.toFixed(2)}</span>
@@ -114,19 +114,19 @@ export default function GlobalBetSlip() {
             </div>
 
             {/* Stake Input */}
-            <div className="flex items-center justify-between bg-black/40 p-2 rounded-xl border border-white/5 mb-4">
-               <button onClick={() => setStake(Math.max(100, stake - 100))} className="w-10 h-10 rounded bg-white/5 text-white font-bold hover:bg-white/10">-</button>
+            <div className="flex items-center justify-between bg-slate-100 p-2 rounded-xl border border-slate-200 mb-4">
+               <button onClick={() => setStake(Math.max(100, stake - 100))} className="w-10 h-10 rounded bg-slate-50 text-slate-900 font-bold hover:bg-slate-100">-</button>
                <div className="flex flex-col items-center">
-                  <span className="text-[10px] text-gray-500 uppercase font-bold">Stake</span>
+                  <span className="text-[10px] text-slate-500 uppercase font-bold">Stake</span>
                   <input 
                     type="number" 
                     value={stake} 
                     onChange={e => setStake(Number(e.target.value))}
                     disabled={status === 'LOADING'}
-                    className="w-24 bg-transparent text-white font-black text-xl text-center focus:outline-none disabled:opacity-50" 
+                    className="w-24 bg-transparent text-slate-900 font-black text-xl text-center focus:outline-none disabled:opacity-50" 
                   />
                </div>
-               <button onClick={() => setStake(stake + 100)} className="w-10 h-10 rounded bg-white/5 text-white font-bold hover:bg-white/10">+</button>
+               <button onClick={() => setStake(stake + 100)} className="w-10 h-10 rounded bg-slate-50 text-slate-900 font-bold hover:bg-slate-100">+</button>
             </div>
 
             {/* Quick Stakes */}
@@ -136,7 +136,7 @@ export default function GlobalBetSlip() {
                   key={amt} 
                   onClick={() => setStake(amt)}
                   disabled={status === 'LOADING'}
-                  className="flex-1 bg-white/5 hover:bg-white/10 text-white text-xs font-bold py-2 rounded transition-colors disabled:opacity-50"
+                  className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-900 text-xs font-bold py-2 rounded transition-colors disabled:opacity-50"
                 >
                   +{amt}
                 </button>
@@ -145,15 +145,15 @@ export default function GlobalBetSlip() {
 
             {/* Summary */}
             <div className="flex justify-between items-center mb-4 px-2">
-               <span className="text-gray-400 text-xs font-bold uppercase">Potential Return</span>
-               <span className="text-green-400 font-black text-lg">₹{(stake * selection.odds).toFixed(2)}</span>
+               <span className="text-slate-500 text-xs font-bold uppercase">Potential Return</span>
+               <span className="text-green-600 font-black text-lg">₹{(stake * selection.odds).toFixed(2)}</span>
             </div>
 
             {/* Action */}
             <button 
               onClick={handlePlaceBet}
               disabled={status === 'LOADING' || stake < 10}
-              className={`w-full py-4 rounded-xl font-black text-white uppercase text-sm tracking-widest shadow-lg flex justify-center items-center gap-2
+              className={`w-full py-4 rounded-xl font-black text-slate-900 uppercase text-sm tracking-widest shadow-lg flex justify-center items-center gap-2
                 ${isBack ? 'bg-blue-600 hover:bg-blue-500' : 'bg-pink-600 hover:bg-pink-500'}
                 disabled:opacity-50 disabled:cursor-not-allowed
               `}

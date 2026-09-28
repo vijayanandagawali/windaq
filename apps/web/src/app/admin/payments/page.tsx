@@ -108,19 +108,19 @@ export default function PaymentsReviewPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <ArrowRightLeft className="w-6 h-6 text-blue-500" />
             Payment Review
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-slate-500 mt-1">
             Deposits are credited automatically when the bank&apos;s credit SMS matches the player&apos;s UTR and amount. Anything unmatched waits here for a finance officer; withdrawals are always paid manually.
           </p>
         </div>
         <button
           onClick={reload}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-300 border border-slate-700 rounded hover:bg-slate-800"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 border border-slate-200 rounded hover:bg-slate-100"
         >
           <RefreshCw className="w-3.5 h-3.5" /> Refresh
         </button>
@@ -134,7 +134,7 @@ export default function PaymentsReviewPage() {
             aria-selected={kind === k}
             onClick={() => switchKind(k)}
             className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold border ${
-              kind === k ? 'bg-blue-500/15 text-blue-300 border-blue-500/40' : 'text-slate-400 border-slate-800 hover:bg-slate-800/40'
+              kind === k ? 'bg-blue-500/15 text-blue-700 border-blue-500/40' : 'text-slate-500 border-slate-200 hover:bg-slate-100'
             }`}
           >
             {k === 'deposits' ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
@@ -144,13 +144,13 @@ export default function PaymentsReviewPage() {
       </div>
 
       {error && (
-        <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-sm text-red-300">{error}</div>
+        <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-sm text-red-700">{error}</div>
       )}
 
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-white/90 border border-slate-200 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-slate-300">
-            <thead className="text-xs text-slate-400 uppercase bg-slate-900 border-b border-slate-800">
+          <table className="w-full text-sm text-left text-slate-600">
+            <thead className="text-xs text-slate-500 uppercase bg-white border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4">Submitted</th>
                 <th className="px-6 py-4">User</th>
@@ -162,11 +162,11 @@ export default function PaymentsReviewPage() {
             </thead>
             <tbody>
               {items.map((req) => (
-                <tr key={req.id} className="border-b border-slate-800/50 hover:bg-slate-800/20">
-                  <td className="px-6 py-4 text-xs text-slate-400">{new Date(req.createdAt).toLocaleString('en-IN')}</td>
-                  <td className="px-6 py-4 font-mono text-sm text-white">{req.user?.phone || req.userId.substring(0, 12)}</td>
-                  <td className="px-6 py-4 font-bold text-emerald-400">₹{(Number(req.amount) / 100).toFixed(2)}</td>
-                  <td className="px-6 py-4 font-mono text-slate-300 text-xs">
+                <tr key={req.id} className="border-b border-slate-200 hover:bg-slate-100">
+                  <td className="px-6 py-4 text-xs text-slate-500">{new Date(req.createdAt).toLocaleString('en-IN')}</td>
+                  <td className="px-6 py-4 font-mono text-sm text-slate-900">{req.user?.phone || req.userId.substring(0, 12)}</td>
+                  <td className="px-6 py-4 font-bold text-emerald-600">₹{(Number(req.amount) / 100).toFixed(2)}</td>
+                  <td className="px-6 py-4 font-mono text-slate-600 text-xs">
                     {kind === 'deposits' ? req.metadata?.utr || '—' : req.metadata?.destination || '—'}
                   </td>
                   {kind === 'withdrawals' && (
@@ -176,14 +176,14 @@ export default function PaymentsReviewPage() {
                     <button
                       disabled={busyId === req.id}
                       onClick={() => act(req.id, 'approve')}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded transition disabled:opacity-50"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/30 rounded transition disabled:opacity-50"
                     >
                       <CheckCircle2 className="w-4 h-4" /> {COPY[kind].approveLabel}
                     </button>
                     <button
                       disabled={busyId === req.id}
                       onClick={() => act(req.id, 'reject')}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded transition disabled:opacity-50"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/30 rounded transition disabled:opacity-50"
                     >
                       <XCircle className="w-4 h-4" /> Reject
                     </button>
@@ -221,9 +221,9 @@ interface BankCreditRow {
 }
 
 const CREDIT_BADGE: Record<BankCreditRow['status'], string> = {
-  MATCHED: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-  UNMATCHED: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
-  AMOUNT_MISMATCH: 'text-red-300 bg-red-500/10 border-red-500/30'
+  MATCHED: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/30',
+  UNMATCHED: 'text-amber-700 bg-amber-500/10 border-amber-500/30',
+  AMOUNT_MISMATCH: 'text-red-700 bg-red-500/10 border-red-500/30'
 };
 
 /** Money the bank reported as received (forwarded credit SMS), newest first. */
@@ -247,13 +247,13 @@ function BankCreditsPanel({ reloadToken }: { reloadToken: number }) {
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-lg font-bold text-white">Bank credits received</h2>
-        <p className="text-xs text-slate-400">From the bank SMS forwarder. UNMATCHED: no player has submitted this UTR yet. AMOUNT_MISMATCH: the player claimed a different amount — resolve manually.</p>
+        <h2 className="text-lg font-bold text-slate-900">Bank credits received</h2>
+        <p className="text-xs text-slate-500">From the bank SMS forwarder. UNMATCHED: no player has submitted this UTR yet. AMOUNT_MISMATCH: the player claimed a different amount — resolve manually.</p>
       </div>
-      {error && <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-sm text-red-300">{error}</div>}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-x-auto">
-        <table className="w-full text-sm text-left text-slate-300">
-          <thead className="text-xs text-slate-400 uppercase bg-slate-900 border-b border-slate-800">
+      {error && <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-sm text-red-700">{error}</div>}
+      <div className="bg-white/90 border border-slate-200 rounded-xl overflow-x-auto">
+        <table className="w-full text-sm text-left text-slate-600">
+          <thead className="text-xs text-slate-500 uppercase bg-white border-b border-slate-200">
             <tr>
               <th className="px-6 py-3">Received</th>
               <th className="px-6 py-3">UTR</th>
@@ -264,10 +264,10 @@ function BankCreditsPanel({ reloadToken }: { reloadToken: number }) {
           </thead>
           <tbody>
             {(rows || []).map((c) => (
-              <tr key={c.id} className="border-b border-slate-800/50">
-                <td className="px-6 py-3 text-xs text-slate-400">{new Date(c.bankReceivedAt).toLocaleString('en-IN')}</td>
+              <tr key={c.id} className="border-b border-slate-200">
+                <td className="px-6 py-3 text-xs text-slate-500">{new Date(c.bankReceivedAt).toLocaleString('en-IN')}</td>
                 <td className="px-6 py-3 font-mono text-xs">{c.utr}</td>
-                <td className="px-6 py-3 font-bold text-emerald-400">₹{c.amountInr.toFixed(2)}</td>
+                <td className="px-6 py-3 font-bold text-emerald-600">₹{c.amountInr.toFixed(2)}</td>
                 <td className="px-6 py-3 text-xs">{c.payerName || '—'} <span className="text-slate-500">({c.sender})</span></td>
                 <td className="px-6 py-3"><span className={`rounded border px-2 py-0.5 text-[11px] font-bold ${CREDIT_BADGE[c.status]}`}>{c.status}</span></td>
               </tr>

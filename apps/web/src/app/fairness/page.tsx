@@ -67,18 +67,18 @@ export default function ProvablyFairPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#061625] font-sans selection:bg-[#26F0B2] text-[#F4FBFF] max-w-lg mx-auto pb-12 shadow-2xl">
+    <main className="min-h-screen bg-white font-sans selection:bg-[#26F0B2] text-[#F4FBFF] max-w-lg mx-auto pb-12 shadow-2xl">
       {/* Page Title Banner */}
-      <div className="px-4 py-3 bg-[#0B2236]/90 border-b border-white/10 flex items-center justify-between">
-        <h1 className="font-black text-sm tracking-wider uppercase text-white">PROVABLY FAIR VERIFIER</h1>
+      <div className="px-4 py-3 bg-white/90 border-b border-slate-200 flex items-center justify-between">
+        <h1 className="font-black text-sm tracking-wider uppercase text-slate-900">PROVABLY FAIR VERIFIER</h1>
       </div>
 
       <div className="p-4 space-y-4">
         {/* Banner */}
-        <div className="bg-[#0B2236] border border-[#26F0B2]/30 rounded-2xl p-4 shadow-[0_0_25px_rgba(38,240,178,0.15)]">
+        <div className="bg-white border border-[#26F0B2]/30 rounded-2xl p-4 shadow-[0_0_25px_rgba(38,240,178,0.15)]">
           <div className="flex items-center gap-2 mb-2">
             <ShieldCheck size={22} className="text-[#26F0B2]" />
-            <h2 className="font-black text-base text-white">CRYPTOGRAPHIC INTEGRITY</h2>
+            <h2 className="font-black text-base text-slate-900">CRYPTOGRAPHIC INTEGRITY</h2>
           </div>
           <p className="text-xs text-[#8EA8B8] leading-relaxed">
             WinDaq outcomes are predetermined by mathematical cryptography (HMAC-SHA256) before rounds start. Neither the platform nor players can manipulate the result during flight.
@@ -86,7 +86,7 @@ export default function ProvablyFairPage() {
         </div>
 
         {/* Verifier Form */}
-        <div className="bg-[#0B2236] border border-white/10 rounded-2xl p-4 shadow-lg space-y-3">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-lg space-y-3">
           <div>
             <label className="text-[11px] font-extrabold uppercase text-[#8EA8B8] block mb-1">
               GAME SYSTEM
@@ -103,7 +103,7 @@ export default function ProvablyFairPage() {
                   className={`py-2 rounded-xl text-xs font-bold transition-all ${
                     game === g.id
                       ? 'bg-[#26F0B2] text-[#061625] shadow-md font-black'
-                      : 'bg-[#061625] text-gray-400 border border-white/10'
+                      : 'bg-white text-slate-500 border border-slate-200'
                   }`}
                 >
                   {g.label}
@@ -121,7 +121,7 @@ export default function ProvablyFairPage() {
               value={serverSeed}
               onChange={(e) => setServerSeed(e.target.value)}
               placeholder="e.g. 7d8a9f2e4b1c..."
-              className="w-full bg-[#061625] border border-white/15 rounded-xl px-3 py-2.5 text-white font-mono text-xs outline-none focus:border-[#26F0B2]"
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 font-mono text-xs outline-none focus:border-[#26F0B2]"
             />
           </div>
 
@@ -134,7 +134,7 @@ export default function ProvablyFairPage() {
                 type="text"
                 value={clientSeed}
                 onChange={(e) => setClientSeed(e.target.value)}
-                className="w-full bg-[#061625] border border-white/15 rounded-xl px-3 py-2.5 text-white font-mono text-xs outline-none focus:border-[#26F0B2]"
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 font-mono text-xs outline-none focus:border-[#26F0B2]"
               />
             </div>
             <div>
@@ -145,7 +145,7 @@ export default function ProvablyFairPage() {
                 type="number"
                 value={nonce}
                 onChange={(e) => setNonce(e.target.value)}
-                className="w-full bg-[#061625] border border-white/15 rounded-xl px-3 py-2.5 text-white font-mono text-xs outline-none focus:border-[#26F0B2]"
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 font-mono text-xs outline-none focus:border-[#26F0B2]"
               />
             </div>
           </div>
@@ -159,7 +159,7 @@ export default function ProvablyFairPage() {
               value={expectedResult}
               onChange={(e) => setExpectedResult(e.target.value)}
               placeholder="e.g. 2.45"
-              className="w-full bg-[#061625] border border-white/15 rounded-xl px-3 py-2.5 text-white font-bold text-sm outline-none focus:border-[#26F0B2]"
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 font-bold text-sm outline-none focus:border-[#26F0B2]"
             />
           </div>
 
@@ -176,28 +176,28 @@ export default function ProvablyFairPage() {
           <div className={`border rounded-2xl p-4 transition-all ${
             verificationResult.verified 
               ? 'bg-[#26F0B2]/10 border-[#26F0B2] text-[#26F0B2]' 
-              : 'bg-[#0F2C43] border-white/10 text-white'
+              : 'bg-white border-slate-200 text-slate-900'
           }`}>
             <div className="flex items-center justify-between mb-2">
               <span className="font-extrabold text-xs uppercase tracking-wider">COMPUTED RESULT:</span>
-              <span className="font-black text-xl text-yellow-400">{verificationResult.computedMultiplier}</span>
+              <span className="font-black text-xl text-yellow-600">{verificationResult.computedMultiplier}</span>
             </div>
-            <div className="text-[11px] font-mono text-gray-300 break-all bg-black/40 p-2.5 rounded-xl border border-white/5">
-              <span className="text-gray-400 block mb-0.5">Derived HMAC-SHA256:</span>
+            <div className="text-[11px] font-mono text-slate-600 break-all bg-slate-100 p-2.5 rounded-xl border border-slate-200">
+              <span className="text-slate-500 block mb-0.5">Derived HMAC-SHA256:</span>
               {verificationResult.computedHash}
             </div>
           </div>
         )}
 
         {/* Verification Logic Guide */}
-        <div className="bg-[#0B2236] border border-white/10 rounded-2xl p-4 space-y-2">
-          <h3 className="font-black text-sm text-white flex items-center gap-2">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2">
+          <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
             <Lock size={16} className="text-[#26F0B2]" /> HOW TO VERIFY INDEPENDENTLY
           </h3>
           <p className="text-xs text-[#8EA8B8] leading-relaxed">
             You can verify any round independently using standard third-party tools (like CyberChef or Node.js):
           </p>
-          <ol className="text-xs text-gray-300 space-y-1 pl-4 list-decimal">
+          <ol className="text-xs text-slate-600 space-y-1 pl-4 list-decimal">
             <li>Take the revealed Server Seed and Client Seed.</li>
             <li>Compute HMAC-SHA256 with key = Server Seed, message = ClientSeed:Nonce.</li>
             <li>Extract the first 52 bits and apply formula: 100 / (100 - X).</li>

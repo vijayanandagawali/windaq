@@ -58,7 +58,7 @@ export default function AviatorGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Background Grid
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.06)';
     ctx.lineWidth = 1;
     for (let i = 0; i < canvas.width; i += 40) {
       ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
@@ -74,9 +74,9 @@ export default function AviatorGame() {
 
     // Under-curve glowing neon fill
     const fillGrad = ctx.createLinearGradient(0, y, 0, canvas.height);
-    fillGrad.addColorStop(0, 'rgba(0, 255, 163, 0.35)');
-    fillGrad.addColorStop(0.5, 'rgba(0, 255, 163, 0.1)');
-    fillGrad.addColorStop(1, 'rgba(0, 255, 163, 0.0)');
+    fillGrad.addColorStop(0, 'rgba(14, 165, 233, 0.30)');
+    fillGrad.addColorStop(0.5, 'rgba(14, 165, 233, 0.10)');
+    fillGrad.addColorStop(1, 'rgba(14, 165, 233, 0.0)');
     ctx.beginPath();
     ctx.moveTo(0, canvas.height);
     ctx.quadraticCurveTo(x * 0.5, canvas.height, x, y);
@@ -89,9 +89,9 @@ export default function AviatorGame() {
     ctx.beginPath();
     ctx.moveTo(0, canvas.height);
     ctx.quadraticCurveTo(x * 0.5, canvas.height, x, y);
-    ctx.strokeStyle = '#00FFA3';
+    ctx.strokeStyle = '#0284C7';
     ctx.lineWidth = 4;
-    ctx.shadowColor = '#00FFA3';
+    ctx.shadowColor = 'rgba(2, 132, 199, 0.5)';
     ctx.shadowBlur = 12;
     ctx.stroke();
     ctx.shadowBlur = 0;
@@ -192,7 +192,7 @@ export default function AviatorGame() {
     if (typeof result.newBalance === 'number') setBalance(result.newBalance);
 
     audioEngine.play('win');
-    confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 }, colors: ['#00FFA3', '#FFFFFF'] });
+    confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 }, colors: ['#0EA5E9', '#10B981', '#F59E0B'] });
 
     const update = (prev: typeof bet1) => ({ ...prev, cashedOut: true, won: result.payout });
     if (panel === 1) setBet1(update);
@@ -321,13 +321,13 @@ export default function AviatorGame() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] bg-obsidian font-sans selection:bg-neon-mint selection:text-deep-ocean relative flex flex-col overflow-y-auto">
+    <div className="min-h-[calc(100dvh-58px)] bg-gradient-to-b from-sky-100 via-sky-50 to-white font-sans relative flex flex-col overflow-y-auto">
 
 
       {/* Game Area (The Canvas & Multiplier) */}
-      <div className={`relative flex-1 flex flex-col justify-center items-center overflow-hidden transition-colors duration-300 ${gameState === 'crashed' ? 'bg-red-950/20' : 'bg-ocean-card/30'}`}>
+      <div className={`relative flex-1 flex flex-col justify-center items-center overflow-hidden transition-colors duration-300 ${gameState === 'crashed' ? 'bg-rose-100/70' : 'bg-transparent'}`}>
         {/* Provably fair hash display */}
-        <div className="absolute top-2 left-4 text-[10px] text-gray-500 flex items-center gap-1 font-mono">
+        <div className="absolute top-2 left-4 text-[10px] text-slate-500 flex items-center gap-1 font-mono">
            <ShieldCheck size={10} className="text-green-500" />
            {provablyFairHash ? `Hash: ${provablyFairHash.substring(0, 12)}...` : 'Connecting RNG...'}
         </div>
@@ -336,7 +336,7 @@ export default function AviatorGame() {
           ref={canvasRef} 
           width={800} 
           height={400} 
-          className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-60"
+          className="absolute inset-0 w-full h-full object-cover"
         />
         
         {/* Multiplier Display */}
@@ -355,9 +355,9 @@ export default function AviatorGame() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span className="absolute font-bold text-xl text-white">{countdown}</span>
+                  <span className="absolute font-bold text-xl text-slate-900">{countdown}</span>
                 </div>
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">Waiting for next round</p>
+                <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">Waiting for next round</p>
               </motion.div>
             ) : (
               <motion.div 
@@ -370,10 +370,10 @@ export default function AviatorGame() {
                   gameState === 'crashed' 
                     ? 'text-red-500 drop-shadow-[0_0_25px_rgba(239,68,68,0.9)] animate-pulse' 
                     : parseFloat(multiplier) >= 10.0
-                    ? 'text-purple-400 drop-shadow-[0_0_25px_rgba(192,132,252,0.8)]'
+                    ? 'text-purple-600 drop-shadow-[0_0_25px_rgba(192,132,252,0.8)]'
                     : parseFloat(multiplier) >= 2.0
-                    ? 'text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.7)]'
-                    : 'text-neon-mint drop-shadow-[0_0_20px_rgba(0,255,163,0.6)]'
+                    ? 'text-yellow-600 drop-shadow-[0_0_20px_rgba(250,204,21,0.7)]'
+                    : 'text-sky-600 drop-shadow-[0_6px_20px_rgba(2,132,199,0.35)]'
                 }`}>
                   {multiplier}x
                 </h1>
@@ -382,7 +382,7 @@ export default function AviatorGame() {
                     initial={{ scale: 0.5 }}
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ repeat: Infinity, duration: 1 }}
-                    className="text-red-400 font-black text-xl uppercase tracking-widest mt-3 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]"
+                    className="text-red-600 font-black text-xl uppercase tracking-widest mt-3 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]"
                   >
                     💥 FLEW AWAY!
                   </motion.p>
@@ -394,9 +394,9 @@ export default function AviatorGame() {
       </div>
 
       {/* Betting Panels (Dual) */}
-      <div className="flex-none bg-deep-ocean p-2 pb-safe rounded-t-3xl shadow-[0_-10px_20px_rgba(0,0,0,0.5)] z-20">
-        <div className="flex justify-between items-center px-4 py-2 border-b border-white/5 mb-2">
-           <span className="text-gray-400 text-xs font-bold">Balance: <span className="text-neon-mint">₹{balance.toFixed(2)}</span></span>
+      <div className="flex-none bg-white/90 backdrop-blur p-2 pb-safe rounded-t-3xl border-t border-slate-200 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] z-20">
+        <div className="flex justify-between items-center px-4 py-2 border-b border-slate-200 mb-2">
+           <span className="text-slate-500 text-xs font-bold">Balance: <span className="text-neon-mint">₹{balance.toFixed(2)}</span></span>
         </div>
         
         <div className="flex gap-2 p-2">
@@ -439,18 +439,18 @@ function BetPanel({ panelNum, betState, setBetState, gameState, currentMulti, on
   const incrementAmount = (val: number) => setBetState({ ...betState, amount: betState.amount + val });
 
   return (
-    <div className="flex-1 glass-card bg-ocean-card/80 border border-white/10 rounded-xl p-2 relative overflow-hidden">
+    <div className="flex-1 glass-card bg-ocean-card/80 border border-slate-200 rounded-xl p-2 relative overflow-hidden">
       {/* Won Overlay */}
       {betState.cashedOut && (
         <div className="absolute inset-0 bg-green-500/20 backdrop-blur-sm z-10 flex flex-col items-center justify-center border border-green-500/50 rounded-xl">
-           <p className="text-green-400 font-bold text-xs uppercase tracking-wider mb-1">Cashed Out</p>
-           <h3 className="text-white font-black text-xl">₹{betState.won.toFixed(2)}</h3>
+           <p className="text-green-600 font-bold text-xs uppercase tracking-wider mb-1">Cashed Out</p>
+           <h3 className="text-slate-900 font-black text-xl">₹{betState.won.toFixed(2)}</h3>
         </div>
       )}
 
       {/* Top row: Auto cashout toggle (simplified) */}
       <div className="flex justify-between items-center mb-2 px-1">
-        <label className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
+        <label className="text-[10px] text-slate-500 font-bold flex items-center gap-1">
           Auto:
           <input 
             type="number" 
@@ -458,7 +458,7 @@ function BetPanel({ panelNum, betState, setBetState, gameState, currentMulti, on
             placeholder="Off" 
             value={betState.autoCashout || ''} 
             onChange={(e) => setBetState({...betState, autoCashout: parseFloat(e.target.value) || 0})}
-            className="w-12 bg-black/40 border border-white/10 rounded px-1 text-white text-xs text-center"
+            className="w-12 bg-slate-100 border border-slate-200 rounded px-1 text-slate-900 text-xs text-center"
             disabled={betState.placed}
           />
           x
@@ -466,16 +466,16 @@ function BetPanel({ panelNum, betState, setBetState, gameState, currentMulti, on
       </div>
 
       {/* Input amount */}
-      <div className="bg-black/40 rounded-lg p-2 flex items-center justify-between mb-2 border border-white/5">
-        <button onClick={() => setBetState({...betState, amount: Math.max(10, betState.amount - 10)})} disabled={betState.placed} className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white font-bold">-</button>
-        <span className="text-white font-bold text-lg">₹{betState.amount}</span>
-        <button onClick={() => setBetState({...betState, amount: betState.amount + 10})} disabled={betState.placed} className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white font-bold">+</button>
+      <div className="bg-slate-100 rounded-lg p-2 flex items-center justify-between mb-2 border border-slate-200">
+        <button onClick={() => setBetState({...betState, amount: Math.max(10, betState.amount - 10)})} disabled={betState.placed} className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 font-bold">-</button>
+        <span className="text-slate-900 font-bold text-lg">₹{betState.amount}</span>
+        <button onClick={() => setBetState({...betState, amount: betState.amount + 10})} disabled={betState.placed} className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 font-bold">+</button>
       </div>
 
       {/* Quick chips */}
       <div className="grid grid-cols-2 gap-1 mb-2">
-        <button onClick={() => incrementAmount(100)} disabled={betState.placed} className="bg-white/5 hover:bg-white/10 rounded py-1 text-gray-300 text-xs font-bold disabled:opacity-50">+100</button>
-        <button onClick={() => incrementAmount(500)} disabled={betState.placed} className="bg-white/5 hover:bg-white/10 rounded py-1 text-gray-300 text-xs font-bold disabled:opacity-50">+500</button>
+        <button onClick={() => incrementAmount(100)} disabled={betState.placed} className="bg-slate-50 hover:bg-slate-100 rounded py-1 text-slate-600 text-xs font-bold disabled:opacity-50">+100</button>
+        <button onClick={() => incrementAmount(500)} disabled={betState.placed} className="bg-slate-50 hover:bg-slate-100 rounded py-1 text-slate-600 text-xs font-bold disabled:opacity-50">+500</button>
       </div>
 
       {/* Big Action Button */}
@@ -484,7 +484,7 @@ function BetPanel({ panelNum, betState, setBetState, gameState, currentMulti, on
           data-testid={`aviator-bet-btn-${panelNum}`}
           onClick={onPlaceBet}
           disabled={gameState === 'flying'}
-          className={`w-full py-3 rounded-lg font-bold text-sm uppercase tracking-wide transition-all ${gameState === 'flying' ? 'bg-gray-700 text-gray-400' : 'btn-neon'}`}
+          className={`w-full py-3 rounded-lg font-bold text-sm uppercase tracking-wide transition-all ${gameState === 'flying' ? 'bg-slate-200 text-slate-500' : 'btn-neon'}`}
         >
           {gameState === 'waiting' ? 'BET' : 'Waiting...'}
         </button>

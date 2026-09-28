@@ -19,11 +19,11 @@ export default function CategoryChip({ label, isActive = false, onClick, icon }:
         transition-colors duration-300
         ${isActive 
           ? 'bg-neon-mint text-deep-ocean border-neon-mint shadow-[0_0_15px_rgba(0,255,163,0.3)]' 
-          : 'bg-ocean-card/60 text-white border-white/10 hover:bg-white/10 hover:border-white/20'
+          : 'bg-ocean-card/60 text-slate-900 border-slate-200 hover:bg-slate-100 hover:border-slate-200'
         }
       `}
     >
-      {icon && <span className={isActive ? "text-deep-ocean" : "text-gray-400"}>{icon}</span>}
+      {icon && <span className={isActive ? "text-deep-ocean" : "text-slate-500"}>{icon}</span>}
       {label}
     </motion.button>
   );

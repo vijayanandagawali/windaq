@@ -293,8 +293,8 @@ export default function SimulatedLiveTable({
   const renderCard = (card?: TableCard | null, isRevealed = false) => {
     if (!card || !isRevealed) {
       return (
-        <div className="w-16 h-24 sm:w-24 sm:h-36 rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border-2 border-red-500/40 shadow-2xl flex items-center justify-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-500/10 via-transparent to-black/60" />
+        <div className="w-16 h-24 sm:w-24 sm:h-36 rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-slate-100 border-2 border-red-500/40 shadow-2xl flex items-center justify-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-500/10 via-transparent to-slate-100" />
           <div className="w-10 h-14 sm:w-12 sm:h-16 border border-yellow-500/30 rounded-lg flex items-center justify-center">
             <span className="text-yellow-500/50 font-serif font-black text-lg sm:text-xl">W</span>
           </div>
@@ -322,7 +322,7 @@ export default function SimulatedLiveTable({
         initial={{ rotateY: 180, scale: 0.8, y: -40, opacity: 0 }}
         animate={{ rotateY: 0, scale: 1, y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 180, damping: 18 }}
-        className="w-16 h-24 sm:w-24 sm:h-36 rounded-xl bg-gradient-to-b from-white via-zinc-100 to-zinc-200 border-2 border-zinc-300 shadow-[0_15px_35px_rgba(0,0,0,0.8)] p-1.5 sm:p-2 flex flex-col justify-between select-none relative overflow-hidden"
+        className="w-16 h-24 sm:w-24 sm:h-36 rounded-xl bg-gradient-to-b from-white via-zinc-100 to-zinc-200 border-2 border-zinc-300 shadow-[0_15px_35px_rgba(15,23,42,0.18)] p-1.5 sm:p-2 flex flex-col justify-between select-none relative overflow-hidden"
       >
         <div className="flex items-center justify-between leading-none">
           <span className={`text-base sm:text-2xl font-black ${suitInfo.color}`}>{label}</span>
@@ -370,26 +370,26 @@ export default function SimulatedLiveTable({
   }, [state.history]);
 
   return (
-    <div className="flex flex-col h-full w-full max-w-[100vw] bg-[#070b12] text-white font-sans overflow-hidden select-none relative">
+    <div className="flex flex-col h-full w-full max-w-[100vw] bg-white text-slate-900 font-sans overflow-hidden select-none relative">
       
       {/* Top HUD: Transparent Simulation Header + Camera & Sound Controls */}
-      <div className="bg-black/60 border-b border-white/10 px-2 sm:px-4 py-2 flex items-center justify-between z-30 backdrop-blur-md max-w-[100vw] overflow-x-hidden">
+      <div className="bg-white/80 border-b border-slate-200 px-2 sm:px-4 py-2 flex items-center justify-between z-30 backdrop-blur-md max-w-[100vw] overflow-x-hidden">
         
         {/* Left: Simulated Live Transparency Label */}
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 px-2 sm:px-2.5 py-1 rounded-full">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-400">
+            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-600">
               SIMULATED LIVE TABLE
             </span>
           </div>
           {state.roundId && (
-            <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-mono text-amber-300">
-              <span className="text-white/40">ROUND:</span>
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-mono text-amber-700">
+              <span className="text-slate-500">ROUND:</span>
               <span className="font-bold">{state.roundId}</span>
             </div>
           )}
-          <span className="hidden md:inline-block text-xs text-white/50 border-l border-white/10 pl-3">
+          <span className="hidden md:inline-block text-xs text-slate-500 border-l border-slate-200 pl-3">
             {roomName} • Provably Fair Virtual Live Dealer
           </span>
         </div>
@@ -398,11 +398,11 @@ export default function SimulatedLiveTable({
         <div className="flex items-center gap-1.5 sm:gap-2">
           
           {/* Camera Perspective Angle Selector (Visible on tablet/desktop) */}
-          <div className="hidden sm:flex items-center bg-white/5 border border-white/10 rounded-lg p-0.5">
+          <div className="hidden sm:flex items-center bg-slate-50 border border-slate-200 rounded-lg p-0.5">
             <button
               onClick={() => setCameraAngle('studio')}
               className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1 ${
-                cameraAngle === 'studio' ? 'bg-amber-500 text-black shadow-md' : 'text-white/70 hover:text-white'
+                cameraAngle === 'studio' ? 'bg-amber-500 text-black shadow-md' : 'text-slate-700 hover:text-slate-900'
               }`}
               title="Studio Angle (Wide with Dealer)"
             >
@@ -412,7 +412,7 @@ export default function SimulatedLiveTable({
             <button
               onClick={() => setCameraAngle('felt')}
               className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
-                cameraAngle === 'felt' ? 'bg-amber-500 text-black shadow-md' : 'text-white/70 hover:text-white'
+                cameraAngle === 'felt' ? 'bg-amber-500 text-black shadow-md' : 'text-slate-700 hover:text-slate-900'
               }`}
               title="Felt Angle (Close-up Betting)"
             >
@@ -421,7 +421,7 @@ export default function SimulatedLiveTable({
             <button
               onClick={() => setCameraAngle('spotlight')}
               className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
-                cameraAngle === 'spotlight' ? 'bg-amber-500 text-black shadow-md' : 'text-white/70 hover:text-white'
+                cameraAngle === 'spotlight' ? 'bg-amber-500 text-black shadow-md' : 'text-slate-700 hover:text-slate-900'
               }`}
               title="Spotlight Angle (Cards Reveal)"
             >
@@ -435,8 +435,8 @@ export default function SimulatedLiveTable({
             data-testid="table-sound-toggle-btn"
             className={`p-2 rounded-lg border transition-colors cursor-pointer ${
               !soundEnabled 
-                ? 'bg-red-500/20 border-red-500/40 text-red-400' 
-                : 'bg-white/5 border-white/10 text-white/80 hover:text-white'
+                ? 'bg-red-500/20 border-red-500/40 text-red-600' 
+                : 'bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-900'
             }`}
             title={soundEnabled ? 'Mute Sound' : 'Unmute Sound'}
             aria-label={soundEnabled ? 'Mute Sound' : 'Unmute Sound'}
@@ -447,26 +447,26 @@ export default function SimulatedLiveTable({
           {/* Official Result History Drawer Trigger */}
           <button
             onClick={() => setShowResultHistory(true)}
-            className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/80 hover:text-white transition-colors flex items-center gap-1 text-xs"
+            className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors flex items-center gap-1 text-xs"
             title="Official Result History"
           >
-            <History size={16} className="text-amber-400" />
+            <History size={16} className="text-amber-600" />
             <span className="hidden sm:inline font-semibold">History</span>
           </button>
 
           {/* Provably Fair Info */}
           <button
             onClick={() => setShowProvablyFair(!showProvablyFair)}
-            className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/80 hover:text-white transition-colors"
+            className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors"
             title="Provably Fair Verification"
           >
-            <ShieldCheck size={16} className="text-emerald-400" />
+            <ShieldCheck size={16} className="text-emerald-600" />
           </button>
         </div>
       </div>
 
       {/* Phase Breadcrumbs Tracker */}
-      <div className="bg-black/40 border-b border-white/5 px-4 py-1.5 flex items-center justify-between text-[11px] overflow-x-auto scrollbar-hide">
+      <div className="bg-slate-100 border-b border-slate-200 px-4 py-1.5 flex items-center justify-between text-[11px] overflow-x-auto scrollbar-hide">
         <div className="flex items-center gap-1.5 md:gap-3 mx-auto">
           {phasesOrder.map((p, idx) => {
             const isActive = state.phase === p.key || 
@@ -477,13 +477,13 @@ export default function SimulatedLiveTable({
                 <div className={`px-2.5 py-0.5 rounded-full font-bold tracking-wider uppercase transition-all duration-300 flex items-center gap-1 ${
                   isActive 
                     ? 'bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.5)] scale-105' 
-                    : 'text-white/40 bg-white/5'
+                    : 'text-slate-500 bg-slate-50'
                 }`}>
-                  {isActive && <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />}
+                  {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
                   {p.label}
                 </div>
                 {idx < phasesOrder.length - 1 && (
-                  <span className="text-white/20">→</span>
+                  <span className="text-slate-400">→</span>
                 )}
               </React.Fragment>
             );
@@ -498,7 +498,7 @@ export default function SimulatedLiveTable({
       }`}>
         
         {/* Ambient Studio Lighting Backdrop */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#120810] via-[#0b1320] to-[#060a10] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white via-white to-slate-50 pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,_rgba(217,119,6,0.15),_transparent_70%)] pointer-events-none" />
 
         {/* Virtual Dealer Stage */}
@@ -545,14 +545,14 @@ export default function SimulatedLiveTable({
           <div className="mb-3 flex items-center gap-3">
             <div className={`px-4 py-1.5 rounded-full flex items-center gap-2 border backdrop-blur-md shadow-xl ${
               (state.phase === 'BETTING_OPEN' || state.phase === 'BETTING_CLOSING')
-                ? 'bg-black/70 border-emerald-500/50 text-emerald-300'
+                ? 'bg-white/80 border-emerald-500/50 text-emerald-700'
                 : (state.phase === 'BETTING_CLOSED' || state.phase === 'BETTING_LOCKED')
-                ? 'bg-black/70 border-red-500/50 text-red-400'
+                ? 'bg-white/80 border-red-500/50 text-red-600'
                 : (state.phase === 'PLAYING' || state.phase === 'DEALING')
-                ? 'bg-black/70 border-amber-500/50 text-amber-300'
+                ? 'bg-white/80 border-amber-500/50 text-amber-700'
                 : (state.phase === 'RESULT_REVEAL' || state.phase === 'RESULT')
-                ? 'bg-black/70 border-purple-500/50 text-purple-300'
-                : 'bg-black/70 border-blue-500/50 text-blue-300'
+                ? 'bg-white/80 border-purple-500/50 text-purple-700'
+                : 'bg-white/80 border-blue-500/50 text-blue-700'
             }`}>
               <span className={`w-2.5 h-2.5 rounded-full ${
                 (state.phase === 'BETTING_OPEN' || state.phase === 'BETTING_CLOSING') ? 'bg-emerald-400 animate-pulse' :
@@ -575,8 +575,8 @@ export default function SimulatedLiveTable({
                 state.phase === 'BETTING_OPEN'
                   ? state.phaseTimeLeft <= 3 
                     ? 'bg-red-600 text-white animate-pulse' 
-                    : 'bg-emerald-500/20 text-emerald-400'
-                  : 'bg-white/10 text-white/80'
+                    : 'bg-emerald-500/20 text-emerald-600'
+                  : 'bg-slate-100 text-slate-700'
               }`}>
                 {state.phaseTimeLeft}s
               </span>
@@ -585,9 +585,9 @@ export default function SimulatedLiveTable({
 
           {/* Maintenance Mode Visual Alert */}
           {state.isMaintenance && (
-            <div className="w-full max-w-2xl bg-amber-950/80 border border-amber-500/60 rounded-xl p-3 mb-2 text-amber-200 flex items-center justify-between shadow-lg animate-pulse">
+            <div className="w-full max-w-2xl bg-amber-950/80 border border-amber-500/60 rounded-xl p-3 mb-2 text-amber-700 flex items-center justify-between shadow-lg animate-pulse">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
                 <span className="font-semibold text-xs">
                   {state.maintenanceMessage || 'Scheduled game maintenance in progress. Gameplay is temporarily paused.'}
                 </span>
@@ -608,10 +608,10 @@ export default function SimulatedLiveTable({
                 : 'bg-red-950/20 border border-red-500/30'
             }`}>
               <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                <span className="text-red-400 font-black text-xs sm:text-base tracking-wider sm:tracking-widest uppercase drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
+                <span className="text-red-600 font-black text-xs sm:text-base tracking-wider sm:tracking-widest uppercase drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
                   DRAGON
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-red-300/70 font-semibold bg-red-900/40 px-1 sm:px-1.5 py-0.5 rounded">1:1</span>
+                <span className="text-[9px] sm:text-[10px] text-red-700 font-semibold bg-red-900/40 px-1 sm:px-1.5 py-0.5 rounded">1:1</span>
               </div>
               
               {/* Dragon Card Slot with 3D Reveal */}
@@ -639,7 +639,7 @@ export default function SimulatedLiveTable({
                 <motion.div
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="mt-1 bg-black/80 border border-white/20 px-2 py-0.5 rounded-full text-[10px] font-mono text-amber-300 font-bold whitespace-nowrap shadow"
+                  className="mt-1 bg-white/80 border border-slate-200 px-2 py-0.5 rounded-full text-[10px] font-mono text-amber-700 font-bold whitespace-nowrap shadow"
                 >
                   {state.result.dragon?.rank} vs {state.result.tiger?.rank}
                 </motion.div>
@@ -649,10 +649,10 @@ export default function SimulatedLiveTable({
               <div className={`mt-2 sm:mt-3 px-2 sm:px-3 py-0.5 sm:py-1 rounded-xl text-center border transition-all ${
                 state.result?.winner === 'TIE' && state.phase !== 'BETTING_OPEN'
                   ? 'bg-emerald-600 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.8)] scale-110 text-white font-black'
-                  : 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400'
+                  : 'bg-emerald-950/20 border-emerald-500/30 text-emerald-600'
               }`}>
                 <div className="text-[10px] sm:text-xs font-black tracking-widest">TIE</div>
-                <div className="text-[8px] sm:text-[10px] font-bold text-emerald-300/70">11:1</div>
+                <div className="text-[8px] sm:text-[10px] font-bold text-emerald-700">11:1</div>
               </div>
             </div>
 
@@ -663,10 +663,10 @@ export default function SimulatedLiveTable({
                 : 'bg-yellow-950/20 border border-yellow-500/30'
             }`}>
               <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                <span className="text-yellow-400 font-black text-xs sm:text-base tracking-wider sm:tracking-widest uppercase drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]">
+                <span className="text-yellow-600 font-black text-xs sm:text-base tracking-wider sm:tracking-widest uppercase drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]">
                   TIGER
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-yellow-300/70 font-semibold bg-yellow-900/40 px-1 sm:px-1.5 py-0.5 rounded">1:1</span>
+                <span className="text-[9px] sm:text-[10px] text-yellow-700 font-semibold bg-yellow-900/40 px-1 sm:px-1.5 py-0.5 rounded">1:1</span>
               </div>
               
               {/* Tiger Card Slot with 3D Reveal */}
@@ -709,22 +709,22 @@ export default function SimulatedLiveTable({
         </div>
 
         {/* Roadmap / Bead Plate Strip */}
-        <div className="relative z-10 bg-black/70 border-t border-b border-white/10 px-4 py-2 flex items-center justify-between gap-4 backdrop-blur-md">
+        <div className="relative z-10 bg-white/80 border-t border-b border-slate-200 px-4 py-2 flex items-center justify-between gap-4 backdrop-blur-md">
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[11px] font-black uppercase tracking-wider text-white/50">Roadmap:</span>
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Roadmap:</span>
             <div className="flex items-center gap-1.5 text-[10px] font-mono">
-              <span className="text-red-400 font-bold">D: {roadmapStats.dragon}%</span>
-              <span className="text-white/30">•</span>
-              <span className="text-yellow-400 font-bold">T: {roadmapStats.tiger}%</span>
-              <span className="text-white/30">•</span>
-              <span className="text-emerald-400 font-bold">Tie: {roadmapStats.tie}%</span>
+              <span className="text-red-600 font-bold">D: {roadmapStats.dragon}%</span>
+              <span className="text-slate-400">•</span>
+              <span className="text-yellow-600 font-bold">T: {roadmapStats.tiger}%</span>
+              <span className="text-slate-400">•</span>
+              <span className="text-emerald-600 font-bold">Tie: {roadmapStats.tie}%</span>
             </div>
           </div>
 
           {/* Bead History Bubbles */}
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1">
             {state.history.length === 0 ? (
-              <span className="text-xs text-white/40 italic">New shoe in progress...</span>
+              <span className="text-xs text-slate-500 italic">New shoe in progress...</span>
             ) : (
               state.history.slice(0, 18).map((h, i) => {
                 const w = h.result?.winner;
@@ -765,13 +765,13 @@ export default function SimulatedLiveTable({
         </div>
 
         {/* Regulatory & Non-Predictive Disclaimer (Prompt #65 Section 9) */}
-        <div className="relative z-10 px-4 py-1.5 bg-black/90 border-b border-white/10 flex items-center justify-between text-[10px] text-white/50">
+        <div className="relative z-10 px-4 py-1.5 bg-white/80 border-b border-slate-200 flex items-center justify-between text-[10px] text-slate-500">
           <span>Historical outcomes only • Independent random trials • Not a predictive system</span>
-          <span className="hidden sm:inline font-mono text-[10px] text-amber-400/80">Click any bead to verify cryptographic proof</span>
+          <span className="hidden sm:inline font-mono text-[10px] text-amber-600">Click any bead to verify cryptographic proof</span>
         </div>
 
         {/* Interactive Betting Layout Grid */}
-        <div className="relative z-10 p-3 sm:p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
+        <div className="relative z-10 p-3 sm:p-4 bg-gradient-to-t from-slate-100 via-slate-100 to-transparent">
           <div className="max-w-3xl mx-auto grid grid-cols-3 gap-1.5 sm:gap-3">
             
             {/* Dragon Betting Spot */}
@@ -785,8 +785,8 @@ export default function SimulatedLiveTable({
                   : 'bg-red-950/20 border-red-500/20 opacity-60 cursor-not-allowed'
               }`}
             >
-              <span className="text-sm sm:text-lg md:text-xl font-black tracking-wider sm:tracking-widest text-red-400">DRAGON</span>
-              <span className="text-[10px] sm:text-xs font-bold text-red-300/60">Pays 1:1</span>
+              <span className="text-sm sm:text-lg md:text-xl font-black tracking-wider sm:tracking-widest text-red-600">DRAGON</span>
+              <span className="text-[10px] sm:text-xs font-bold text-red-700">Pays 1:1</span>
               
               {/* Stacked Chip Visualizer */}
               {myBets['DRAGON'] && (
@@ -807,8 +807,8 @@ export default function SimulatedLiveTable({
                   : 'bg-emerald-950/20 border-emerald-500/20 opacity-60 cursor-not-allowed'
               }`}
             >
-              <span className="text-sm sm:text-lg md:text-xl font-black tracking-wider sm:tracking-widest text-emerald-400">TIE</span>
-              <span className="text-[10px] sm:text-xs font-bold text-emerald-300/60">Pays 11:1</span>
+              <span className="text-sm sm:text-lg md:text-xl font-black tracking-wider sm:tracking-widest text-emerald-600">TIE</span>
+              <span className="text-[10px] sm:text-xs font-bold text-emerald-700">Pays 11:1</span>
               
               {myBets['TIE'] && (
                 <div className="absolute -top-1.5 sm:top-2 -right-1 sm:right-2 bg-emerald-600 text-white text-[10px] sm:text-xs font-black px-1.5 sm:px-2.5 py-0.5 rounded-full border border-emerald-300 shadow-lg animate-bounce">
@@ -828,8 +828,8 @@ export default function SimulatedLiveTable({
                   : 'bg-yellow-950/20 border-yellow-500/20 opacity-60 cursor-not-allowed'
               }`}
             >
-              <span className="text-sm sm:text-lg md:text-xl font-black tracking-wider sm:tracking-widest text-yellow-400">TIGER</span>
-              <span className="text-[10px] sm:text-xs font-bold text-yellow-300/60">Pays 1:1</span>
+              <span className="text-sm sm:text-lg md:text-xl font-black tracking-wider sm:tracking-widest text-yellow-600">TIGER</span>
+              <span className="text-[10px] sm:text-xs font-bold text-yellow-700">Pays 1:1</span>
               
               {myBets['TIGER'] && (
                 <div className="absolute -top-1.5 sm:top-2 -right-1 sm:right-2 bg-yellow-500 text-black text-[10px] sm:text-xs font-black px-1.5 sm:px-2.5 py-0.5 rounded-full border border-yellow-300 shadow-lg animate-bounce">
@@ -844,7 +844,7 @@ export default function SimulatedLiveTable({
       </div>
 
       {/* Bottom Controls Bar: Chips & Action Buttons */}
-      <div className="bg-black/90 border-t border-white/10 px-3 sm:px-4 pt-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] z-30 backdrop-blur-md">
+      <div className="bg-white/80 border-t border-slate-200 px-3 sm:px-4 pt-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] z-30 backdrop-blur-md">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3">
           
           {/* Quick Bet Modifiers: Repeat, 2x, Clear */}
@@ -852,7 +852,7 @@ export default function SimulatedLiveTable({
             <button
               onClick={handleRepeatBet}
               disabled={state.phase !== 'BETTING_OPEN'}
-              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-40 text-[11px] sm:text-xs font-bold transition-colors flex items-center gap-1 text-white/90 cursor-pointer min-h-[36px]"
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-[11px] sm:text-xs font-bold transition-colors flex items-center gap-1 text-slate-800 cursor-pointer min-h-[36px]"
               title="Repeat Previous Bets"
             >
               <RotateCcw size={13} />
@@ -861,7 +861,7 @@ export default function SimulatedLiveTable({
             <button
               onClick={handleDoubleBets}
               disabled={state.phase !== 'BETTING_OPEN'}
-              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-40 text-[11px] sm:text-xs font-bold transition-colors text-white/90 cursor-pointer min-h-[36px]"
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-[11px] sm:text-xs font-bold transition-colors text-slate-800 cursor-pointer min-h-[36px]"
               title="Double Current Bets (2x)"
             >
               2x Double
@@ -869,7 +869,7 @@ export default function SimulatedLiveTable({
             <button
               onClick={handleClearBets}
               disabled={state.phase !== 'BETTING_OPEN'}
-              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 disabled:opacity-40 text-[11px] sm:text-xs font-bold transition-colors text-red-300 cursor-pointer min-h-[36px]"
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 disabled:opacity-40 text-[11px] sm:text-xs font-bold transition-colors text-red-700 cursor-pointer min-h-[36px]"
               title="Clear Active Bets"
             >
               Clear
@@ -892,12 +892,12 @@ export default function SimulatedLiveTable({
                     chip.border
                   } bg-gradient-to-br ${chip.color} ${
                     isSelected 
-                      ? 'scale-110 -translate-y-1 ring-2 sm:ring-4 ring-white/50 shadow-[0_0_15px_rgba(255,255,255,0.4)]' 
+                      ? 'scale-110 -translate-y-1 ring-2 sm:ring-4 ring-slate-200 shadow-[0_0_15px_rgba(255,255,255,0.4)]' 
                       : 'opacity-70 hover:opacity-100 hover:scale-105'
                   }`}
                 >
-                  <div className="absolute inset-0.5 sm:inset-1 rounded-full border border-white/30 border-dashed pointer-events-none" />
-                  <span className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                  <div className="absolute inset-0.5 sm:inset-1 rounded-full border border-slate-200 border-dashed pointer-events-none" />
+                  <span className="text-slate-900 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                     {chip.label}
                   </span>
                 </button>
@@ -906,9 +906,9 @@ export default function SimulatedLiveTable({
           </div>
 
           {/* Wallet Balance Display */}
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">
-            <span className="text-xs text-white/60 font-semibold">Balance:</span>
-            <span className="text-sm font-black text-emerald-400 font-mono">₹{balance.toFixed(2)}</span>
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+            <span className="text-xs text-slate-600 font-semibold">Balance:</span>
+            <span className="text-sm font-black text-emerald-600 font-mono">₹{balance.toFixed(2)}</span>
           </div>
 
         </div>
@@ -921,22 +921,22 @@ export default function SimulatedLiveTable({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-[#0f172a] border border-emerald-500/40 rounded-2xl max-w-lg w-full max-h-[88dvh] overflow-y-auto overscroll-contain pb-safe p-5 sm:p-6 shadow-2xl relative text-left"
+              className="bg-white border border-emerald-500/40 rounded-2xl max-w-lg w-full max-h-[88dvh] overflow-y-auto overscroll-contain pb-safe p-5 sm:p-6 shadow-2xl relative text-left"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-white/10 sticky -top-5 bg-[#0f172a]/95 backdrop-blur-md pt-1 pb-2 z-10">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 sticky -top-5 bg-white/90 backdrop-blur-md pt-1 pb-2 z-10">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="text-emerald-400" size={22} />
-                  <h3 className="font-black text-base sm:text-lg text-white">Provably Fair Verification</h3>
+                  <ShieldCheck className="text-emerald-600" size={22} />
+                  <h3 className="font-black text-base sm:text-lg text-slate-900">Provably Fair Verification</h3>
                 </div>
                 <button 
                   onClick={() => setShowProvablyFair(false)}
-                  className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-900 cursor-pointer"
                   aria-label="Close Verification"
                 >
                   ✕
@@ -945,16 +945,16 @@ export default function SimulatedLiveTable({
 
               <div className="space-y-4 text-xs mt-4">
                 <div>
-                  <label className="text-white/50 font-bold block mb-1">Server Seed Hash (Pre-committed SHA-256)</label>
-                  <div className="bg-black/60 p-2.5 rounded-lg font-mono text-emerald-300 break-all border border-white/5 select-all">
+                  <label className="text-slate-500 font-bold block mb-1">Server Seed Hash (Pre-committed SHA-256)</label>
+                  <div className="bg-white/80 p-2.5 rounded-lg font-mono text-emerald-700 break-all border border-slate-200 select-all">
                     {state.serverSeedHash || 'Generated upon round creation'}
                   </div>
                 </div>
 
                 {state.serverSeed && (
                   <div>
-                    <label className="text-white/50 font-bold block mb-1">Revealed Server Seed</label>
-                    <div className="bg-black/60 p-2.5 rounded-lg font-mono text-amber-300 break-all border border-white/5 select-all">
+                    <label className="text-slate-500 font-bold block mb-1">Revealed Server Seed</label>
+                    <div className="bg-white/80 p-2.5 rounded-lg font-mono text-amber-700 break-all border border-slate-200 select-all">
                       {state.serverSeed}
                     </div>
                   </div>
@@ -962,16 +962,16 @@ export default function SimulatedLiveTable({
 
                 {state.clientSeed && (
                   <div>
-                    <label className="text-white/50 font-bold block mb-1">Client Seed</label>
-                    <div className="bg-black/60 p-2.5 rounded-lg font-mono text-blue-300 break-all border border-white/5 select-all">
+                    <label className="text-slate-500 font-bold block mb-1">Client Seed</label>
+                    <div className="bg-white/80 p-2.5 rounded-lg font-mono text-blue-700 break-all border border-slate-200 select-all">
                       {state.clientSeed}
                     </div>
                   </div>
                 )}
 
-                <div className="bg-white/5 p-3 rounded-xl border border-white/10 text-white/70 space-y-1">
-                  <div className="font-bold text-white flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="text-emerald-400" />
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-slate-700 space-y-1">
+                  <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <CheckCircle2 size={14} className="text-emerald-600" />
                     How It Works
                   </div>
                   <p>

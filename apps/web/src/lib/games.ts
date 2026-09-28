@@ -36,7 +36,7 @@ export const GAMES: LobbyGame[] = [
   {
     slug: 'aviator', name: 'Aviator', href: '/games/aviator', category: 'crash', status: 'live',
     tagline: 'Cash out before the plane flies away', highlight: 'Multiplier crash', minBet: 10,
-    accent: '#FF3366', ...art('aviator')
+    accent: '#0EA5E9', ...art('aviator')
   },
   {
     slug: 'colour-prediction', name: 'Colour Prediction', href: '/games/color-prediction', category: 'draws', status: 'live',

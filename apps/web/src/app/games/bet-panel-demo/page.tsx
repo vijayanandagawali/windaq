@@ -36,32 +36,32 @@ export default function BetPanelDemoPage() {
   };
 
   return (
-    <div data-hydrated={mounted ? "true" : "false"} className="min-h-screen bg-[#070b12] text-white flex flex-col">
+    <div data-hydrated={mounted ? "true" : "false"} className="min-h-screen bg-white text-slate-900 flex flex-col">
       <Header />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6">
         
         {/* Title Header */}
-        <div className="mb-6 pb-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="mb-6 pb-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black tracking-tight text-white">UNIVERSAL BET PANEL</h1>
+              <h1 className="text-2xl font-black tracking-tight text-slate-900">UNIVERSAL BET PANEL</h1>
               <span className="text-xs bg-neon-mint/20 text-neon-mint font-bold px-2.5 py-0.5 rounded-full border border-neon-mint/30 flex items-center gap-1">
                 <Sparkles size={12} /> Standardized Across All Games
               </span>
             </div>
-            <p className="text-xs text-white/50 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Consistent betting controls, real-time potential payout calculations, min/max limit enforcement, and double-entry integration.
             </p>
           </div>
 
           {/* Test State Modifiers */}
-          <div className="flex flex-wrap items-center gap-2 bg-white/5 p-2 rounded-2xl border border-white/10">
-            <span className="text-[10px] text-white/40 font-bold uppercase px-1">Test State:</span>
+          <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200">
+            <span className="text-[10px] text-slate-500 font-bold uppercase px-1">Test State:</span>
             <button
               onClick={() => { setTestState('IDLE'); setSettlement(null); }}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                testState === 'IDLE' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'
+                testState === 'IDLE' ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Idle
@@ -69,7 +69,7 @@ export default function BetPanelDemoPage() {
             <button
               onClick={() => setTestState('LOADING')}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                testState === 'LOADING' ? 'bg-blue-500/30 text-blue-300' : 'text-white/60 hover:text-white'
+                testState === 'LOADING' ? 'bg-blue-500/30 text-blue-700' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Loading
@@ -77,7 +77,7 @@ export default function BetPanelDemoPage() {
             <button
               onClick={() => setTestState('ACCEPTED')}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                testState === 'ACCEPTED' ? 'bg-emerald-500/30 text-emerald-300' : 'text-white/60 hover:text-white'
+                testState === 'ACCEPTED' ? 'bg-emerald-500/30 text-emerald-700' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Accepted
@@ -85,7 +85,7 @@ export default function BetPanelDemoPage() {
             <button
               onClick={() => setTestState('REJECTED')}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                testState === 'REJECTED' ? 'bg-red-500/30 text-red-300' : 'text-white/60 hover:text-white'
+                testState === 'REJECTED' ? 'bg-red-500/30 text-red-700' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Rejected
@@ -94,14 +94,14 @@ export default function BetPanelDemoPage() {
               onClick={() => {
                 setSettlement({ status: 'WON', payout: 200, profit: 100 });
               }}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-all cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-yellow-500/20 text-yellow-700 hover:bg-yellow-500/30 transition-all cursor-pointer"
             >
               Won
             </button>
             <button
               onClick={() => setIsOpen(!isOpen)}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                isOpen ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'
+                isOpen ? 'bg-emerald-500/20 text-emerald-700' : 'bg-red-500/20 text-red-700'
               }`}
             >
               {isOpen ? 'Open' : 'Locked'}
@@ -114,7 +114,7 @@ export default function BetPanelDemoPage() {
           
           {/* 1. Standard Mode (Dice, Table, Colour) */}
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
               <Dices size={16} className="text-neon-mint" />
               <span>Standard Game Panel (Dice / Colour / Table)</span>
             </div>
@@ -133,8 +133,8 @@ export default function BetPanelDemoPage() {
 
           {/* 2. Crash Mode (Aviator) */}
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
-              <Rocket size={16} className="text-amber-400" />
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+              <Rocket size={16} className="text-amber-600" />
               <span>Crash Game Panel (Aviator)</span>
             </div>
             <UniversalBetPanel
@@ -154,8 +154,8 @@ export default function BetPanelDemoPage() {
 
           {/* 3. Compact Mode */}
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
-              <Layers size={16} className="text-cyan-400" />
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+              <Layers size={16} className="text-cyan-600" />
               <span>Compact Mobile Panel</span>
             </div>
             <UniversalBetPanel

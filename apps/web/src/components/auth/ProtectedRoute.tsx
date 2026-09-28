@@ -18,7 +18,7 @@ export default function ProtectedRoute({ children, requiredRole = 'USER', title 
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
         <Loader2 size={32} className="text-neon-mint animate-spin mb-3" />
-        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Verifying Session...</p>
+        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Verifying Session...</p>
       </div>
     );
   }
@@ -29,10 +29,10 @@ export default function ProtectedRoute({ children, requiredRole = 'USER', title 
         <div className="w-16 h-16 rounded-3xl bg-neon-mint/10 border border-neon-mint/30 flex items-center justify-center mb-4 shadow-[0_0_25px_rgba(0,255,163,0.2)]">
           <Lock size={28} className="text-neon-mint" />
         </div>
-        <h2 className="text-lg font-black text-white tracking-tight uppercase mb-1">
+        <h2 className="text-lg font-black text-slate-900 tracking-tight uppercase mb-1">
           {title}
         </h2>
-        <p className="text-xs text-gray-400 leading-relaxed mb-6">
+        <p className="text-xs text-slate-500 leading-relaxed mb-6">
           You must be logged in to view your private wallet, transactions, and profile records.
         </p>
 
@@ -47,7 +47,7 @@ export default function ProtectedRoute({ children, requiredRole = 'USER', title 
 
           <button
             onClick={() => openAuthModal('GUEST')}
-            className="w-full py-3 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 font-black text-xs rounded-2xl hover:bg-yellow-400/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3 bg-yellow-400/10 border border-yellow-400/30 text-yellow-600 font-black text-xs rounded-2xl hover:bg-yellow-400/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <Sparkles size={14} />
             <span>PLAY AS GUEST (TEST MODE)</span>
@@ -55,7 +55,7 @@ export default function ProtectedRoute({ children, requiredRole = 'USER', title 
 
           <Link
             href="/"
-            className="block py-2 text-xs font-bold text-gray-400 hover:text-white transition-colors"
+            className="block py-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
           >
             ← Return to Home Lobby
           </Link>
@@ -69,17 +69,17 @@ export default function ProtectedRoute({ children, requiredRole = 'USER', title 
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center max-w-sm mx-auto">
         <div className="w-16 h-16 rounded-3xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-4 shadow-[0_0_25px_rgba(239,68,68,0.2)]">
-          <ShieldAlert size={28} className="text-red-400" />
+          <ShieldAlert size={28} className="text-red-600" />
         </div>
-        <h2 className="text-lg font-black text-white tracking-tight uppercase mb-1">
+        <h2 className="text-lg font-black text-slate-900 tracking-tight uppercase mb-1">
           ACCESS RESTRICTED
         </h2>
-        <p className="text-xs text-gray-400 leading-relaxed mb-6">
+        <p className="text-xs text-slate-500 leading-relaxed mb-6">
           Administrator privileges are required to access this console.
         </p>
         <Link
           href="/"
-          className="px-6 py-2.5 bg-white/10 border border-white/15 rounded-xl text-xs font-bold text-white hover:bg-white/20 transition-all"
+          className="px-6 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 hover:bg-slate-200 transition-all"
         >
           Return to Home Lobby
         </Link>

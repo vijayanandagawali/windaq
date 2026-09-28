@@ -42,11 +42,11 @@ export default function GameCard({
   // Skeleton / Loading State
   if (state === 'loading') {
     return (
-      <div className={`${width} aspect-[3/4] rounded-xl bg-ocean-card/50 border border-white/5 overflow-hidden relative flex flex-col animate-pulse`}>
-        <div className="flex-1 bg-white/5" />
-        <div className="h-12 bg-black/40 p-2">
-           <div className="h-3 w-3/4 bg-white/10 rounded mb-1" />
-           <div className="h-2 w-1/2 bg-white/5 rounded" />
+      <div className={`${width} aspect-[3/4] rounded-xl bg-ocean-card/50 border border-slate-200 overflow-hidden relative flex flex-col animate-pulse`}>
+        <div className="flex-1 bg-slate-50" />
+        <div className="h-12 bg-slate-100 p-2">
+           <div className="h-3 w-3/4 bg-slate-100 rounded mb-1" />
+           <div className="h-2 w-1/2 bg-slate-50 rounded" />
         </div>
       </div>
     );
@@ -58,7 +58,7 @@ export default function GameCard({
         whileTap={isPlayable ? { scale: 0.96 } : {}}
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
-        className={`${width} aspect-[3/4] relative rounded-xl overflow-hidden group border border-white/10 bg-ocean-card cursor-pointer transition-all duration-300 ${!isPlayable ? 'opacity-70 grayscale-[50%]' : 'hover:border-neon-mint/50 hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)]'}`}
+        className={`${width} aspect-[3/4] relative rounded-xl overflow-hidden group border border-slate-200 bg-ocean-card cursor-pointer transition-all duration-300 ${!isPlayable ? 'opacity-70 grayscale-[50%]' : 'hover:border-neon-mint/50 hover:shadow-[0_10px_30px_rgba(15,23,42,0.13)]'}`}
       >
         {/* Background Image */}
         <div className="absolute inset-0 bg-deep-ocean">
@@ -73,7 +73,7 @@ export default function GameCard({
         </div>
 
         {/* Gradient Overlay for Text Readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-100 via-slate-100 to-transparent pointer-events-none" />
 
         {/* Top Badges Area */}
         <div className="absolute top-2 left-2 right-2 flex justify-between items-start pointer-events-none">
@@ -97,20 +97,20 @@ export default function GameCard({
           
           <button 
             onClick={handleFavorite} 
-            className="pointer-events-auto p-1.5 rounded-full bg-black/40 backdrop-blur hover:bg-black/60 transition-colors"
+            className="pointer-events-auto p-1.5 rounded-full bg-slate-100 backdrop-blur hover:bg-white/80 transition-colors"
           >
-            <Heart size={14} className={isFavorite ? 'fill-pink-500 text-pink-500' : 'text-white'} />
+            <Heart size={14} className={isFavorite ? 'fill-pink-500 text-pink-500' : 'text-slate-900'} />
           </button>
         </div>
 
         {/* Bottom Text Area */}
         <div className="absolute bottom-0 left-0 right-0 p-2 transform transition-transform duration-300">
-          <h3 className="text-white font-bold text-xs truncate drop-shadow-md">{title}</h3>
-          <p className="text-gray-400 text-[9px] font-semibold uppercase tracking-wider truncate">{provider}</p>
+          <h3 className="text-slate-900 font-bold text-xs truncate drop-shadow-md">{title}</h3>
+          <p className="text-slate-500 text-[9px] font-semibold uppercase tracking-wider truncate">{provider}</p>
         </div>
 
         {/* Hover / Status Overlays */}
-        <div className={`absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300 ${isHovered && isPlayable ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300 ${isHovered && isPlayable ? 'opacity-100' : 'opacity-0'}`}>
           {state === 'default' && (
             <motion.div 
               initial={{ scale: 0.5, opacity: 0 }}
@@ -125,15 +125,15 @@ export default function GameCard({
 
         {/* Non-Playable State Overlays */}
         {state === 'maintenance' && (
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
-            <Wrench size={24} className="text-gray-400 mb-2" />
-            <span className="text-[10px] font-bold text-white uppercase tracking-widest text-center px-2">Maintenance</span>
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
+            <Wrench size={24} className="text-slate-500 mb-2" />
+            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-widest text-center px-2">Maintenance</span>
           </div>
         )}
         {state === 'blocked' && (
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
             <ShieldAlert size={24} className="text-red-500 mb-2" />
-            <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest text-center px-2">Limit Reached</span>
+            <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest text-center px-2">Limit Reached</span>
           </div>
         )}
 

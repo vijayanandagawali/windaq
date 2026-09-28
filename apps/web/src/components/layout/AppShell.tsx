@@ -49,13 +49,13 @@ export default function AppShell({ children }: AppShellProps) {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen flex flex-col bg-deep-ocean text-white font-sans selection:bg-neon-mint selection:text-deep-ocean relative">
+      <div className="min-h-screen flex flex-col bg-deep-ocean text-slate-900 font-sans selection:bg-emerald-200 selection:text-slate-900 relative">
         {/* Network & Offline Status */}
         <NetworkWatcher />
 
         {/* Global Loading Top Bar on Navigation */}
         {isNavigating && (
-          <div className="fixed top-0 left-0 right-0 z-50 h-[2px] bg-gradient-to-r from-neon-mint via-cyan-400 to-emerald-400 animate-pulse" />
+          <div className="fixed top-0 left-0 right-0 z-50 h-[3px] bg-gradient-to-r from-emerald-500 via-sky-500 to-pink-500 animate-pulse" />
         )}
 
         {/* Unified Responsive Application Header */}
@@ -86,26 +86,16 @@ export default function AppShell({ children }: AppShellProps) {
           position="top-center"
           toastOptions={{
             style: {
-              background: '#0a192f',
-              color: '#fff',
-              border: '1px solid rgba(0, 255, 163, 0.3)',
-              boxShadow: '0 0 20px rgba(0, 255, 163, 0.2)',
-              fontSize: '12px',
-              fontWeight: '700',
-              borderRadius: '12px'
+              background: '#FFFFFF',
+              color: '#0F172A',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
+              fontSize: '13px',
+              fontWeight: '600',
+              borderRadius: '14px'
             },
-            success: {
-              iconTheme: {
-                primary: '#00FFA3',
-                secondary: '#0a192f',
-              },
-            },
-            error: {
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#0a192f',
-              },
-            }
+            success: { iconTheme: { primary: '#059669', secondary: '#FFFFFF' } },
+            error: { iconTheme: { primary: '#E11D48', secondary: '#FFFFFF' } }
           }}
         />
       </div>

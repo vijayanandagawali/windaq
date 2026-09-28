@@ -14,8 +14,8 @@ import { useAudioStore } from '@/store/audioStore';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
 
 const SYMBOL_MAP: Record<string, { icon: string, color: string }> = {
-  WILD: { icon: '💎', color: 'text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]' },
-  SCATTER: { icon: '⭐', color: 'text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]' },
+  WILD: { icon: '💎', color: 'text-cyan-600 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]' },
+  SCATTER: { icon: '⭐', color: 'text-yellow-600 drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]' },
   H1: { icon: '🧜‍♂️', color: 'text-blue-500' },
   H2: { icon: '🔱', color: 'text-yellow-600' },
   H3: { icon: '💰', color: 'text-orange-500' },
@@ -167,13 +167,13 @@ export default function SlotsGame() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] bg-[#0a0f1a] font-sans selection:bg-neon-mint relative flex flex-col pb-safe overflow-y-auto">
+    <div className="min-h-[calc(100dvh-58px)] bg-white font-sans selection:bg-neon-mint relative flex flex-col pb-safe overflow-y-auto">
 
 
       {/* Main Game Area */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 relative overflow-hidden">
         {/* Background ambient effects */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-deep-ocean to-[#0a0f1a] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-deep-ocean to-slate-50 pointer-events-none" />
         
         {/* Logo / Title */}
         <motion.div 
@@ -187,7 +187,7 @@ export default function SlotsGame() {
         </motion.div>
 
         {/* Slot Grid Viewport */}
-        <div className="relative z-10 bg-black/80 p-3 sm:p-4 rounded-2xl border-4 border-yellow-600/40 shadow-[0_0_50px_rgba(0,0,0,0.9),0_0_30px_rgba(234,179,8,0.2)] backdrop-blur-md">
+        <div className="relative z-10 bg-white/80 p-3 sm:p-4 rounded-2xl border-4 border-yellow-600/40 shadow-[0_0_50px_rgba(15,23,42,0.18),0_0_30px_rgba(234,179,8,0.2)] backdrop-blur-md">
           
           {/* Animated Laser Paylines Overlay */}
           {winningLines.length > 0 && !spinning && (
@@ -221,7 +221,7 @@ export default function SlotsGame() {
                         animate={isReelSpinning ? { y: [0, 60, -60, 0] } : { y: 0 }}
                         transition={isReelSpinning ? { repeat: Infinity, duration: 0.15, ease: 'linear' } : { type: 'tween', duration: 0.25, ease: 'easeOut' }}
                         className={`
-                          h-16 sm:h-20 md:h-24 bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl flex items-center justify-center border border-white/10
+                          h-16 sm:h-20 md:h-24 bg-gradient-to-b from-slate-100 to-white rounded-xl flex items-center justify-center border border-slate-200
                           ${!spinning && isWinningSymbol ? 'ring-4 ring-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.7)] scale-105 z-10' : ''}
                         `}
                       >
@@ -255,14 +255,14 @@ export default function SlotsGame() {
       </div>
 
       {/* Control Panel */}
-      <div className="flex-none bg-gradient-to-t from-black to-black/80 rounded-t-3xl border-t border-white/10 p-6 z-20 relative shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+      <div className="flex-none bg-gradient-to-t from-slate-100 to-slate-100 rounded-t-3xl border-t border-slate-200 p-6 z-20 relative shadow-[0_-10px_40px_rgba(15,23,42,0.18)]">
          <div className="flex items-center justify-between mb-6">
            <div className="flex flex-col">
-             <span className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Balance</span>
-             <span className="text-white font-black text-xl">₹{balance.toFixed(2)}</span>
+             <span className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Balance</span>
+             <span className="text-slate-900 font-black text-xl">₹{balance.toFixed(2)}</span>
            </div>
            
-           <button className="text-gray-400 hover:text-white p-2 rounded-full transition-colors">
+           <button className="text-slate-500 hover:text-slate-900 p-2 rounded-full transition-colors">
              <Info size={20} />
            </button>
          </div>
@@ -270,21 +270,21 @@ export default function SlotsGame() {
          <div className="flex gap-4 items-center">
             {/* Stake Controls */}
             <div className="flex-1 flex flex-col">
-               <div className="flex justify-between text-xs font-bold uppercase text-gray-400 mb-2">
+               <div className="flex justify-between text-xs font-bold uppercase text-slate-500 mb-2">
                  <span>Stake</span>
-                 <span className="text-yellow-400">₹{stake}</span>
+                 <span className="text-yellow-600">₹{stake}</span>
                </div>
-               <div className="flex items-center gap-2 bg-white/5 rounded-xl p-1 border border-white/10">
+               <div className="flex items-center gap-2 bg-slate-50 rounded-xl p-1 border border-slate-200">
                   <button 
                     disabled={spinning || stake <= 10}
                     onClick={() => { audioEngine.play('click'); setStake(s => Math.max(10, s - 10)); }}
-                    className="w-10 h-10 rounded-lg bg-white/10 text-white font-bold disabled:opacity-50 hover:bg-white/20 active:scale-95 transition-all"
+                    className="w-10 h-10 rounded-lg bg-slate-100 text-slate-900 font-bold disabled:opacity-50 hover:bg-slate-200 active:scale-95 transition-all"
                   >-</button>
-                  <div className="flex-1 text-center font-black text-white">{stake}</div>
+                  <div className="flex-1 text-center font-black text-slate-900">{stake}</div>
                   <button 
                     disabled={spinning || stake >= 10000}
                     onClick={() => { audioEngine.play('click'); setStake(s => Math.min(10000, s + 50)); }}
-                    className="w-10 h-10 rounded-lg bg-white/10 text-white font-bold disabled:opacity-50 hover:bg-white/20 active:scale-95 transition-all"
+                    className="w-10 h-10 rounded-lg bg-slate-100 text-slate-900 font-bold disabled:opacity-50 hover:bg-slate-200 active:scale-95 transition-all"
                   >+</button>
                </div>
             </div>
@@ -293,10 +293,10 @@ export default function SlotsGame() {
             <button 
               disabled={spinning}
               onClick={handleSpin}
-              className="w-24 h-24 rounded-full bg-gradient-to-b from-neon-mint to-teal-600 shadow-[0_0_30px_rgba(45,212,191,0.4)] border-4 border-black flex flex-col items-center justify-center transform active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
+              className="w-24 h-24 rounded-full bg-gradient-to-b from-neon-mint to-teal-600 shadow-[0_0_30px_rgba(45,212,191,0.4)] border-4 border-slate-200 flex flex-col items-center justify-center transform active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
             >
               {spinning ? (
-                <div className="w-8 h-8 border-4 border-black/20 border-t-black rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-slate-200 border-t-black rounded-full animate-spin" />
               ) : (
                 <>
                   <Coins className="text-black mb-1" size={24} />

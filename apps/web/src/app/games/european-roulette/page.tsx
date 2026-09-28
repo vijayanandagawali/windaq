@@ -252,7 +252,7 @@ export default function RouletteGame() {
   const getNumberColorClass = (n: number) => {
     if (n === 0) return "bg-green-600 hover:bg-green-500 border-green-400 text-white";
     if (isRed(n)) return "bg-red-700 hover:bg-red-600 border-red-500 text-white";
-    return "bg-gray-900 hover:bg-gray-800 border-gray-600 text-white";
+    return "bg-white hover:bg-slate-100 border-slate-300 text-slate-900";
   };
 
   const renderNumberCell = (n: number) => {
@@ -262,7 +262,7 @@ export default function RouletteGame() {
       <button 
         key={n}
         onClick={() => placeBet('STRAIGHT', [n])}
-        className={`relative flex items-center justify-center border-t border-l border-white/20 transition-all font-bold text-lg sm:text-xl py-3 ${getNumberColorClass(n)} ${
+        className={`relative flex items-center justify-center border-t border-l border-slate-200 transition-all font-bold text-lg sm:text-xl py-3 ${getNumberColorClass(n)} ${
           isWinner ? 'ring-4 ring-yellow-400 scale-105 z-20 shadow-[0_0_25px_rgba(250,204,21,0.9)] animate-pulse' : ''
         }`}
       >
@@ -272,7 +272,7 @@ export default function RouletteGame() {
             initial={{ scale: 0, y: -15 }}
             animate={{ scale: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 15 }}
-            className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]"
+            className="absolute inset-0 bg-slate-100 flex items-center justify-center backdrop-blur-[1px]"
           >
             <div className="bg-gradient-to-br from-yellow-400 to-amber-600 text-black text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-lg border border-yellow-200">
               ₹{myBets[betKey]}
@@ -284,43 +284,43 @@ export default function RouletteGame() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] w-full bg-[#0a0f1a] text-white font-sans selection:bg-neon-mint flex flex-col overflow-y-auto">
+    <div className="h-[calc(100dvh-58px)] w-full bg-white text-white font-sans selection:bg-neon-mint flex flex-col overflow-y-auto">
       {/* Top HUD Bar */}
-      <div className="bg-black/60 border-b border-white/10 px-4 py-2 flex items-center justify-between z-30 backdrop-blur-md">
+      <div className="bg-white/80 border-b border-slate-200 px-4 py-2 flex items-center justify-between z-30 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400">
+            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-600">
               EUROPEAN ROULETTE
             </span>
           </div>
           {gameState.roundId && (
-            <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full text-[11px] font-mono text-amber-300">
-              <span className="text-white/40">ROUND:</span>
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-[11px] font-mono text-amber-700">
+              <span className="text-slate-500">ROUND:</span>
               <span className="font-bold">{gameState.roundId}</span>
             </div>
           )}
-          <span className="hidden md:inline-block text-xs text-white/50 border-l border-white/10 pl-3">
+          <span className="hidden md:inline-block text-xs text-slate-500 border-l border-slate-200 pl-3">
             Auto Wheel • Server-Authoritative 37 Pockets (0-36)
           </span>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowHistoryDrawer(true)}
-            className="text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold flex items-center gap-1.5 transition-colors"
+            className="text-xs px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-900 font-semibold flex items-center gap-1.5 transition-colors"
           >
-            <History size={14} className="text-emerald-400" />
+            <History size={14} className="text-emerald-600" />
             <span>Official History</span>
           </button>
         </div>
       </div>
 
       {/* Game Stage Area */}
-      <div className="w-full min-h-[220px] py-4 bg-gradient-to-b from-[#1a2b1f] to-[#0a0f1a] relative flex flex-col items-center justify-center overflow-hidden border-b border-white/10">
+      <div className="w-full min-h-[220px] py-4 bg-gradient-to-b from-white to-slate-50 relative flex flex-col items-center justify-center overflow-hidden border-b border-slate-200">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-900/30 via-transparent to-transparent opacity-60" />
         
         {/* Timer / Status */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 border border-white/10 px-5 py-1.5 rounded-full flex items-center gap-3 backdrop-blur-md z-20 shadow-lg">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-white/80 border border-slate-200 px-5 py-1.5 rounded-full flex items-center gap-3 backdrop-blur-md z-20 shadow-lg">
            {gameState.status === 'OPEN' ? (
              <>
                <div className="w-2 h-2 rounded-full bg-neon-mint animate-pulse" />
@@ -332,7 +332,7 @@ export default function RouletteGame() {
            ) : (
              <>
                <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-               <span className="font-bold tracking-widest uppercase text-xs text-yellow-400">{PHASE_LABELS[gameState.status] || 'Please wait'}</span>
+               <span className="font-bold tracking-widest uppercase text-xs text-yellow-600">{PHASE_LABELS[gameState.status] || 'Please wait'}</span>
              </>
            )}
         </div>
@@ -352,7 +352,7 @@ export default function RouletteGame() {
               className="mt-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black px-4 py-1 rounded-full font-black text-sm tracking-widest shadow-[0_0_20px_rgba(234,179,8,0.7)] flex items-center gap-2"
             >
               <span>WINNER:</span>
-              <span className={`text-base font-black px-2 py-0.5 rounded-md ${isRed(resultNumber) ? 'bg-red-600 text-white' : resultNumber === 0 ? 'bg-emerald-600 text-white' : 'bg-black text-white'}`}>
+              <span className={`text-base font-black px-2 py-0.5 rounded-md ${isRed(resultNumber) ? 'bg-red-600 text-white' : resultNumber === 0 ? 'bg-emerald-600 text-white' : 'bg-white text-slate-900'}`}>
                 {resultNumber} {resultNumber === 0 ? '(GREEN)' : isRed(resultNumber) ? '(RED)' : '(BLACK)'}
               </span>
             </motion.div>
@@ -367,11 +367,11 @@ export default function RouletteGame() {
       />
 
       {/* History Ribbon */}
-      <div className="bg-black/50 border-b border-white/5 py-2 px-4 flex gap-2 overflow-x-auto scrollbar-hide items-center h-12 justify-between">
+      <div className="bg-slate-100 border-b border-slate-200 py-2 px-4 flex gap-2 overflow-x-auto scrollbar-hide items-center h-12 justify-between">
         <div className="flex items-center gap-2 overflow-x-auto">
-          <span className="text-xs text-gray-400 font-bold uppercase mr-1 whitespace-nowrap">History:</span>
+          <span className="text-xs text-slate-500 font-bold uppercase mr-1 whitespace-nowrap">History:</span>
           {history.length === 0 ? (
-            <span className="text-xs text-gray-500 italic">No completed spins yet...</span>
+            <span className="text-xs text-slate-500 italic">No completed spins yet...</span>
           ) : (
             history.map((h, i) => {
               const num = h.resultNumber !== undefined ? h.resultNumber : (parseInt(h.resultValue?.match(/\d+/)?.[0] || '0'));
@@ -405,35 +405,35 @@ export default function RouletteGame() {
         </div>
         <button
           onClick={() => setShowHistoryDrawer(true)}
-          className="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold flex items-center gap-1 border border-slate-700 whitespace-nowrap"
+          className="text-xs px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold flex items-center gap-1 border border-slate-200 whitespace-nowrap"
         >
-          <History size={12} className="text-emerald-400" />
+          <History size={12} className="text-emerald-600" />
           Official History
         </button>
       </div>
 
       {/* Non-Predictive Disclaimer */}
-      <div className="bg-black/70 border-b border-white/5 px-4 py-1 flex items-center justify-between text-[10px] text-gray-500">
+      <div className="bg-white/80 border-b border-slate-200 px-4 py-1 flex items-center justify-between text-[10px] text-slate-500">
         <span>Historical outcomes only • Independent random trials • Not a predictive system</span>
-        <span className="hidden sm:inline font-mono text-[10px] text-emerald-400/70">Click any spin for cryptographic proof</span>
+        <span className="hidden sm:inline font-mono text-[10px] text-emerald-600">Click any spin for cryptographic proof</span>
       </div>
 
       {/* Betting Grid */}
-      <div className="flex-1 p-2 sm:p-4 overflow-y-auto bg-[#0f1523]">
+      <div className="flex-1 p-2 sm:p-4 overflow-y-auto bg-white">
         <div className="max-w-4xl mx-auto">
           
           {/* Main Grid Wrapper */}
-          <div className="flex border-b border-r border-white/20 bg-black/40 rounded-xl overflow-hidden shadow-2xl">
+          <div className="flex border-b border-r border-slate-200 bg-slate-100 rounded-xl overflow-hidden shadow-2xl">
             
             {/* Zero Cell */}
             <button 
               onClick={() => placeBet('STRAIGHT', [0])}
-              className="w-12 sm:w-16 relative flex items-center justify-center border-t border-l border-white/20 hover:bg-green-500 bg-green-600 transition-colors"
+              className="w-12 sm:w-16 relative flex items-center justify-center border-t border-l border-slate-200 hover:bg-green-500 bg-green-600 transition-colors"
             >
-               <span className="font-black text-2xl rotate-90 text-white">0</span>
+               <span className="font-black text-2xl rotate-90 text-slate-900">0</span>
                {myBets['STRAIGHT_0'] && (
-                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
-                   <div className="bg-yellow-500 text-black text-xs font-black px-2 py-0.5 rounded-full shadow border border-black rotate-90">
+                 <div className="absolute inset-0 bg-slate-100 flex items-center justify-center backdrop-blur-[1px]">
+                   <div className="bg-yellow-500 text-black text-xs font-black px-2 py-0.5 rounded-full shadow border border-slate-200 rotate-90">
                      {myBets['STRAIGHT_0']}
                    </div>
                  </div>
@@ -453,63 +453,63 @@ export default function RouletteGame() {
             </div>
 
             {/* Column Bets */}
-            <div className="w-12 sm:w-16 flex flex-col font-bold text-xs tracking-widest border-t border-l border-white/20 text-gray-400">
-               <button onClick={() => placeBet('COLUMN', [3,6,9,12,15,18,21,24,27,30,33,36])} className="flex-1 border-b border-white/20 hover:bg-white/10 flex items-center justify-center relative">
+            <div className="w-12 sm:w-16 flex flex-col font-bold text-xs tracking-widest border-t border-l border-slate-200 text-slate-500">
+               <button onClick={() => placeBet('COLUMN', [3,6,9,12,15,18,21,24,27,30,33,36])} className="flex-1 border-b border-slate-200 hover:bg-slate-100 flex items-center justify-center relative">
                  <span className="-rotate-90">2:1</span>
                  {myBets['COLUMN_3'] && <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[9px] px-1 rounded-full">{myBets['COLUMN_3']}</div>}
                </button>
-               <button onClick={() => placeBet('COLUMN', [2,5,8,11,14,17,20,23,26,29,32,35])} className="flex-1 border-b border-white/20 hover:bg-white/10 flex items-center justify-center relative">
+               <button onClick={() => placeBet('COLUMN', [2,5,8,11,14,17,20,23,26,29,32,35])} className="flex-1 border-b border-slate-200 hover:bg-slate-100 flex items-center justify-center relative">
                  <span className="-rotate-90">2:1</span>
                  {/* Needs unique key if distinguishing which column, but for simplicity we just pass same market type "COLUMN". Our engine doesn't distinguish which column for payouts as long as targets are met. Wait, if multiple COLUMN bets are placed, they overwrite the local UI state key `COLUMN`. Let's fix that by sending unique keys for UI only. */}
                </button>
-               <button onClick={() => placeBet('COLUMN', [1,4,7,10,13,16,19,22,25,28,31,34])} className="flex-1 border-b border-white/20 hover:bg-white/10 flex items-center justify-center">
+               <button onClick={() => placeBet('COLUMN', [1,4,7,10,13,16,19,22,25,28,31,34])} className="flex-1 border-b border-slate-200 hover:bg-slate-100 flex items-center justify-center">
                  <span className="-rotate-90">2:1</span>
                </button>
             </div>
           </div>
 
           {/* Outside Bets Row 1: Dozens */}
-          <div className="flex ml-12 sm:ml-16 mr-12 sm:mr-16 border-l border-r border-b border-white/20">
-            <button onClick={() => placeBet('DOZEN', Array.from({length:12}, (_,i)=>i+1))} className="flex-1 py-3 text-center border-r border-white/20 hover:bg-white/10 font-bold text-gray-300 text-xs sm:text-sm tracking-widest relative">
+          <div className="flex ml-12 sm:ml-16 mr-12 sm:mr-16 border-l border-r border-b border-slate-200">
+            <button onClick={() => placeBet('DOZEN', Array.from({length:12}, (_,i)=>i+1))} className="flex-1 py-3 text-center border-r border-slate-200 hover:bg-slate-100 font-bold text-slate-600 text-xs sm:text-sm tracking-widest relative">
               1ST 12
               {myBets['DOZEN_1'] && <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[9px] px-1 rounded-full">{myBets['DOZEN_1']}</div>}
             </button>
-            <button onClick={() => placeBet('DOZEN', Array.from({length:12}, (_,i)=>i+13))} className="flex-1 py-3 text-center border-r border-white/20 hover:bg-white/10 font-bold text-gray-300 text-xs sm:text-sm tracking-widest relative">
+            <button onClick={() => placeBet('DOZEN', Array.from({length:12}, (_,i)=>i+13))} className="flex-1 py-3 text-center border-r border-slate-200 hover:bg-slate-100 font-bold text-slate-600 text-xs sm:text-sm tracking-widest relative">
               2ND 12
             </button>
-            <button onClick={() => placeBet('DOZEN', Array.from({length:12}, (_,i)=>i+25))} className="flex-1 py-3 text-center hover:bg-white/10 font-bold text-gray-300 text-xs sm:text-sm tracking-widest relative">
+            <button onClick={() => placeBet('DOZEN', Array.from({length:12}, (_,i)=>i+25))} className="flex-1 py-3 text-center hover:bg-slate-100 font-bold text-slate-600 text-xs sm:text-sm tracking-widest relative">
               3RD 12
             </button>
           </div>
 
           {/* Outside Bets Row 2: 1-18, EVEN, RED, BLACK, ODD, 19-36 */}
-          <div className="flex ml-12 sm:ml-16 mr-12 sm:mr-16 border-l border-r border-b border-white/20">
-            <button onClick={() => placeBet('LOW', Array.from({length:18}, (_,i)=>i+1))} className="flex-1 py-3 border-r border-white/20 hover:bg-white/10 font-bold text-gray-300 text-[10px] sm:text-xs">1 TO 18</button>
-            <button onClick={() => placeBet('EVEN', Array.from({length:18}, (_,i)=>(i+1)*2))} className="flex-1 py-3 border-r border-white/20 hover:bg-white/10 font-bold text-gray-300 text-[10px] sm:text-xs">EVEN</button>
-            <button onClick={() => placeBet('RED', RED_NUMBERS)} className="flex-1 py-3 border-r border-white/20 hover:bg-red-900/50 bg-red-950/30 flex items-center justify-center">
+          <div className="flex ml-12 sm:ml-16 mr-12 sm:mr-16 border-l border-r border-b border-slate-200">
+            <button onClick={() => placeBet('LOW', Array.from({length:18}, (_,i)=>i+1))} className="flex-1 py-3 border-r border-slate-200 hover:bg-slate-100 font-bold text-slate-600 text-[10px] sm:text-xs">1 TO 18</button>
+            <button onClick={() => placeBet('EVEN', Array.from({length:18}, (_,i)=>(i+1)*2))} className="flex-1 py-3 border-r border-slate-200 hover:bg-slate-100 font-bold text-slate-600 text-[10px] sm:text-xs">EVEN</button>
+            <button onClick={() => placeBet('RED', RED_NUMBERS)} className="flex-1 py-3 border-r border-slate-200 hover:bg-red-900/50 bg-red-950/30 flex items-center justify-center">
                <div className="w-6 h-4 bg-red-600 rounded" />
             </button>
-            <button onClick={() => placeBet('BLACK', Array.from({length:36}, (_,i)=>i+1).filter(x => !isRed(x)))} className="flex-1 py-3 border-r border-white/20 hover:bg-gray-800/80 bg-gray-900/50 flex items-center justify-center">
-               <div className="w-6 h-4 bg-gray-800 rounded border border-gray-600" />
+            <button onClick={() => placeBet('BLACK', Array.from({length:36}, (_,i)=>i+1).filter(x => !isRed(x)))} className="flex-1 py-3 border-r border-slate-200 hover:bg-slate-100 bg-white/90 flex items-center justify-center">
+               <div className="w-6 h-4 bg-slate-100 rounded border border-slate-300" />
             </button>
-            <button onClick={() => placeBet('ODD', Array.from({length:18}, (_,i)=>(i*2)+1))} className="flex-1 py-3 border-r border-white/20 hover:bg-white/10 font-bold text-gray-300 text-[10px] sm:text-xs">ODD</button>
-            <button onClick={() => placeBet('HIGH', Array.from({length:18}, (_,i)=>i+19))} className="flex-1 py-3 hover:bg-white/10 font-bold text-gray-300 text-[10px] sm:text-xs">19 TO 36</button>
+            <button onClick={() => placeBet('ODD', Array.from({length:18}, (_,i)=>(i*2)+1))} className="flex-1 py-3 border-r border-slate-200 hover:bg-slate-100 font-bold text-slate-600 text-[10px] sm:text-xs">ODD</button>
+            <button onClick={() => placeBet('HIGH', Array.from({length:18}, (_,i)=>i+19))} className="flex-1 py-3 hover:bg-slate-100 font-bold text-slate-600 text-[10px] sm:text-xs">19 TO 36</button>
           </div>
           
         </div>
       </div>
 
       {/* Chip Selector Footer */}
-      <div className="bg-black/60 border-t border-white/10 p-4 sticky bottom-0 z-40 backdrop-blur-md">
+      <div className="bg-white/80 border-t border-slate-200 p-4 sticky bottom-0 z-40 backdrop-blur-md">
          <div className="max-w-3xl mx-auto flex gap-2 justify-center overflow-x-auto pb-2 scrollbar-hide">
             {CHIP_VALUES.map(val => (
               <button 
                 key={val}
                 onClick={() => setSelectedChips(val)}
-                className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex-shrink-0 flex items-center justify-center border-4 shadow-[0_4px_10px_rgba(0,0,0,0.5)] transition-transform ${selectedChips === val ? 'scale-110 -translate-y-2 border-neon-mint bg-neon-mint/20' : 'border-gray-500 bg-gray-800 opacity-80 hover:opacity-100'}`}
+                className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex-shrink-0 flex items-center justify-center border-4 shadow-[0_4px_10px_rgba(15,23,42,0.13)] transition-transform ${selectedChips === val ? 'scale-110 -translate-y-2 border-neon-mint bg-neon-mint/20' : 'border-gray-500 bg-slate-100 opacity-80 hover:opacity-100'}`}
               >
-                 <div className="absolute inset-1 border border-white/20 rounded-full border-dashed" />
-                 <span className={`font-black text-sm ${selectedChips === val ? 'text-neon-mint drop-shadow-[0_0_5px_#10b981]' : 'text-gray-300'}`}>{val >= 1000 ? `${val/1000}k` : val}</span>
+                 <div className="absolute inset-1 border border-slate-200 rounded-full border-dashed" />
+                 <span className={`font-black text-sm ${selectedChips === val ? 'text-neon-mint drop-shadow-[0_0_5px_#10b981]' : 'text-slate-600'}`}>{val >= 1000 ? `${val/1000}k` : val}</span>
               </button>
             ))}
          </div>

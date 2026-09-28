@@ -123,14 +123,14 @@ export default function AnimatedCard({
         {/* BACK FACE (Face Down / In Shoe) */}
         <div
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-          className="absolute inset-0 w-full h-full rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border-2 border-red-500/50 flex items-center justify-center overflow-hidden shadow-inner"
+          className="absolute inset-0 w-full h-full rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-slate-100 border-2 border-red-500/50 flex items-center justify-center overflow-hidden shadow-inner"
         >
           {/* Pattern overlay */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/15 via-transparent to-black/70" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/15 via-transparent to-slate-100" />
           
           {/* WinDaq Emblem frame */}
-          <div className="w-8 h-12 sm:w-11 sm:h-16 border border-amber-500/40 rounded-lg flex flex-col items-center justify-center p-1 bg-black/40">
-            <span className="text-amber-400 font-serif font-black text-sm sm:text-lg">W</span>
+          <div className="w-8 h-12 sm:w-11 sm:h-16 border border-amber-500/40 rounded-lg flex flex-col items-center justify-center p-1 bg-slate-100">
+            <span className="text-amber-600 font-serif font-black text-sm sm:text-lg">W</span>
             <div className="w-4 sm:w-6 h-0.5 bg-amber-500/50 mt-0.5" />
           </div>
         </div>

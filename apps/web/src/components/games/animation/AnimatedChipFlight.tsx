@@ -78,8 +78,8 @@ export default function AnimatedChipFlight({
               chip.borderColor || 'border-amber-200'
             } shadow-[0_4px_15px_rgba(0,0,0,0.6),0_0_12px_rgba(245,158,11,0.5)] flex items-center justify-center select-none`}
           >
-            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full border border-dashed border-white/40 flex items-center justify-center">
-              <span className="text-[9px] sm:text-[10px] font-black text-white font-mono drop-shadow">
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full border border-dashed border-slate-200 flex items-center justify-center">
+              <span className="text-[9px] sm:text-[10px] font-black text-slate-900 font-mono drop-shadow">
                 ₹{chip.amount >= 1000 ? `${(chip.amount / 1000).toFixed(0)}k` : chip.amount}
               </span>
             </div>

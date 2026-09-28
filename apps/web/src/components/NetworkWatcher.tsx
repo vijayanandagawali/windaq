@@ -54,7 +54,7 @@ export default function NetworkWatcher() {
           <RefreshCcw size={16} className="animate-spin ml-2 opacity-50" />
           
           {/* Cover layer to prevent interactions globally while offline */}
-          <div className="fixed inset-0 top-10 bg-black/20 backdrop-blur-[1px] z-[99]" />
+          <div className="fixed inset-0 top-10 bg-slate-100 backdrop-blur-[1px] z-[99]" />
         </motion.div>
       )}
     </AnimatePresence>

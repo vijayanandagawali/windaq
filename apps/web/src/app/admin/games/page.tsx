@@ -293,19 +293,19 @@ export default function AdminGameControlPage() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <div className="flex items-center gap-3">
-            <Gamepad2 className="w-8 h-8 text-emerald-400" />
-            <h1 className="text-3xl font-bold tracking-tight text-white">Admin Game Control Room</h1>
+            <Gamepad2 className="w-8 h-8 text-emerald-600" />
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Game Control Room</h1>
           </div>
-          <p className="text-slate-400 mt-1 text-sm">
+          <p className="text-slate-500 mt-1 text-sm">
             Server-authoritative game controls, variant limits, speed governors, and versioned financial payout governance.
           </p>
         </div>
         <button 
           onClick={fetchGames}
-          className="flex items-center gap-2 bg-slate-900 border border-slate-700 hover:border-slate-600 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-white transition"
+          className="flex items-center gap-2 bg-white border border-slate-200 hover:border-slate-300 px-3 py-2 rounded-lg text-sm text-slate-600 hover:text-slate-900 transition"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh State
         </button>
@@ -313,39 +313,39 @@ export default function AdminGameControlPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+        <div className="bg-white/90 border border-slate-200 rounded-xl p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Total Catalog</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase">Total Catalog</span>
             <Gamepad2 className="w-4 h-4 text-slate-500" />
           </div>
-          <p className="text-2xl font-bold text-white mt-1">{metrics.total}</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1">{metrics.total}</p>
           <p className="text-xs text-slate-500 mt-1">Platform Games Loaded</p>
         </div>
 
         <div className="bg-emerald-950/20 border border-emerald-900/40 rounded-xl p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-emerald-400 uppercase">Active & Open</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-semibold text-emerald-600 uppercase">Active & Open</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">{metrics.active}</p>
+          <p className="text-2xl font-bold text-emerald-600 mt-1">{metrics.active}</p>
           <p className="text-xs text-emerald-500/70 mt-1">Accepting Wagers</p>
         </div>
 
         <div className="bg-amber-950/20 border border-amber-900/40 rounded-xl p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-amber-400 uppercase">Maintenance Mode</span>
-            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-semibold text-amber-600 uppercase">Maintenance Mode</span>
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
           </div>
-          <p className="text-2xl font-bold text-amber-400 mt-1">{metrics.maintenance}</p>
+          <p className="text-2xl font-bold text-amber-600 mt-1">{metrics.maintenance}</p>
           <p className="text-xs text-amber-500/70 mt-1">Undergoing Service</p>
         </div>
 
         <div className="bg-red-950/20 border border-red-900/40 rounded-xl p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-red-400 uppercase">Disabled</span>
-            <XCircle className="w-4 h-4 text-red-400" />
+            <span className="text-xs font-semibold text-red-600 uppercase">Disabled</span>
+            <XCircle className="w-4 h-4 text-red-600" />
           </div>
-          <p className="text-2xl font-bold text-red-400 mt-1">{metrics.disabled}</p>
+          <p className="text-2xl font-bold text-red-600 mt-1">{metrics.disabled}</p>
           <p className="text-xs text-red-500/70 mt-1">Deactivated by Admin</p>
         </div>
       </div>
@@ -360,7 +360,7 @@ export default function AdminGameControlPage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                 filterStatus === tab 
                   ? 'bg-emerald-500 text-slate-950 shadow-md' 
-                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+                  : 'bg-white/90 text-slate-500 hover:text-slate-900 border border-slate-200'
               }`}
             >
               {tab}
@@ -375,16 +375,16 @@ export default function AdminGameControlPage() {
             placeholder="Search game or slug..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-900/90 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            className="w-full pl-9 pr-4 py-2 bg-white/90 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
           />
         </div>
       </div>
 
       {/* Games Table */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden shadow-lg backdrop-blur">
+      <div className="bg-white/90 border border-slate-200 rounded-xl overflow-hidden shadow-lg backdrop-blur">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-slate-300">
-            <thead className="text-xs text-slate-400 uppercase bg-slate-900/80 border-b border-slate-800">
+          <table className="w-full text-sm text-left text-slate-600">
+            <thead className="text-xs text-slate-500 uppercase bg-white/90 border-b border-slate-200">
               <tr>
                 <th className="px-5 py-4">Game & Category</th>
                 <th className="px-5 py-4">Operational Status</th>
@@ -396,21 +396,21 @@ export default function AdminGameControlPage() {
                 <th className="px-5 py-4 text-right">Quick Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-slate-200">
               {filteredGames.map((game) => (
                 <tr 
                   key={game.gameSlug}
                   onClick={() => openGameDetails(game.gameSlug)}
-                  className="hover:bg-slate-800/40 cursor-pointer transition"
+                  className="hover:bg-slate-100 cursor-pointer transition"
                 >
                   {/* Game Name & Category */}
                   <td className="px-5 py-4">
-                    <div className="font-semibold text-white flex items-center gap-2">
+                    <div className="font-semibold text-slate-900 flex items-center gap-2">
                       <span>{game.name}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-xs text-slate-500 font-mono">{game.gameSlug}</span>
-                      <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-medium">
+                      <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium">
                         {game.category}
                       </span>
                     </div>
@@ -419,15 +419,15 @@ export default function AdminGameControlPage() {
                   {/* Operational Status */}
                   <td className="px-5 py-4">
                     {game.isMaintenance ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-950/40 text-amber-400 border border-amber-800/40">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-950/40 text-amber-600 border border-amber-800/40">
                         <AlertTriangle className="w-3.5 h-3.5" /> Maintenance
                       </span>
                     ) : game.isEnabled ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950/40 text-emerald-400 border border-emerald-800/40">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950/40 text-emerald-600 border border-emerald-800/40">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Active
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-950/40 text-red-400 border border-red-800/40">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-950/40 text-red-600 border border-red-800/40">
                         <XCircle className="w-3.5 h-3.5" /> Disabled
                       </span>
                     )}
@@ -437,10 +437,10 @@ export default function AdminGameControlPage() {
                   <td className="px-5 py-4">
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
                       game.visibility === 'FEATURED' 
-                        ? 'bg-purple-950/50 text-purple-400 border border-purple-800/40' 
+                        ? 'bg-purple-950/50 text-purple-600 border border-purple-800/40' 
                         : game.visibility === 'VISIBLE'
-                        ? 'bg-blue-950/50 text-blue-400 border border-blue-800/40'
-                        : 'bg-slate-800 text-slate-400'
+                        ? 'bg-blue-950/50 text-blue-600 border border-blue-800/40'
+                        : 'bg-slate-100 text-slate-500'
                     }`}>
                       {game.visibility}
                     </span>
@@ -448,30 +448,30 @@ export default function AdminGameControlPage() {
 
                   {/* Dealer Speed */}
                   <td className="px-5 py-4 font-mono text-xs">
-                    <span className="bg-slate-800/80 text-amber-300 px-2 py-1 rounded border border-slate-700/60 font-semibold">
+                    <span className="bg-slate-100 text-amber-700 px-2 py-1 rounded border border-slate-200 font-semibold">
                       {game.dealerSpeed}x
                     </span>
                   </td>
 
                   {/* Limits */}
-                  <td className="px-5 py-4 text-xs font-mono text-slate-200">
+                  <td className="px-5 py-4 text-xs font-mono text-slate-700">
                     <div>Min: ₹{game.minBet}</div>
-                    <div className="text-slate-400">Max: ₹{game.maxBet?.toLocaleString()}</div>
+                    <div className="text-slate-500">Max: ₹{game.maxBet?.toLocaleString()}</div>
                   </td>
 
                   {/* Durations */}
-                  <td className="px-5 py-4 text-xs font-mono text-slate-300">
+                  <td className="px-5 py-4 text-xs font-mono text-slate-600">
                     <div>Round: {game.roundDuration}s</div>
-                    <div className="text-emerald-400">Betting: {game.bettingDuration}s</div>
+                    <div className="text-emerald-600">Betting: {game.bettingDuration}s</div>
                   </td>
 
                   {/* Versioned Payouts */}
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-1.5">
-                      <span className="bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 text-xs font-mono font-bold px-2 py-0.5 rounded">
+                      <span className="bg-emerald-950/60 border border-emerald-700/60 text-emerald-700 text-xs font-mono font-bold px-2 py-0.5 rounded">
                         v{game.activePayoutVersion}
                       </span>
-                      <span className="text-[11px] text-slate-400">
+                      <span className="text-[11px] text-slate-500">
                         ({game.payoutVersionsCount || 1} revs)
                       </span>
                     </div>
@@ -486,7 +486,7 @@ export default function AdminGameControlPage() {
                         className={`p-1.5 rounded-lg border text-xs font-medium transition ${
                           game.isMaintenance 
                             ? 'bg-amber-500 text-slate-950 border-amber-400' 
-                            : 'bg-slate-800 text-slate-400 hover:text-amber-400 border-slate-700'
+                            : 'bg-slate-100 text-slate-500 hover:text-amber-600 border-slate-200'
                         }`}
                       >
                         <AlertTriangle className="w-3.5 h-3.5" />
@@ -497,8 +497,8 @@ export default function AdminGameControlPage() {
                         title={game.isEnabled ? "Disable Game" : "Enable Game"}
                         className={`p-1.5 rounded-lg border text-xs font-medium transition ${
                           game.isEnabled 
-                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30' 
-                            : 'bg-red-500/20 text-red-400 border-red-500/40 hover:bg-red-500/30'
+                            ? 'bg-emerald-500/20 text-emerald-600 border-emerald-500/40 hover:bg-emerald-500/30' 
+                            : 'bg-red-500/20 text-red-600 border-red-500/40 hover:bg-red-500/30'
                         }`}
                       >
                         {game.isEnabled ? <Check className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
@@ -506,7 +506,7 @@ export default function AdminGameControlPage() {
 
                       <button
                         onClick={() => openGameDetails(game.gameSlug)}
-                        className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 border border-slate-700"
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 border border-slate-200"
                       >
                         <Settings2 className="w-3.5 h-3.5" /> Configure
                       </button>
@@ -521,36 +521,36 @@ export default function AdminGameControlPage() {
 
       {/* COMPREHENSIVE GAME CONFIGURATION MODAL / DRAWER */}
       {selectedSlug && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-white/90">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600">
                   <Gamepad2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                     {gameDetails?.name || selectedSlug}
-                    <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono font-normal">
+                    <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono font-normal">
                       {selectedSlug}
                     </span>
                   </h2>
-                  <p className="text-xs text-slate-400">
-                    Active Financial Payout Version: <span className="text-emerald-400 font-mono font-bold">v{gameDetails?.activePayoutVersion}</span>
+                  <p className="text-xs text-slate-500">
+                    Active Financial Payout Version: <span className="text-emerald-600 font-mono font-bold">v{gameDetails?.activePayoutVersion}</span>
                   </p>
                 </div>
               </div>
               <button 
                 onClick={() => setSelectedSlug(null)}
-                className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition"
+                className="text-slate-500 hover:text-slate-900 p-2 rounded-lg hover:bg-slate-100 transition"
               >
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
 
             {/* Modal Tabs */}
-            <div className="flex border-b border-slate-800 bg-slate-950/50 px-6 gap-2 overflow-x-auto">
+            <div className="flex border-b border-slate-200 bg-white/90 px-6 gap-2 overflow-x-auto">
               {[
                 { id: 'general', label: 'General & Visibility', icon: Settings2 },
                 { id: 'limits', label: 'Bet Limits & Durations', icon: Sliders },
@@ -566,8 +566,8 @@ export default function AdminGameControlPage() {
                     onClick={() => setActiveTab(t.id as any)}
                     className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition ${
                       isActive 
-                        ? 'border-emerald-400 text-emerald-400 bg-slate-900/60' 
-                        : 'border-transparent text-slate-400 hover:text-slate-200'
+                        ? 'border-emerald-400 text-emerald-600 bg-white/90' 
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -580,7 +580,7 @@ export default function AdminGameControlPage() {
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {detailsLoading ? (
-                <div className="flex items-center justify-center py-20 text-slate-400">
+                <div className="flex items-center justify-center py-20 text-slate-500">
                   <RefreshCw className="w-6 h-6 animate-spin mr-2" /> Loading game control parameters...
                 </div>
               ) : (
@@ -590,11 +590,11 @@ export default function AdminGameControlPage() {
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Game Status Toggle */}
-                        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <div className="bg-white/90 border border-slate-200 rounded-xl p-5 space-y-3">
                           <div className="flex items-center justify-between">
                             <div>
-                              <h3 className="text-sm font-semibold text-white">Enable Game Operation</h3>
-                              <p className="text-xs text-slate-400">Allow players to enter lobby and place bets</p>
+                              <h3 className="text-sm font-semibold text-slate-900">Enable Game Operation</h3>
+                              <p className="text-xs text-slate-500">Allow players to enter lobby and place bets</p>
                             </div>
                             <input
                               type="checkbox"
@@ -604,18 +604,18 @@ export default function AdminGameControlPage() {
                             />
                           </div>
                           <div className={`text-xs p-2.5 rounded-lg font-medium ${
-                            editConfig.isEnabled ? 'bg-emerald-950/30 text-emerald-400' : 'bg-red-950/30 text-red-400'
+                            editConfig.isEnabled ? 'bg-emerald-950/30 text-emerald-600' : 'bg-red-950/30 text-red-600'
                           }`}>
                             {editConfig.isEnabled ? '✅ Game is currently accessible to all players' : '🚫 Game is closed. Bet attempts will be rejected.'}
                           </div>
                         </div>
 
                         {/* Maintenance Mode Toggle */}
-                        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <div className="bg-white/90 border border-slate-200 rounded-xl p-5 space-y-3">
                           <div className="flex items-center justify-between">
                             <div>
-                              <h3 className="text-sm font-semibold text-white">Maintenance Mode</h3>
-                              <p className="text-xs text-slate-400">Suspend bets & display scheduled notice</p>
+                              <h3 className="text-sm font-semibold text-slate-900">Maintenance Mode</h3>
+                              <p className="text-xs text-slate-500">Suspend bets & display scheduled notice</p>
                             </div>
                             <input
                               type="checkbox"
@@ -625,13 +625,13 @@ export default function AdminGameControlPage() {
                             />
                           </div>
                           <div className="space-y-1.5">
-                            <label className="text-xs text-slate-400">Maintenance Banner Notice:</label>
+                            <label className="text-xs text-slate-500">Maintenance Banner Notice:</label>
                             <input
                               type="text"
                               value={editConfig.maintenanceMessage || ''}
                               onChange={(e) => setEditConfig({ ...editConfig, maintenanceMessage: e.target.value })}
                               placeholder="e.g. Card shoe replacement in progress. Back shortly."
-                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white"
+                              className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-900"
                             />
                           </div>
                         </div>
@@ -639,9 +639,9 @@ export default function AdminGameControlPage() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Lobby Visibility */}
-                        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5 space-y-3">
-                          <h3 className="text-sm font-semibold text-white">Lobby Visibility</h3>
-                          <p className="text-xs text-slate-400">Choose game promotional placement in platform lobby</p>
+                        <div className="bg-white/90 border border-slate-200 rounded-xl p-5 space-y-3">
+                          <h3 className="text-sm font-semibold text-slate-900">Lobby Visibility</h3>
+                          <p className="text-xs text-slate-500">Choose game promotional placement in platform lobby</p>
                           <div className="grid grid-cols-3 gap-2 pt-2">
                             {(['FEATURED', 'VISIBLE', 'HIDDEN'] as const).map(vis => (
                               <button
@@ -651,7 +651,7 @@ export default function AdminGameControlPage() {
                                 className={`py-2 text-xs font-semibold rounded-lg border transition ${
                                   editConfig.visibility === vis
                                     ? 'bg-emerald-500 text-slate-950 border-emerald-400'
-                                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                                    : 'bg-white border-slate-200 text-slate-500 hover:text-slate-900'
                                 }`}
                               >
                                 {vis}
@@ -661,14 +661,14 @@ export default function AdminGameControlPage() {
                         </div>
 
                         {/* Simulated Dealer Speed */}
-                        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <div className="bg-white/90 border border-slate-200 rounded-xl p-5 space-y-3">
                           <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-semibold text-white">Simulated Dealer Speed</h3>
-                            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded">
+                            <h3 className="text-sm font-semibold text-slate-900">Simulated Dealer Speed</h3>
+                            <span className="text-xs font-mono font-bold text-amber-600 bg-amber-950/60 px-2 py-0.5 rounded">
                               {editConfig.dealerSpeed}x
                             </span>
                           </div>
-                          <p className="text-xs text-slate-400">Controls dealing animations, countdown pacing, and card turn delays</p>
+                          <p className="text-xs text-slate-500">Controls dealing animations, countdown pacing, and card turn delays</p>
                           <div className="flex items-center gap-2 pt-2">
                             {[0.75, 1.0, 1.25, 1.5, 2.0].map(spd => (
                               <button
@@ -678,7 +678,7 @@ export default function AdminGameControlPage() {
                                 className={`flex-1 py-1.5 text-xs font-mono font-semibold rounded-lg border transition ${
                                   editConfig.dealerSpeed === spd
                                     ? 'bg-amber-400 text-slate-950 border-amber-300'
-                                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                                    : 'bg-white border-slate-200 text-slate-500 hover:text-slate-900'
                                 }`}
                               >
                                 {spd}x
@@ -688,7 +688,7 @@ export default function AdminGameControlPage() {
                         </div>
                       </div>
 
-                      <div className="flex justify-end pt-4 border-t border-slate-800">
+                      <div className="flex justify-end pt-4 border-t border-slate-200">
                         <button
                           onClick={handleSaveConfig}
                           disabled={isSavingConfig}
@@ -705,58 +705,58 @@ export default function AdminGameControlPage() {
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Min & Max Bet */}
-                        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5 space-y-4">
-                          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                            <Coins className="w-4 h-4 text-emerald-400" /> Financial Stake Limits (INR)
+                        <div className="bg-white/90 border border-slate-200 rounded-xl p-5 space-y-4">
+                          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                            <Coins className="w-4 h-4 text-emerald-600" /> Financial Stake Limits (INR)
                           </h3>
                           <div className="space-y-3">
                             <div>
-                              <label className="text-xs text-slate-400">Minimum Bet (₹)</label>
+                              <label className="text-xs text-slate-500">Minimum Bet (₹)</label>
                               <input
                                 type="number"
                                 min="1"
                                 value={editConfig.minBet || 10}
                                 onChange={(e) => setEditConfig({ ...editConfig, minBet: Number(e.target.value) })}
-                                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-sm mt-1"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-mono text-sm mt-1"
                               />
                             </div>
                             <div>
-                              <label className="text-xs text-slate-400">Maximum Bet (₹)</label>
+                              <label className="text-xs text-slate-500">Maximum Bet (₹)</label>
                               <input
                                 type="number"
                                 min="10"
                                 value={editConfig.maxBet || 50000}
                                 onChange={(e) => setEditConfig({ ...editConfig, maxBet: Number(e.target.value) })}
-                                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-sm mt-1"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-mono text-sm mt-1"
                               />
                             </div>
                           </div>
                         </div>
 
                         {/* Round Durations */}
-                        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5 space-y-4">
-                          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-blue-400" /> Game Round Lifecycle Timing
+                        <div className="bg-white/90 border border-slate-200 rounded-xl p-5 space-y-4">
+                          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-blue-600" /> Game Round Lifecycle Timing
                           </h3>
                           <div className="space-y-3">
                             <div>
-                              <label className="text-xs text-slate-400">Total Round Cycle Duration (seconds)</label>
+                              <label className="text-xs text-slate-500">Total Round Cycle Duration (seconds)</label>
                               <input
                                 type="number"
                                 min="5"
                                 value={editConfig.roundDuration || 30}
                                 onChange={(e) => setEditConfig({ ...editConfig, roundDuration: Number(e.target.value) })}
-                                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-sm mt-1"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-mono text-sm mt-1"
                               />
                             </div>
                             <div>
-                              <label className="text-xs text-slate-400">Betting Countdown Window (seconds)</label>
+                              <label className="text-xs text-slate-500">Betting Countdown Window (seconds)</label>
                               <input
                                 type="number"
                                 min="3"
                                 value={editConfig.bettingDuration || 15}
                                 onChange={(e) => setEditConfig({ ...editConfig, bettingDuration: Number(e.target.value) })}
-                                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-sm mt-1"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-mono text-sm mt-1"
                               />
                             </div>
                           </div>
@@ -764,9 +764,9 @@ export default function AdminGameControlPage() {
                       </div>
 
                       {/* Visual Cycle Timeline Preview */}
-                      <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5 space-y-3">
-                        <h4 className="text-xs font-semibold text-slate-400 uppercase">Live Cycle Preview</h4>
-                        <div className="h-6 w-full bg-slate-800 rounded-lg overflow-hidden flex text-[10px] font-bold">
+                      <div className="bg-white/90 border border-slate-200 rounded-xl p-5 space-y-3">
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Live Cycle Preview</h4>
+                        <div className="h-6 w-full bg-slate-100 rounded-lg overflow-hidden flex text-[10px] font-bold">
                           <div 
                             style={{ width: `${Math.min(100, Math.round(((editConfig.bettingDuration || 15) / (editConfig.roundDuration || 30)) * 100))}%` }}
                             className="bg-emerald-500 text-slate-950 flex items-center justify-center truncate px-2"
@@ -779,7 +779,7 @@ export default function AdminGameControlPage() {
                         </div>
                       </div>
 
-                      <div className="flex justify-end pt-4 border-t border-slate-800">
+                      <div className="flex justify-end pt-4 border-t border-slate-200">
                         <button
                           onClick={handleSaveConfig}
                           disabled={isSavingConfig}
@@ -795,19 +795,19 @@ export default function AdminGameControlPage() {
                   {activeTab === 'variants' && (
                     <div className="space-y-6">
                       <div className="space-y-3">
-                        <h3 className="text-sm font-semibold text-white">Configured Rooms & Variants</h3>
-                        <p className="text-xs text-slate-400">Toggle individual variant availability without shutting down the entire game.</p>
+                        <h3 className="text-sm font-semibold text-slate-900">Configured Rooms & Variants</h3>
+                        <p className="text-xs text-slate-500">Toggle individual variant availability without shutting down the entire game.</p>
                       </div>
 
                       <div className="space-y-3">
                         {(editConfig.variants || []).map((variant: Variant, idx: number) => (
                           <div 
                             key={variant.id}
-                            className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 flex items-center justify-between"
+                            className="bg-white/90 border border-slate-200 rounded-xl p-4 flex items-center justify-between"
                           >
                             <div>
-                              <h4 className="text-sm font-semibold text-white">{variant.name}</h4>
-                              <div className="flex items-center gap-3 text-xs text-slate-400 font-mono mt-0.5">
+                              <h4 className="text-sm font-semibold text-slate-900">{variant.name}</h4>
+                              <div className="flex items-center gap-3 text-xs text-slate-500 font-mono mt-0.5">
                                 <span>ID: {variant.id}</span>
                                 {variant.minBet && <span>Min: ₹{variant.minBet}</span>}
                                 {variant.maxBet && <span>Max: ₹{variant.maxBet}</span>}
@@ -816,7 +816,7 @@ export default function AdminGameControlPage() {
 
                             <div className="flex items-center gap-3">
                               <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
-                                variant.isEnabled ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40' : 'bg-red-950/60 text-red-400 border border-red-800/40'
+                                variant.isEnabled ? 'bg-emerald-950/60 text-emerald-600 border border-emerald-800/40' : 'bg-red-950/60 text-red-600 border border-red-800/40'
                               }`}>
                                 {variant.isEnabled ? 'Enabled' : 'Disabled'}
                               </span>
@@ -835,7 +835,7 @@ export default function AdminGameControlPage() {
                         ))}
                       </div>
 
-                      <div className="flex justify-end pt-4 border-t border-slate-800">
+                      <div className="flex justify-end pt-4 border-t border-slate-200">
                         <button
                           onClick={handleSaveConfig}
                           disabled={isSavingConfig}
@@ -851,28 +851,28 @@ export default function AdminGameControlPage() {
                   {activeTab === 'payouts' && (
                     <div className="space-y-6">
                       <div className="bg-emerald-950/20 border border-emerald-900/40 rounded-xl p-4 flex items-start gap-3">
-                        <ShieldAlert className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                        <ShieldAlert className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                         <div>
-                          <h4 className="text-sm font-semibold text-emerald-300">Financial Payout Versioning & Audit Protection</h4>
-                          <p className="text-xs text-emerald-400/80 mt-1 leading-relaxed">
+                          <h4 className="text-sm font-semibold text-emerald-700">Financial Payout Versioning & Audit Protection</h4>
+                          <p className="text-xs text-emerald-600 mt-1 leading-relaxed">
                             Financial payout rules are strictly versioned. When new multipliers are deployed, a new sequential version is created and ongoing rounds lock to their creation version. All edits require a mandatory audit justification reason.
                           </p>
                         </div>
                       </div>
 
                       {/* Active Version Multipliers Form */}
-                      <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5 space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                          <h3 className="text-sm font-semibold text-white">Payout Multipliers & Odds Configuration</h3>
-                          <span className="bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 text-xs font-mono font-bold px-2.5 py-1 rounded">
+                      <div className="bg-white/90 border border-slate-200 rounded-xl p-5 space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                          <h3 className="text-sm font-semibold text-slate-900">Payout Multipliers & Odds Configuration</h3>
+                          <span className="bg-emerald-950/60 border border-emerald-700/60 text-emerald-700 text-xs font-mono font-bold px-2.5 py-1 rounded">
                             Active Version: v{gameDetails?.activePayoutVersion}
                           </span>
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                           {Object.entries(editablePayouts).map(([market, multiplier]) => (
-                            <div key={market} className="bg-slate-900 border border-slate-800 rounded-lg p-3">
-                              <label className="text-xs text-slate-400 font-mono font-semibold block truncate" title={market}>
+                            <div key={market} className="bg-white border border-slate-200 rounded-lg p-3">
+                              <label className="text-xs text-slate-500 font-mono font-semibold block truncate" title={market}>
                                 {market}
                               </label>
                               <div className="mt-1 flex items-center gap-1">
@@ -882,7 +882,7 @@ export default function AdminGameControlPage() {
                                   min="0"
                                   value={multiplier}
                                   onChange={(e) => setEditablePayouts({ ...editablePayouts, [market]: parseFloat(e.target.value) || 0 })}
-                                  className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-sm font-mono text-emerald-400 font-bold focus:outline-none focus:border-emerald-500"
+                                  className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-sm font-mono text-emerald-600 font-bold focus:outline-none focus:border-emerald-500"
                                 />
                                 <span className="text-xs text-slate-500 font-mono">x</span>
                               </div>
@@ -890,23 +890,23 @@ export default function AdminGameControlPage() {
                           ))}
                         </div>
 
-                        <div className="pt-3 border-t border-slate-800 space-y-2">
-                          <label className="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                        <div className="pt-3 border-t border-slate-200 space-y-2">
+                          <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
                             <span>Mandatory Audit Rationale / Justification:</span>
-                            <span className="text-red-400">*</span>
+                            <span className="text-red-600">*</span>
                           </label>
                           <textarea
                             rows={2}
                             value={payoutReason}
                             onChange={(e) => setPayoutReason(e.target.value)}
                             placeholder="e.g. Festival Promotional RTP Boost - Calibrated for weekend volume."
-                            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                           />
                         </div>
 
                         <div className="flex items-center justify-between pt-2">
                           <span className="text-xs text-slate-500">
-                            Deploying will generate <strong className="text-emerald-400 font-mono">v{(gameDetails?.activePayoutVersion || 1) + 1}</strong>
+                            Deploying will generate <strong className="text-emerald-600 font-mono">v{(gameDetails?.activePayoutVersion || 1) + 1}</strong>
                           </span>
                           <button
                             onClick={handleDeployPayoutVersion}
@@ -920,32 +920,32 @@ export default function AdminGameControlPage() {
                       </div>
 
                       {/* Version History Timeline */}
-                      <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-5 space-y-4">
-                        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Historical Payout Revisions</h4>
+                      <div className="bg-white/90 border border-slate-200 rounded-xl p-5 space-y-4">
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Historical Payout Revisions</h4>
                         <div className="space-y-3">
                           {(gameDetails?.versionHistory || []).map((ver) => (
                             <div 
                               key={ver.id}
                               className={`p-3.5 rounded-lg border text-xs space-y-2 ${
                                 ver.isActive 
-                                  ? 'bg-emerald-950/20 border-emerald-800/40 text-slate-300' 
-                                  : 'bg-slate-900/40 border-slate-800 text-slate-400'
+                                  ? 'bg-emerald-950/20 border-emerald-800/40 text-slate-600' 
+                                  : 'bg-slate-200 border-slate-200 text-slate-500'
                               }`}
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <span className={`font-mono font-bold px-2 py-0.5 rounded ${
-                                    ver.isActive ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'
+                                    ver.isActive ? 'bg-emerald-500 text-slate-950' : 'bg-slate-100 text-slate-600'
                                   }`}>
                                     v{ver.version}
                                   </span>
-                                  {ver.isActive && <span className="text-emerald-400 font-semibold">(Current Active)</span>}
+                                  {ver.isActive && <span className="text-emerald-600 font-semibold">(Current Active)</span>}
                                 </div>
                                 <span className="text-[11px] text-slate-500 font-mono">
                                   Effective: {new Date(ver.effectiveFrom).toLocaleString()}
                                 </span>
                               </div>
-                              <p className="text-slate-300 italic font-medium">"{ver.reason}"</p>
+                              <p className="text-slate-600 italic font-medium">"{ver.reason}"</p>
                               <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
                                 <span>Author: {ver.createdBy}</span>
                                 <span>{Object.keys(ver.rules || {}).length} markets configured</span>
@@ -961,24 +961,24 @@ export default function AdminGameControlPage() {
                   {activeTab === 'audits' && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-white">Immutable Administrative Audit Trail</h3>
-                        <span className="text-xs text-slate-400">{gameDetails?.audits?.length || 0} events recorded</span>
+                        <h3 className="text-sm font-semibold text-slate-900">Immutable Administrative Audit Trail</h3>
+                        <span className="text-xs text-slate-500">{gameDetails?.audits?.length || 0} events recorded</span>
                       </div>
 
                       <div className="space-y-2.5">
                         {(gameDetails?.audits || []).map((audit) => (
                           <div 
                             key={audit.id}
-                            className="bg-slate-950/60 border border-slate-800 rounded-lg p-3 text-xs space-y-1.5"
+                            className="bg-white/90 border border-slate-200 rounded-lg p-3 text-xs space-y-1.5"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-mono font-bold text-emerald-400">{audit.action}</span>
+                              <span className="font-mono font-bold text-emerald-600">{audit.action}</span>
                               <span className="text-slate-500 font-mono">{new Date(audit.createdAt).toLocaleString()}</span>
                             </div>
-                            <div className="text-slate-300">
+                            <div className="text-slate-600">
                               <span className="text-slate-500">Reason:</span> {audit.reason || 'N/A'}
                             </div>
-                            <div className="text-[11px] text-slate-400 flex items-center justify-between font-mono pt-1 border-t border-slate-850">
+                            <div className="text-[11px] text-slate-500 flex items-center justify-between font-mono pt-1 border-t border-slate-850">
                               <span>Admin ID: {audit.adminId}</span>
                               {audit.fieldChanged && <span>Field: {audit.fieldChanged}</span>}
                             </div>

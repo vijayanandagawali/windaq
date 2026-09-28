@@ -133,7 +133,7 @@ export default function BlackjackGame() {
           initial={{ x: 50, y: -200, opacity: 0, rotateY: 180 }}
           animate={{ x: index * 20, y: 0, opacity: 1, rotateY: 180 }}
           transition={{ type: "spring", damping: 15 }}
-          className="absolute w-16 h-24 sm:w-20 sm:h-28 rounded-lg bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blue-900 border-2 border-white/20 shadow-xl"
+          className="absolute w-16 h-24 sm:w-20 sm:h-28 rounded-lg bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blue-900 border-2 border-slate-200 shadow-xl"
         />
       );
     }
@@ -182,7 +182,7 @@ export default function BlackjackGame() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] w-full bg-[#1e4620] bg-[url('https://www.transparenttextures.com/patterns/felt.png')] text-white font-sans flex flex-col relative overflow-y-auto">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-emerald-50 via-white to-sky-50 text-slate-900 font-sans flex flex-col relative overflow-y-auto">
 
 
       {/* Table Area */}
@@ -190,7 +190,7 @@ export default function BlackjackGame() {
         
         {/* Dealer Zone */}
         <div className="absolute top-10 sm:top-20 flex flex-col items-center">
-          <div className="text-yellow-400/80 font-bold tracking-widest text-xs uppercase mb-2">Dealer Must Draw to 16</div>
+          <div className="text-yellow-600 font-bold tracking-widest text-xs uppercase mb-2">Dealer Must Draw to 16</div>
           <div className="relative w-48 h-28 flex justify-center">
             {gameState?.dealerCards?.map((card: any, i: number) => {
               // Hide second card if playing
@@ -199,7 +199,7 @@ export default function BlackjackGame() {
             })}
           </div>
           {gameState?.status === 'SETTLED' && gameState?.dealerCards && (
-             <div className="bg-black/60 px-3 py-1 rounded-full text-xs font-bold border border-white/10 mt-2 backdrop-blur-sm">
+             <div className="bg-white/80 px-3 py-1 rounded-full text-xs font-bold border border-slate-200 mt-2 backdrop-blur-sm">
                {getHandTotal(gameState.dealerCards)}
              </div>
           )}
@@ -207,7 +207,7 @@ export default function BlackjackGame() {
 
         {/* Center Logo / Status */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 text-center pointer-events-none">
-           <h2 className="text-4xl sm:text-6xl font-black text-white/50 tracking-[0.5em] mb-2 uppercase">Blackjack</h2>
+           <h2 className="text-4xl sm:text-6xl font-black text-slate-500 tracking-[0.5em] mb-2 uppercase">Blackjack</h2>
            <p className="text-xl font-bold text-yellow-500/50 uppercase tracking-widest">Pays 3 to 2</p>
         </div>
 
@@ -226,7 +226,7 @@ export default function BlackjackGame() {
                        animate={{ y: 0, opacity: 1 }}
                        className={`mb-2 px-3 py-1 rounded-full text-xs font-black uppercase shadow-lg border ${
                          hand.status === 'WON' || hand.status === 'BLACKJACK' ? 'bg-yellow-500 text-black border-yellow-300' :
-                         hand.status === 'PUSH' ? 'bg-gray-500 text-white border-gray-400' :
+                         hand.status === 'PUSH' ? 'bg-gray-500 text-slate-900 border-gray-400' :
                          'bg-red-600 text-white border-red-400'
                        }`}
                      >
@@ -240,10 +240,10 @@ export default function BlackjackGame() {
                    </div>
                    
                    {/* Total & Bet Info */}
-                   <div className={`bg-black/60 px-3 py-1.5 rounded-full flex gap-3 text-xs font-bold border ${isActive ? 'border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]' : 'border-white/10'}`}>
-                     <span className="text-white">{getHandTotal(hand.cards)}</span>
-                     <div className="w-px bg-white/20" />
-                     <span className="text-yellow-400">₹ {hand.bet}</span>
+                   <div className={`bg-white/80 px-3 py-1.5 rounded-full flex gap-3 text-xs font-bold border ${isActive ? 'border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]' : 'border-slate-200'}`}>
+                     <span className="text-slate-900">{getHandTotal(hand.cards)}</span>
+                     <div className="w-px bg-slate-200" />
+                     <span className="text-yellow-600">₹ {hand.bet}</span>
                    </div>
                  </div>
                );
@@ -254,7 +254,7 @@ export default function BlackjackGame() {
       </div>
 
       {/* Controls Area */}
-      <div className="h-24 sm:h-28 bg-black/80 border-t border-white/10 z-20 flex items-center justify-center px-4 backdrop-blur-md">
+      <div className="h-24 sm:h-28 bg-white/80 border-t border-slate-200 z-20 flex items-center justify-center px-4 backdrop-blur-md">
         
         {(!gameState || gameState.status === 'BETTING' || gameState.status === 'SETTLED') && (
            <div className="flex gap-4 items-center w-full max-w-3xl">
@@ -263,10 +263,10 @@ export default function BlackjackGame() {
                  <button 
                    key={val}
                    onClick={() => setSelectedChips(val)}
-                   className={`relative w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center border-2 shadow-[0_4px_10px_rgba(0,0,0,0.5)] transition-transform ${selectedChips === val ? 'scale-110 -translate-y-2 border-yellow-400 bg-yellow-400/20' : 'border-gray-500 bg-gray-800 opacity-80 hover:opacity-100'}`}
+                   className={`relative w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center border-2 shadow-[0_4px_10px_rgba(15,23,42,0.13)] transition-transform ${selectedChips === val ? 'scale-110 -translate-y-2 border-yellow-400 bg-yellow-400/20' : 'border-gray-500 bg-slate-100 opacity-80 hover:opacity-100'}`}
                  >
-                    <div className="absolute inset-1 border border-white/20 rounded-full border-dashed" />
-                    <span className={`font-black text-xs ${selectedChips === val ? 'text-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.8)]' : 'text-gray-300'}`}>{val >= 1000 ? `${val/1000}k` : val}</span>
+                    <div className="absolute inset-1 border border-slate-200 rounded-full border-dashed" />
+                    <span className={`font-black text-xs ${selectedChips === val ? 'text-yellow-600 drop-shadow-[0_0_5px_rgba(250,204,21,0.8)]' : 'text-slate-600'}`}>{val >= 1000 ? `${val/1000}k` : val}</span>
                  </button>
                ))}
              </div>

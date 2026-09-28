@@ -22,85 +22,85 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   
   return (
     <ProtectedRoute requiredRole="ADMIN" title="WINDAQ OPS CONSOLE">
-      <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden">
+      <div className="flex h-screen bg-white text-slate-800 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-64 border-r border-slate-800 bg-slate-900/50 backdrop-blur flex flex-col">
-          <div className="p-6 border-b border-slate-800 flex items-center gap-3">
+        <aside className="w-64 border-r border-slate-200 bg-white/90 backdrop-blur flex flex-col">
+          <div className="p-6 border-b border-slate-200 flex items-center gap-3">
             <ShieldCheck className="text-emerald-500 w-8 h-8" />
             <h1 className="text-lg font-bold tracking-tight">WinDaq Ops</h1>
           </div>
           
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-4 px-2">Core</div>
-            <Link href="/admin" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
+            <Link href="/admin" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600">
               <LayoutDashboard className="w-4 h-4" /> Dashboard
             </Link>
-            <Link href="/admin/users" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
+            <Link href="/admin/users" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600">
               <Users className="w-4 h-4" /> Users
             </Link>
-            <Link href="/admin/kyc" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
+            <Link href="/admin/kyc" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600">
               <ShieldCheck className="w-4 h-4" /> KYC Verification
             </Link>
 
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6 px-2">Games & Operations</div>
-            <Link href="/admin/realtime" className="flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300 group">
+            <Link href="/admin/realtime" className="flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600 group">
               <div className="flex items-center gap-3">
-                <ActivitySquare className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" /> Realtime Control
+                <ActivitySquare className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" /> Realtime Control
               </div>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             </Link>
-            <Link href="/admin/tables" className="flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300 group">
+            <Link href="/admin/tables" className="flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600 group">
               <div className="flex items-center gap-3">
-                <Layers className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" /> Live Tables (Dealers)
+                <Layers className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform" /> Live Tables (Dealers)
               </div>
-              <span className="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">AUTO</span>
+              <span className="text-[10px] font-bold bg-amber-500/20 text-amber-600 px-1.5 py-0.5 rounded border border-amber-500/30">AUTO</span>
             </Link>
-            <Link href="/admin/games" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
-              <Gamepad2 className="w-4 h-4 text-emerald-400" /> Game Control
+            <Link href="/admin/games" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600">
+              <Gamepad2 className="w-4 h-4 text-emerald-600" /> Game Control
             </Link>
-            <Link href="/admin/history" className="flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300 group">
+            <Link href="/admin/history" className="flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600 group">
               <div className="flex items-center gap-3">
-                <History className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" /> Result History & Audits
+                <History className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform" /> Result History & Audits
               </div>
-              <span className="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">AUDIT</span>
+              <span className="text-[10px] font-bold bg-amber-500/20 text-amber-600 px-1.5 py-0.5 rounded border border-amber-500/30">AUDIT</span>
             </Link>
             
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6 px-2">Finance</div>
-            <Link href="/admin/reconciliation" className="flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300 group">
+            <Link href="/admin/reconciliation" className="flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600 group">
               <div className="flex items-center gap-3">
-                <ShieldCheck className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" /> Wallet Reconciliation
+                <ShieldCheck className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" /> Wallet Reconciliation
               </div>
-              <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/30">ENGINE</span>
+              <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-500/30">ENGINE</span>
             </Link>
-            <Link href="/admin/payments" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
+            <Link href="/admin/payments" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600">
               <CreditCard className="w-4 h-4" /> Payments & UPI
             </Link>
-            <Link href="/admin/adjustments" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
+            <Link href="/admin/adjustments" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600">
               <Coins className="w-4 h-4" /> Manual Adjustments
             </Link>
-            <Link href="/admin/ledger" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
+            <Link href="/admin/ledger" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600">
               <ActivitySquare className="w-4 h-4" /> Double-Entry Ledger
             </Link>
             
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6 px-2">Security</div>
-            <Link href="/admin/risk" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
+            <Link href="/admin/risk" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600">
               <ShieldCheck className="w-4 h-4" /> Risk & Anti-Fraud
             </Link>
-            <Link href="/admin/audit" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-800 hover:text-white text-slate-300">
+            <Link href="/admin/audit" className="flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-slate-100 hover:text-slate-900 text-slate-600">
               <ActivitySquare className="w-4 h-4" /> Audit Logs
             </Link>
           </nav>
           
-          <div className="p-4 border-t border-slate-800 text-sm">
+          <div className="p-4 border-t border-slate-200 text-sm">
             <div className="flex items-center justify-between mb-2">
               <div className="truncate">
-                <p className="text-white font-medium truncate">{user?.phone || user?.id || 'Admin'}</p>
-                <p className="text-emerald-400 text-xs font-bold">{user?.role || 'SUPER_ADMIN'}</p>
+                <p className="text-slate-900 font-medium truncate">{user?.phone || user?.id || 'Admin'}</p>
+                <p className="text-emerald-600 text-xs font-bold">{user?.role || 'SUPER_ADMIN'}</p>
               </div>
               <button 
                 onClick={() => logout()}
                 title="Log out"
-                className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors cursor-pointer"
               >
                 <LogOut className="w-5 h-5" />
               </button>
@@ -109,7 +109,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </aside>
         
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950">
+        <main className="flex-1 flex flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white via-white to-white">
           <div className="flex-1 overflow-y-auto p-8">
             {children}
           </div>

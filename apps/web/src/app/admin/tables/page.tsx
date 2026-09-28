@@ -266,15 +266,15 @@ export default function AdminTablesPage() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       
       {/* Header & Polling Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-6 rounded-2xl backdrop-blur-xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 border border-slate-200 p-6 rounded-2xl backdrop-blur-xl">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
               Automated Virtual Tables & Dealer Monitor
             </h1>
           </div>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-500">
             Multi-table continuous engine orchestration, synthetic dealer assignment, and test simulation sandbox.
           </p>
         </div>
@@ -284,8 +284,8 @@ export default function AdminTablesPage() {
             onClick={() => setIsPolling(!isPolling)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition-all ${
               isPolling 
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                : 'bg-slate-800 border-slate-700 text-slate-400'
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600' 
+                : 'bg-slate-100 border-slate-200 text-slate-500'
             }`}
           >
             {isPolling ? <Pause size={14} /> : <Play size={14} />}
@@ -294,7 +294,7 @@ export default function AdminTablesPage() {
           
           <button
             onClick={fetchTables}
-            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+            className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
             title="Refresh"
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -303,13 +303,13 @@ export default function AdminTablesPage() {
       </div>
 
       {/* Strict Anti-Outcome Manipulation Architecture Banner */}
-      <div className="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-indigo-950/40 border border-emerald-500/30 p-4 rounded-xl flex items-start gap-3 shadow-lg">
-        <ShieldCheck className="text-emerald-400 w-6 h-6 shrink-0 mt-0.5" />
+      <div className="bg-gradient-to-r from-emerald-950/40 via-white to-indigo-950/40 border border-emerald-500/30 p-4 rounded-xl flex items-start gap-3 shadow-lg">
+        <ShieldCheck className="text-emerald-600 w-6 h-6 shrink-0 mt-0.5" />
         <div>
-          <h4 className="text-xs font-black uppercase tracking-widest text-emerald-300 mb-0.5">
+          <h4 className="text-xs font-black uppercase tracking-widest text-emerald-700 mb-0.5">
             Cryptographic Provably Fair & Anti-Manipulation Protection
           </h4>
-          <p className="text-xs text-slate-300 leading-relaxed">
+          <p className="text-xs text-slate-600 leading-relaxed">
             Every continuous round generates a SHA-256 seed commitment before betting locks. 
             Direct manual outcome injection is architecturally prohibited. 
             All dealer movements and presentations strictly reflect the verified server engine.
@@ -323,34 +323,34 @@ export default function AdminTablesPage() {
           <div 
             key={table.tableId}
             data-testid={`admin-table-card-${table.tableId}`}
-            className="bg-slate-900/80 border border-slate-800 hover:border-amber-500/40 transition-all duration-300 rounded-2xl p-5 flex flex-col justify-between shadow-xl relative overflow-hidden"
+            className="bg-white/90 border border-slate-200 hover:border-amber-500/40 transition-all duration-300 rounded-2xl p-5 flex flex-col justify-between shadow-xl relative overflow-hidden"
           >
             {/* Top Table Info Bar */}
             <div>
               <div className="flex items-start justify-between gap-2 mb-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
+                    <span className="text-xs font-mono font-bold text-amber-600 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
                       {table.tableId.toUpperCase()}
                     </span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                       table.status === 'ACTIVE' 
-                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600' 
                         : table.status === 'MAINTENANCE' 
-                        ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
-                        : 'bg-red-500/10 border-red-500/30 text-red-400'
+                        ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-600'
+                        : 'bg-red-500/10 border-red-500/30 text-red-600'
                     }`}>
                       {table.status}
                     </span>
                   </div>
-                  <h3 className="font-bold text-base text-white mt-1">{table.name}</h3>
-                  <div className="text-[11px] text-slate-400 capitalize">{table.gameId} • {table.variantId}</div>
+                  <h3 className="font-bold text-base text-slate-900 mt-1">{table.name}</h3>
+                  <div className="text-[11px] text-slate-500 capitalize">{table.gameId} • {table.variantId}</div>
                 </div>
 
                 {/* Status Indicator */}
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] font-mono text-slate-500">v{table.configurationVersion}</span>
-                  <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 mt-0.5">
+                  <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     {table.health}
                   </span>
@@ -358,19 +358,19 @@ export default function AdminTablesPage() {
               </div>
 
               {/* Dealer Area Card */}
-              <div className="bg-black/60 border border-white/5 rounded-xl p-3 mb-3 flex items-center justify-between">
+              <div className="bg-slate-900/40 border border-slate-200 rounded-xl p-3 mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-black border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-xs">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-slate-100 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-xs">
                     {table.dealer?.avatar?.[0]?.toUpperCase() || 'D'}
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                       <span>{table.dealer?.displayName || 'Virtual Dealer'}</span>
-                      <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 rounded uppercase tracking-wider font-mono">
+                      <span className="text-[9px] bg-amber-500/20 text-amber-700 px-1.5 rounded uppercase tracking-wider font-mono">
                         SIMULATED
                       </span>
                     </div>
-                    <div className="text-[10px] text-slate-400 truncate max-w-[170px]" title={table.dealer?.speech}>
+                    <div className="text-[10px] text-slate-500 truncate max-w-[170px]" title={table.dealer?.speech}>
                       "{table.dealer?.speech || 'Welcome to the table.'}"
                     </div>
                   </div>
@@ -378,7 +378,7 @@ export default function AdminTablesPage() {
 
                 <button
                   onClick={() => handleOpenDealerModal(table)}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
+                  className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 transition-colors"
                   title="Change Dealer"
                 >
                   <UserCheck size={14} />
@@ -386,10 +386,10 @@ export default function AdminTablesPage() {
               </div>
 
               {/* Live Round Phase & Countdown */}
-              <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 mb-3 space-y-2">
+              <div className="bg-white/90 border border-slate-200 rounded-xl p-3 mb-3 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400 font-medium">Current Round:</span>
-                  <span className="font-mono text-amber-300 font-bold">{table.roundId}</span>
+                  <span className="text-slate-500 font-medium">Current Round:</span>
+                  <span className="font-mono text-amber-700 font-bold">{table.roundId}</span>
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -399,13 +399,13 @@ export default function AdminTablesPage() {
                       table.phase === 'PLAYING' ? 'bg-amber-400 animate-spin' :
                       table.phase === 'RESULT' ? 'bg-purple-400' : 'bg-slate-500'
                     }`} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                       {table.phase.replace(/_/g, ' ')}
                     </span>
                   </div>
 
                   {table.phaseTimeLeft > 0 && (
-                    <span className="text-xs font-mono font-bold bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded">
+                    <span className="text-xs font-mono font-bold bg-amber-500/20 text-amber-600 px-2 py-0.5 rounded">
                       {table.phaseTimeLeft}s
                     </span>
                   )}
@@ -414,24 +414,24 @@ export default function AdminTablesPage() {
                 {/* Cryptographic Seed Commitment Hash */}
                 {table.serverSeedHash && (
                   <div className="text-[10px] font-mono text-slate-500 truncate" title={`SHA-256 Hash: ${table.serverSeedHash}`}>
-                    <span className="text-slate-400 font-semibold">Commitment:</span> {table.serverSeedHash.slice(0, 16)}...
+                    <span className="text-slate-500 font-semibold">Commitment:</span> {table.serverSeedHash.slice(0, 16)}...
                   </div>
                 )}
               </div>
 
               {/* Seated Simulated Opponents Sandbox */}
-              <div className="border border-white/5 bg-slate-950/40 rounded-xl p-3 mb-3">
+              <div className="border border-slate-200 bg-white/90 rounded-xl p-3 mb-3">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-300">
-                    <Bot size={14} className="text-indigo-400" />
+                  <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                    <Bot size={14} className="text-indigo-600" />
                     <span className="font-semibold">Simulated Bots ({table.simulatedBotsCount})</span>
                   </div>
                   <button
                     onClick={() => handleToggleSimulation(table)}
                     className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${
                       table.simulationEnabled 
-                        ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300' 
-                        : 'bg-slate-800 border-slate-700 text-slate-400'
+                        ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-700' 
+                        : 'bg-slate-100 border-slate-200 text-slate-500'
                     }`}
                   >
                     {table.simulationEnabled ? 'ON' : 'OFF'}
@@ -443,13 +443,13 @@ export default function AdminTablesPage() {
                     {table.simulatedBots.map(bot => (
                       <div 
                         key={bot.botId}
-                        className="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-[10px]"
+                        className="flex items-center gap-1 bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px]"
                       >
-                        <span className="text-indigo-400 font-medium">{bot.displayName}</span>
+                        <span className="text-indigo-600 font-medium">{bot.displayName}</span>
                         <span className="text-[8px] text-slate-500 font-mono">#{bot.seatIndex}</span>
                         <button
                           onClick={() => handleBotTest(bot.botId, bot.status === 'DISCONNECTED' ? 'reconnect' : 'disconnect')}
-                          className="text-[8px] text-slate-400 hover:text-white underline ml-1"
+                          className="text-[8px] text-slate-500 hover:text-slate-900 underline ml-1"
                           title="Simulate Disconnect/Reconnect"
                         >
                           {bot.status === 'DISCONNECTED' ? 'rc' : 'dc'}
@@ -464,15 +464,15 @@ export default function AdminTablesPage() {
             </div>
 
             {/* Bottom Actions Row */}
-            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
-              <div className="text-[11px] text-slate-400 font-mono">
+            <div className="pt-2 border-t border-slate-200 flex items-center justify-between gap-2">
+              <div className="text-[11px] text-slate-500 font-mono">
                 ₹{table.minBet} – ₹{table.maxBet}
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleViewAudits(table)}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs flex items-center gap-1 transition-colors"
                   title="View Audit Log"
                 >
                   <History size={12} />
@@ -496,13 +496,13 @@ export default function AdminTablesPage() {
 
       {/* 1. Modal: Table Configuration & Timing */}
       {showConfigModal && selectedTable && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-lg text-white">Configure {selectedTable.name}</h3>
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="font-bold text-lg text-slate-900">Configure {selectedTable.name}</h3>
               <button 
                 onClick={() => setShowConfigModal(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-500 hover:text-slate-900"
               >
                 <X size={18} />
               </button>
@@ -510,11 +510,11 @@ export default function AdminTablesPage() {
 
             <div className="space-y-3 text-sm">
               <div>
-                <label className="text-xs text-slate-400 font-medium block mb-1">Table Status</label>
+                <label className="text-xs text-slate-500 font-medium block mb-1">Table Status</label>
                 <select
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm"
                 >
                   <option value="ACTIVE">ACTIVE (Running rounds continuously)</option>
                   <option value="MAINTENANCE">MAINTENANCE (Temporarily paused for players)</option>
@@ -524,36 +524,36 @@ export default function AdminTablesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-slate-400 font-medium block mb-1">Min Bet (₹)</label>
+                  <label className="text-xs text-slate-500 font-medium block mb-1">Min Bet (₹)</label>
                   <input
                     type="number"
                     value={editMinBet}
                     onChange={(e) => setEditMinBet(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 font-medium block mb-1">Max Bet (₹)</label>
+                  <label className="text-xs text-slate-500 font-medium block mb-1">Max Bet (₹)</label>
                   <input
                     type="number"
                     value={editMaxBet}
                     onChange={(e) => setEditMaxBet(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 font-medium block mb-1">Betting Phase Duration (Seconds)</label>
+                <label className="text-xs text-slate-500 font-medium block mb-1">Betting Phase Duration (Seconds)</label>
                 <input
                   type="number"
                   value={editBettingDuration}
                   onChange={(e) => setEditBettingDuration(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm"
                 />
               </div>
 
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5 text-xs text-amber-300">
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5 text-xs text-amber-700">
                 ⚠️ Any changes will be audited and recorded with your administrator identity.
               </div>
             </div>
@@ -561,7 +561,7 @@ export default function AdminTablesPage() {
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 onClick={() => setShowConfigModal(false)}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium"
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium"
               >
                 Cancel
               </button>
@@ -578,13 +578,13 @@ export default function AdminTablesPage() {
 
       {/* 2. Modal: Dealer Assignment */}
       {showDealerModal && selectedTable && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-lg text-white">Assign Virtual Dealer to {selectedTable.name}</h3>
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="font-bold text-lg text-slate-900">Assign Virtual Dealer to {selectedTable.name}</h3>
               <button 
                 onClick={() => setShowDealerModal(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-500 hover:text-slate-900"
               >
                 <X size={18} />
               </button>
@@ -598,19 +598,19 @@ export default function AdminTablesPage() {
                   className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                     editDealerId === d.dealerId 
                       ? 'bg-amber-500/15 border-amber-500 shadow-md scale-[1.02]' 
-                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                      : 'bg-white/90 border-slate-200 hover:border-slate-200'
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-black border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-sm">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-slate-100 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-sm">
                       {d.avatar?.[0]?.toUpperCase() || 'D'}
                     </div>
                     <div>
-                      <div className="font-bold text-sm text-white">{d.displayName}</div>
-                      <div className="text-[10px] text-amber-400 font-medium uppercase">{d.personalityStyle} style</div>
+                      <div className="font-bold text-sm text-slate-900">{d.displayName}</div>
+                      <div className="text-[10px] text-amber-600 font-medium uppercase">{d.personalityStyle} style</div>
                     </div>
                   </div>
-                  <div className="text-[11px] text-slate-400 italic line-clamp-2">
+                  <div className="text-[11px] text-slate-500 italic line-clamp-2">
                     "{d.greeting}"
                   </div>
                 </div>
@@ -620,7 +620,7 @@ export default function AdminTablesPage() {
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 onClick={() => setShowDealerModal(false)}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium"
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium"
               >
                 Cancel
               </button>
@@ -637,16 +637,16 @@ export default function AdminTablesPage() {
 
       {/* 3. Modal: Configuration Audit Trail */}
       {showAuditModal && selectedTable && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
-                <h3 className="font-bold text-lg text-white">Configuration Audits</h3>
-                <p className="text-xs text-slate-400">{selectedTable.name} ({selectedTable.tableId})</p>
+                <h3 className="font-bold text-lg text-slate-900">Configuration Audits</h3>
+                <p className="text-xs text-slate-500">{selectedTable.name} ({selectedTable.tableId})</p>
               </div>
               <button 
                 onClick={() => setShowAuditModal(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-500 hover:text-slate-900"
               >
                 <X size={18} />
               </button>
@@ -655,15 +655,15 @@ export default function AdminTablesPage() {
             <div className="max-h-72 overflow-y-auto space-y-2">
               {audits.length > 0 ? (
                 audits.map((a, idx) => (
-                  <div key={idx} className="bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs space-y-1">
-                    <div className="flex items-center justify-between text-slate-400">
-                      <span className="font-mono text-amber-300 font-bold">{a.auditId}</span>
+                  <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 text-xs space-y-1">
+                    <div className="flex items-center justify-between text-slate-500">
+                      <span className="font-mono text-amber-700 font-bold">{a.auditId}</span>
                       <span>{new Date(a.timestamp).toLocaleString()}</span>
                     </div>
-                    <div className="text-slate-300">
+                    <div className="text-slate-600">
                       <span className="text-slate-500 font-medium">Admin:</span> {a.adminUser} • <span className="text-slate-500 font-medium">Version:</span> v{a.version}
                     </div>
-                    <pre className="bg-black/60 p-2 rounded text-[11px] text-emerald-300 overflow-x-auto">
+                    <pre className="bg-slate-900/40 p-2 rounded text-[11px] text-emerald-700 overflow-x-auto">
                       {JSON.stringify(a.changes, null, 2)}
                     </pre>
                   </div>
@@ -678,7 +678,7 @@ export default function AdminTablesPage() {
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setShowAuditModal(false)}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium"
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium"
               >
                 Close
               </button>
