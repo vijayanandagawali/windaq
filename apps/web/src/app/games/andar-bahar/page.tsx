@@ -300,13 +300,13 @@ export default function AndarBaharGame() {
         </div>
 
         {/* Andar / Bahar Table Zones */}
-        <div className="w-full max-w-4xl flex justify-between gap-4 sm:gap-8 px-2">
+        <div className="w-[calc(100%-1rem)] max-w-4xl flex justify-between gap-3 sm:gap-6 rounded-[28px] bg-[radial-gradient(circle_at_50%_15%,#22C3A6,#0B6B5C_85%)] p-3 sm:p-5 shadow-[inset_0_10px_28px_rgba(0,0,0,0.28),0_18px_40px_rgba(11,107,92,0.25)] ring-4 ring-amber-200/70">
            
            {/* Andar Area (Left) */}
-           <div className={`flex-1 bg-blue-900/40 border-2 rounded-2xl p-4 flex flex-col items-center relative min-h-[180px] transition-all duration-300 ${
-             result?.winner === 'ANDAR' && !isDealing ? 'border-amber-400 shadow-[0_0_35px_rgba(245,158,11,0.5)] bg-blue-900/60' : 'border-blue-500/30'
+           <div className={`flex-1 bg-white/10 border-2 rounded-2xl p-3 sm:p-4 flex flex-col items-center relative min-h-[170px] transition-all duration-500 ${
+             result?.winner === 'ANDAR' && !isDealing ? 'border-amber-300 bg-white/20 shadow-[0_0_40px_rgba(251,191,36,0.6)]' : 'border-sky-200/50'
            }`}>
-              <div className="absolute top-2 left-4 font-black text-2xl sm:text-4xl text-slate-400 uppercase tracking-tighter pointer-events-none">Andar</div>
+              <div className="absolute top-2 left-4 font-black text-xl sm:text-3xl text-white/55 uppercase tracking-tight pointer-events-none">Andar</div>
               <div className="flex flex-wrap justify-center z-10 mt-6 min-h-[80px]">
                 {displayedCards.filter(c => c.side === 'ANDAR').map((c, i) => {
                   const isMatch = result?.joker && c.card.rank === result.joker.rank;
@@ -334,10 +334,10 @@ export default function AndarBaharGame() {
            </div>
 
            {/* Bahar Area (Right) */}
-           <div className={`flex-1 bg-red-900/40 border-2 rounded-2xl p-4 flex flex-col items-center relative min-h-[180px] transition-all duration-300 ${
-             result?.winner === 'BAHAR' && !isDealing ? 'border-amber-400 shadow-[0_0_35px_rgba(245,158,11,0.5)] bg-red-900/60' : 'border-red-500/30'
+           <div className={`flex-1 bg-white/10 border-2 rounded-2xl p-3 sm:p-4 flex flex-col items-center relative min-h-[170px] transition-all duration-500 ${
+             result?.winner === 'BAHAR' && !isDealing ? 'border-amber-300 bg-white/20 shadow-[0_0_40px_rgba(251,191,36,0.6)]' : 'border-rose-200/50'
            }`}>
-              <div className="absolute top-2 right-4 font-black text-2xl sm:text-4xl text-slate-400 uppercase tracking-tighter pointer-events-none">Bahar</div>
+              <div className="absolute top-2 right-4 font-black text-xl sm:text-3xl text-white/55 uppercase tracking-tight pointer-events-none">Bahar</div>
               <div className="flex flex-wrap justify-center z-10 mt-6 min-h-[80px]">
                 {displayedCards.filter(c => c.side === 'BAHAR').map((c, i) => {
                   const isMatch = result?.joker && c.card.rank === result.joker.rank;

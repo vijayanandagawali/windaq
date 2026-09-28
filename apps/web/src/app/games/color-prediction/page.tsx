@@ -5,12 +5,12 @@ import Link from 'next/link';
 import { ChevronLeft, Info, Clock, History } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
 import { Socket } from '@/lib/gameSocket';
 import { createGameSocket } from '@/lib/config';
 import { useBetSettlements } from '@/hooks/useBetSettlements';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
+import ColourResultReel from '@/components/games/ColourResultReel';
 import { audioEngine } from '@/lib/audioEngine';
 import AnimatedChipFlight from '@/components/games/animation/AnimatedChipFlight';
 
@@ -22,13 +22,21 @@ const COLORS = [
 
 const NUMBERS = Array.from({length: 10}, (_, i) => i);
 
+/** Maps the engine's universal phases onto the three states this page shows. */
+function normalisePhase(state: string): 'OPEN' | 'LOCKED' | 'RESULT' | 'UPCOMING' {
+  if (state === 'BETTING_OPEN' || state === 'BETTING_CLOSING' || state === 'OPEN') return 'OPEN';
+  if (state === 'BETTING_LOCKED' || state === 'PLAYING' || state === 'LOCKED') return 'LOCKED';
+  if (state === 'RESULT_REVEAL' || state === 'SETTLEMENT' || state === 'COMPLETED' || state === 'NEXT_ROUND' || state === 'RESULT') return 'RESULT';
+  return 'UPCOMING';
+}
+
 export default function ColorPrediction() {
   const { balance, setBalance, fetchBalance } = useWalletStore();
   const [socket, setSocket] = useState<Socket | null>(null);
   
   const [activeTab, setActiveTab] = useState<'1min' | '3min'>('1min');
   const [countdown, setCountdown] = useState(0);
-  const [period, setPeriod] = useState("Loading...");
+  const [period, setPeriod] = useState("—");
   const [gameState, setGameState] = useState("UPCOMING");
   const [history, setHistory] = useState<any[]>([]);
   const [lastResult, setLastResult] = useState<{ color: string; number: number; period: string } | null>(null);
@@ -53,7 +61,7 @@ export default function ColorPrediction() {
   }, []);
 
   // Win/loss banner from the server's settlement (`bet:settled`), never from client-side payout maths.
-  useBetSettlements(socket, 'colour', ({ staked, paid, bestMultiplier }) => {
+  const showColourOutcome = ({ staked, paid, bestMultiplier }: { staked: number; paid: number; bestMultiplier: number }) => {
     if (paid > 0) {
       setCelebration({ type: 'win', amount: paid, multiplier: `${bestMultiplier.toFixed(1)}x`, net: paid - staked });
       setChipFlights(prev => [
@@ -75,6 +83,11 @@ export default function ColorPrediction() {
     }
     setActiveBets([]);
     fetchBalance();
+  };
+
+  // The celebration waits for the result reel to finish landing so it never spoils the draw.
+  useBetSettlements(socket, 'colour', (summary) => {
+    setTimeout(() => showColourOutcome(summary), 2700);
   });
 
   // Room management
@@ -89,24 +102,26 @@ export default function ColorPrediction() {
     socket.emit('colour:join', { room: activeTab });
     
     const onTick = (data: any) => {
+      const phase = normalisePhase(data.state);
       setPeriod(data.period);
-      setGameState(data.state);
+      setGameState(phase);
       setCountdown(data.remainingSeconds);
       if (data.remainingSeconds <= 3 && data.remainingSeconds > 0) {
         audioEngine.play('countdown', { urgent: true });
       } else if (data.remainingSeconds <= 10 && data.remainingSeconds > 0) {
         audioEngine.play('countdown');
       }
-      if (data.state === 'LOCKED') setBetModalOpen(false);
-      if (data.state === 'OPEN') {
+      if (phase === 'LOCKED') setBetModalOpen(false);
+      if (phase === 'OPEN') {
         // Reset chamber on new round (no-op when already clear)
         setLastResult(null);
       }
     };
     
     const onState = (data: any) => {
-      setGameState(data.state);
-      if (data.state === 'LOCKED') setBetModalOpen(false);
+      const phase = normalisePhase(data.state);
+      setGameState(phase);
+      if (phase === 'LOCKED') setBetModalOpen(false);
     };
     
     const onHistory = (data: any[]) => {
@@ -114,24 +129,16 @@ export default function ColorPrediction() {
     };
     
     const onResult = (data: any) => {
-      setLastResult(data);
-      audioEngine.play('win');
+      // The server sends resultNum/resultColor; older payloads used number/color.
+      const number = Number(data.number ?? data.resultNum);
+      const color = String(data.color ?? data.resultColor ?? "");
+      setLastResult({ number, color, period: data.period });
+      // No sound or confetti here: everyone sees the draw, only real wins are celebrated (bet:settled).
 
-
-      // Trigger confetti on win color
-      if (data.color === 'green' || data.color === 'violet' || data.color === 'red') {
-        confetti({
-          particleCount: 50,
-          spread: 60,
-          colors: [data.color === 'red' ? '#ef4444' : data.color === 'green' ? '#22c55e' : '#a855f7'],
-          origin: { y: 0.8 }
-        });
-      }
-      
       setHistory(prev => [{
         period: data.period,
-        resultNum: data.number,
-        resultColor: data.color
+        resultNum: number,
+        resultColor: color
       }, ...prev].slice(0, 10));
     };
 
@@ -223,87 +230,8 @@ export default function ColorPrediction() {
          </div>
       </div>
 
-      {/* 3D Mystery Result Chamber / Oracle Orb */}
-      <div className="mx-4 mb-6 relative flex flex-col items-center justify-center p-5 rounded-2xl bg-gradient-to-b from-ocean-card/90 to-slate-100 border border-slate-200 shadow-[0_10px_35px_rgba(15,23,42,0.18)] overflow-hidden">
-        {/* Ambient glow behind orb */}
-        <div className={`absolute w-44 h-44 rounded-full blur-3xl opacity-40 transition-colors duration-500 pointer-events-none ${
-          lastResult?.color === 'red' ? 'bg-red-500' :
-          lastResult?.color === 'green' ? 'bg-emerald-500' :
-          lastResult?.color === 'violet' ? 'bg-purple-500' : 'bg-cyan-500'
-        }`} />
-
-        <div className="relative flex flex-col items-center">
-          {/* Chamber Header Tag */}
-          <div className="mb-3 px-3 py-0.5 rounded-full bg-white/80 border border-slate-200 text-[11px] font-mono tracking-widest uppercase text-slate-700 flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${
-              gameState === 'LOCKED' ? 'bg-red-500 animate-ping' :
-              gameState === 'RESULT' ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'
-            }`} />
-            {gameState === 'LOCKED' ? 'CHAMBER LOCKED • ANTICIPATION' :
-             gameState === 'RESULT' ? 'OUTCOME REVEALED' : 'MYSTERY RESULT CHAMBER'}
-          </div>
-
-          {/* Glowing Multi-Ring Orb */}
-          <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full flex items-center justify-center">
-            {/* Outer Orbiting Ring */}
-            <motion.div 
-              animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: gameState === 'LOCKED' ? 2 : 8, ease: "linear" }}
-              className="absolute inset-0 rounded-full border-2 border-dashed border-cyan-400/50"
-            />
-            {/* Inner Counter-Orbiting Ring */}
-            <motion.div 
-              animate={{ rotate: -360 }}
-              transition={{ repeat: Infinity, duration: gameState === 'LOCKED' ? 3 : 12, ease: "linear" }}
-              className="absolute inset-2 rounded-full border-2 border-dashed border-amber-400/40"
-            />
-
-            {/* Central Crystal Sphere */}
-            <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center transition-all duration-700 shadow-[0_0_30px_rgba(0,0,0,0.8)_inset] ${
-              lastResult?.color === 'red' ? 'bg-gradient-to-br from-red-500 to-red-950 border-2 border-red-400 shadow-[0_0_35px_rgba(239,68,68,0.8)]' :
-              lastResult?.color === 'green' ? 'bg-gradient-to-br from-emerald-500 to-emerald-950 border-2 border-emerald-400 shadow-[0_0_35px_rgba(34,197,94,0.8)]' :
-              lastResult?.color === 'violet' ? 'bg-gradient-to-br from-purple-500 to-purple-950 border-2 border-purple-400 shadow-[0_0_35px_rgba(168,85,247,0.8)]' :
-              'bg-gradient-to-br from-cyan-600/40 via-blue-950 to-slate-100 border-2 border-cyan-400/40'
-            }`}>
-              {lastResult ? (
-                <motion.div
-                  initial={{ scale: 0, rotate: 180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  className="flex flex-col items-center justify-center"
-                >
-                  <span className="text-3xl sm:text-4xl font-black text-slate-900 drop-shadow-md">
-                    {lastResult.number}
-                  </span>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-800">
-                    {lastResult.color}
-                  </span>
-                </motion.div>
-              ) : gameState === 'LOCKED' ? (
-                <motion.div 
-                  animate={{ scale: [0.9, 1.15, 0.9] }}
-                  transition={{ repeat: Infinity, duration: 0.8 }}
-                  className="text-amber-600 font-black text-xl tracking-tighter"
-                >
-                  ???
-                </motion.div>
-              ) : (
-                <span className="text-slate-500 font-mono font-bold text-lg">?</span>
-              )}
-            </div>
-          </div>
-
-          {/* Reveal Callout Banner */}
-          {lastResult && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-3 px-4 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-black uppercase tracking-wider text-amber-700"
-            >
-              Winner: {lastResult.color} • Number {lastResult.number}
-            </motion.div>
-          )}
-        </div>
-      </div>
+      {/* Result reel: spins while locked, lands on the server result */}
+      <ColourResultReel spinning={gameState === 'LOCKED'} result={lastResult} />
 
       {/* Reusable Chip Flights */}
       <AnimatedChipFlight 

@@ -174,6 +174,30 @@ class ColourEngine extends UniversalRoundEngine {
 
   async onNextRound() {}
 
+  /** Current round state as sent to clients every second (and immediately on join). */
+  buildTick(now = Date.now()) {
+    return {
+        roundId: this.roundId,
+        gameId: 'colour',
+        room: this.roomName,
+        period: this.period.toString(),
+        phase: this.currentPhase,
+        state: this.currentPhase === UNIVERSAL_PHASES.BETTING_OPEN ? 'BETTING_OPEN' : this.currentPhase,
+        serverTime: now,
+        phaseEndsAt: this.phaseEndsAt,
+        phaseTimeLeft: this.phaseTimeLeft,
+        totalPhaseDuration: this.totalPhaseDuration,
+        remainingSeconds: this.phaseTimeLeft,
+        hash: this.serverSeedHash,
+        serverSeed: (this.currentPhase === UNIVERSAL_PHASES.RESULT || 
+                     this.currentPhase === UNIVERSAL_PHASES.SETTLEMENT || 
+                     this.currentPhase === UNIVERSAL_PHASES.COMPLETED ||
+                     this.currentPhase === UNIVERSAL_PHASES.NEXT_ROUND) ? this.serverSeed : null,
+        result: this.currentResult,
+        history: this.history.slice(0, 20)
+    };
+  }
+
   /**
    * Overwrite loop to emit colour:tick alongside round:tick
    */
@@ -188,26 +212,7 @@ class ColourEngine extends UniversalRoundEngine {
         }
 
         // Authoritative Tick Broadcast
-        const tickPayload = {
-          roundId: this.roundId,
-          gameId: 'colour',
-          room: this.roomName,
-          period: this.period.toString(),
-          phase: this.currentPhase,
-          state: this.currentPhase === UNIVERSAL_PHASES.BETTING_OPEN ? 'BETTING_OPEN' : this.currentPhase,
-          serverTime: now,
-          phaseEndsAt: this.phaseEndsAt,
-          phaseTimeLeft: this.phaseTimeLeft,
-          totalPhaseDuration: this.totalPhaseDuration,
-          remainingSeconds: this.phaseTimeLeft,
-          hash: this.serverSeedHash,
-          serverSeed: (this.currentPhase === UNIVERSAL_PHASES.RESULT || 
-                       this.currentPhase === UNIVERSAL_PHASES.SETTLEMENT || 
-                       this.currentPhase === UNIVERSAL_PHASES.COMPLETED ||
-                       this.currentPhase === UNIVERSAL_PHASES.NEXT_ROUND) ? this.serverSeed : null,
-          result: this.currentResult,
-          history: this.history.slice(0, 20)
-        };
+        const tickPayload = this.buildTick(now);
 
         this.io.to(`colour:${this.roomName}`).emit('colour:tick', tickPayload);
         this.emitEvent('round:tick', tickPayload);

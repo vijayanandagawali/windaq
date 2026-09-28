@@ -20,6 +20,8 @@ function handleColourSockets(socket, io, colourEngines = {}) {
   socket.on('colour:join', async ({ room } = {}) => {
     if (!colourEngines[room]) return;
     socket.join(`colour:${room}`);
+    // Send the live round immediately so the page never waits a tick showing 'Loading'.
+    try { socket.emit('colour:tick', colourEngines[room].buildTick()); } catch (e) { /* first tick arrives within a second anyway */ }
     try {
       const history = await prisma.colourRound.findMany({
         where: { room, state: 'SETTLED' },
