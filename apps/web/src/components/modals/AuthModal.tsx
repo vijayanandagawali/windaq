@@ -5,6 +5,7 @@ import { X, Smartphone, KeyRound, Sparkles, ShieldCheck, ArrowRight, Loader2, Al
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/config';
+import { LogoMark } from '@/components/brand/Logo';
 
 export default function AuthModal() {
   const {
@@ -123,9 +124,7 @@ export default function AuthModal() {
 
         {/* Header Branding */}
         <div className="text-center mb-5">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-tr from-neon-mint via-emerald-400 to-blue-500 rounded-2xl shadow-[0_0_20px_rgba(0,255,163,0.3)] mb-2">
-            <span className="font-black text-deep-ocean text-2xl">W</span>
-          </div>
+          <LogoMark size={48} className="mx-auto mb-2 drop-shadow-[0_8px_18px_rgba(16,185,129,0.3)]" />
           <h2 className="text-xl font-black text-slate-900 tracking-tight">WINDAQ ACCESS</h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {activeTab === 'GUEST'

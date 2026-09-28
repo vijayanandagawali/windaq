@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Logo from '@/components/brand/Logo';
 import { ShieldCheck, Lock, BadgeCheck, Smartphone } from 'lucide-react';
 
 const BADGES = [
@@ -25,8 +26,7 @@ export default function TrustFooter() {
         <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
           <div className="max-w-sm">
             <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-sky-500 text-base font-black text-white">W</span>
-              <span className="text-lg font-extrabold tracking-tight text-slate-900">WinDaq</span>
+              <Logo size={36} />
             </div>
             <p className="mt-3 text-sm leading-relaxed text-slate-500">
               Every round is locked to a hashed server seed before bets close, and every rupee is recorded on a double-entry ledger.

@@ -8,6 +8,7 @@ import { useWalletStore } from '@/store/walletStore';
 import { useAuthStore } from '@/store/authStore';
 import { useAudioStore } from '@/store/audioStore';
 import AnimatedBalance from '@/components/ui/AnimatedBalance';
+import { LogoMark } from '@/components/brand/Logo';
 import GameHistorySheet, { HISTORY_GAME_NAMES } from '@/components/games/GameHistorySheet';
 
 const TABLE_PATHS = ['/european-roulette', '/dragon-tiger', '/andar-bahar', '/blackjack'];
@@ -52,12 +53,10 @@ export default function Header() {
           )}
 
           <Link href="/" className="group flex min-w-0 items-center gap-2">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 via-teal-400 to-emerald-500 text-base font-black text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transition-transform group-hover:scale-105 group-hover:rotate-3">
-              W
-            </span>
+            <LogoMark size={36} className="shrink-0 drop-shadow-[0_8px_16px_rgba(16,185,129,0.3)] transition-transform group-hover:scale-105" />
             {/* The name truncates rather than running under the buttons; inner pages on small phones show only the mark. */}
             <span className={`min-w-0 leading-none ${isHome ? '' : 'hidden min-[480px]:block'}`}>
-              <span className="block truncate text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">WinDaq</span>
+              <span className="block truncate text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">Win<span className="bg-gradient-to-r from-sky-500 to-emerald-500 bg-clip-text text-transparent">Daq</span></span>
               <span className="mt-0.5 hidden items-center gap-1 text-[10px] font-semibold text-slate-500 min-[380px]:flex">
                 <ShieldCheck size={11} className="text-emerald-600" /> Provably fair
               </span>

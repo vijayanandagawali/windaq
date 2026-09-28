@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import CardBack from '@/components/brand/CardBack';
 
 /** True while the element is on screen; previews pause their timers and CSS animations otherwise. */
 export function useInView<T extends Element>(margin = '120px') {
@@ -43,8 +44,8 @@ export function PlayingCard({ rank, suit, faceDown = false, className = '', styl
           </span>
           <span className={`absolute inset-0 flex items-center justify-center font-serif text-[1.6em] ${colour}`}>{SUIT_GLYPH[suit]}</span>
         </div>
-        <div className="absolute inset-0 rounded-[9%] bg-[#0E7490] shadow-[0_6px_14px_rgba(15,23,42,0.28)] [backface-visibility:hidden] [transform:rotateY(180deg)]">
-          <div className="absolute inset-[7%] rounded-[7%] border border-white/60 bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.16)_0_3px,transparent_3px_7px)]" />
+        <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+          <CardBack />
         </div>
       </div>
     </div>
