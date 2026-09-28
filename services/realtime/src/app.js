@@ -50,7 +50,7 @@ function createApp() {
   // Security Middlewares
   app.use(helmet()); // Sets HSTS, X-Frame-Options, X-Content-Type-Options, etc.
   app.use(cors({
-    origin: process.env.FRONTEND_URL || '*', // Restrict in production
+    origin: require('./config/security').getAllowedOrigins(),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'x-admin-user-id', 'x-mfa-token']
   }));

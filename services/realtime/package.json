@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "@windaq/provably-fair": "*",
     "@windaq/teenpatti-engine": "*",
     "cors": "^2.8.6",
@@ -21,7 +22,9 @@
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "poker-engine": "*",
+    "prisma": "^5.22.0",
     "redis": "^6.2.1",
+    "slot-engine": "*",
     "socket.io": "^4.8.3"
   }
 }

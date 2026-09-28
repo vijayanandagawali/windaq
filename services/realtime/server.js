@@ -42,7 +42,7 @@ const server = http.createServer(app);
 // High-speed WebSocket server setup with CORS
 const io = new Server(server, {
   cors: {
-    origin: '*', // In production, restrict to frontend PWA domain
+    origin: require('./src/config/security').getAllowedOrigins(),
     methods: ['GET', 'POST']
   },
   pingInterval: 10000,

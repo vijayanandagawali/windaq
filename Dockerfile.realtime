@@ -1,0 +1,30 @@
+# WinDaq realtime game server (services/realtime) — production image.
+# Build context is the repository root (npm workspaces). Secrets come from the platform's
+# environment variables at runtime; no .env file is copied into the image.
+FROM node:22-slim
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Workspace manifests first so dependency installs are cached between code changes.
+COPY package.json package-lock.json ./
+COPY apps/web/package.json apps/web/
+COPY services/api/package.json services/api/
+COPY services/wallet/package.json services/wallet/
+COPY services/realtime/package.json services/realtime/
+COPY packages packages
+RUN npm ci --workspace=backend --omit=dev --ignore-scripts
+
+COPY services/wallet/prisma services/wallet/prisma
+RUN npx prisma generate --schema services/wallet/prisma/schema.prisma
+
+COPY services/realtime services/realtime
+
+ENV NODE_ENV=production
+EXPOSE 4000
+
+# The schema is applied without data loss (db push refuses destructive changes), then the server starts.
+CMD ["sh", "-c", "npx prisma db push --schema services/wallet/prisma/schema.prisma --skip-generate && node services/realtime/server.js"]

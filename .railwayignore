@@ -1,0 +1,11 @@
+# Upload only what the realtime image needs. Never upload secrets.
+.env
+.env.*
+!.env.example
+**/node_modules/
+**/.next/
+Payment Gateway/
+*.png
+*.jpg
+playwright-report/
+test-results/
