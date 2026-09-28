@@ -80,7 +80,7 @@ export default function Header() {
           </button>
 
           <button onClick={() => setControlsOpen(true)} data-testid="header-sound-btn" role="button"
-            className={`${iconButton} ${soundEnabled ? '' : 'text-rose-500'}`}
+            className={`${iconButton} ${soundEnabled ? '' : 'text-rose-500'} ${isAuthenticated ? '' : 'hidden min-[420px]:flex'}`}
             title={soundEnabled ? `Sound on (${Math.round(volume * 100)}%)` : 'Sound muted'}
             aria-label={soundEnabled ? 'Sound Settings (Active)' : 'Sound Settings (Muted)'}>
             {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
