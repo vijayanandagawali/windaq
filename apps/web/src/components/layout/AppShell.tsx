@@ -85,6 +85,7 @@ export default function AppShell({ children }: AppShellProps) {
         {/* Global Styled Toaster */}
         <Toaster 
           position="top-center"
+          containerStyle={{ top: 76 }}
           toastOptions={{
             style: {
               background: '#FFFFFF',

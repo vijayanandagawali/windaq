@@ -68,6 +68,7 @@ export default function RouletteGame() {
     amount: number;
     multiplier?: number;
     message?: string;
+    net?: number;
   }>({ status: 'IDLE', amount: 0 });
 
   // The banner waits for both the wheel to stop and the server's settlement, whichever comes last.
@@ -83,6 +84,7 @@ export default function RouletteGame() {
         status: 'WON',
         amount: summary.paid,
         multiplier: summary.bestMultiplier,
+        net: summary.paid - summary.staked,
         message: `Number ${settledWinNumber} Hit!`
       });
 
@@ -284,7 +286,7 @@ export default function RouletteGame() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 text-slate-900 font-sans flex flex-col">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-sky-50 via-white to-emerald-50 text-slate-900 font-sans flex flex-col">
       {/* Top HUD Bar */}
       <div className="bg-white/80 border-b border-slate-200 px-4 py-2 flex items-center justify-between z-30 backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -521,6 +523,7 @@ export default function RouletteGame() {
       {/* Win & Loss Animation Overlay */}
       <WinLossCelebration
         status={celebration.status}
+        net={celebration.net}
         amount={celebration.amount}
         multiplier={celebration.multiplier}
         message={celebration.message}

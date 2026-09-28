@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Lock, Play } from 'lucide-react';
 import type { LobbyGame } from '@/lib/games';
+import GamePreview from './previews/GamePreviews';
+import { hasPreview } from './previews/slugs';
 
 /**
  * Lobby game tile. The artwork is a plain <img>: it is visible as soon as it paints, with no
@@ -13,17 +15,21 @@ export default function GameTile({ game, priority = false }: { game: LobbyGame; 
     <>
       <div className="relative aspect-[4/5] overflow-hidden rounded-[22px] bg-slate-100 ring-1 ring-slate-200/80 transition duration-300 group-hover:-translate-y-1.5 group-hover:shadow-[0_22px_44px_-12px_var(--tile-glow)] group-focus-visible:ring-2 group-focus-visible:ring-emerald-500"
         style={{ ['--tile-glow' as string]: `${game.accent}66`, boxShadow: '0 8px 24px -10px rgba(15,23,42,0.18)' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={game.cardImage}
-          alt=""
-          width={400}
-          height={500}
-          loading={priority ? 'eager' : 'lazy'}
-          decoding="async"
-          className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.06] ${comingSoon ? 'grayscale opacity-60' : ''}`}
-        />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+        {!comingSoon && hasPreview(game.slug) ? (
+          <div className="h-full w-full transition duration-500 group-hover:scale-[1.04]"><GamePreview slug={game.slug} /></div>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={game.cardImage}
+            alt=""
+            width={400}
+            height={500}
+            loading={priority ? 'eager' : 'lazy'}
+            decoding="async"
+            className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.06] ${comingSoon ? 'grayscale opacity-60' : ''}`}
+          />
+        )}
+        {(comingSoon || !hasPreview(game.slug)) && <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />}
 
         {comingSoon ? (
           <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600 shadow-sm backdrop-blur">

@@ -40,7 +40,7 @@ export default function ColorPrediction() {
   const [betAmount, setBetAmount] = useState(100);
   const [placingBet, setPlacingBet] = useState(false);
   const [activeBets, setActiveBets] = useState<Array<{ type: string; val: string | number; amount: number }>>([]);
-  const [celebration, setCelebration] = useState<{ type: 'win' | 'loss'; amount: number; multiplier?: string } | null>(null);
+  const [celebration, setCelebration] = useState<{ type: 'win' | 'loss'; amount: number; multiplier?: string; net?: number } | null>(null);
 
   // Initialize Socket
   useEffect(() => {
@@ -55,7 +55,7 @@ export default function ColorPrediction() {
   // Win/loss banner from the server's settlement (`bet:settled`), never from client-side payout maths.
   useBetSettlements(socket, 'colour', ({ staked, paid, bestMultiplier }) => {
     if (paid > 0) {
-      setCelebration({ type: 'win', amount: paid, multiplier: `${bestMultiplier.toFixed(1)}x` });
+      setCelebration({ type: 'win', amount: paid, multiplier: `${bestMultiplier.toFixed(1)}x`, net: paid - staked });
       setChipFlights(prev => [
         ...prev,
         {
@@ -188,7 +188,7 @@ export default function ColorPrediction() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 font-sans relative flex flex-col pb-safe">
+    <div className="min-h-[calc(100dvh-58px)] bg-gradient-to-b from-sky-50 via-white to-emerald-50 font-sans relative flex flex-col pb-safe">
 
 
       {/* Tabs */}

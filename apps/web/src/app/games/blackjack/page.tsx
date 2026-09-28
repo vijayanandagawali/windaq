@@ -182,7 +182,7 @@ export default function BlackjackGame() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 text-slate-900 font-sans flex flex-col relative">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-sky-50 via-white to-emerald-50 text-slate-900 font-sans flex flex-col relative">
 
 
       {/* Table Area */}

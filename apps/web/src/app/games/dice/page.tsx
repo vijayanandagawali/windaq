@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Info, History } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Socket } from '@/lib/gameSocket';
 import { createGameSocket } from '@/lib/config';
@@ -12,6 +12,7 @@ import { useBetSettlements } from '@/hooks/useBetSettlements';
 
 import UniversalBetPanel from '@/components/games/UniversalBetPanel';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
+import DiceTray from '@/components/games/DiceTray';
 import { audioEngine, haptic } from '@/lib/audioEngine';
 import AnimatedChipFlight, { ChipFlightData } from '@/components/games/animation/AnimatedChipFlight';
 
@@ -45,6 +46,7 @@ export default function DiceGame() {
     amount: number;
     multiplier?: number;
     message?: string;
+    net?: number;
   }>({ status: 'IDLE', amount: 0 });
 
   const [flyingChips, setFlyingChips] = useState<ChipFlightData[]>([]);
@@ -76,7 +78,7 @@ export default function DiceGame() {
           paid
         );
       }
-      setCelebration({ status: 'WON', amount: paid, multiplier: bestMultiplier, message: `${sumLabel}YOU WON!` });
+      setCelebration({ status: 'WON', amount: paid, multiplier: bestMultiplier, net: paid - staked, message: `${sumLabel}Dice landed` });
     } else if (staked > 0) {
       audioEngine.play('loss');
       haptic.error();
@@ -224,11 +226,11 @@ export default function DiceGame() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 text-slate-900 font-sans flex flex-col">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-sky-50 via-white to-emerald-50 text-slate-900 font-sans flex flex-col">
 
 
       {/* Game Stage Area */}
-      <div className="w-full h-48 sm:h-64 bg-gradient-to-b from-white to-slate-50 relative flex flex-col items-center justify-center overflow-hidden border-b border-slate-200">
+      <div className="w-full h-64 sm:h-72 bg-gradient-to-b from-sky-50 to-white relative flex flex-col items-center justify-center overflow-hidden border-b border-slate-200">
         
         {/* Background Gradients */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/30 via-transparent to-transparent opacity-60" />
@@ -251,43 +253,10 @@ export default function DiceGame() {
            )}
         </div>
 
-        {/* Dice Container */}
-        <div className="flex items-center justify-center h-full w-full relative z-20">
-          <AnimatePresence>
-            {diceResult ? (
-              <div className="flex gap-2 sm:gap-6 mt-8">
-                {diceResult.map((val, i) => renderDice(val, i))}
-              </div>
-            ) : (
-              <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                exit={{ opacity: 0 }}
-                className="flex gap-2 sm:gap-6 mt-8 opacity-50 grayscale blur-[2px]"
-              >
-                 {renderDice(1, 0)}
-                 {renderDice(2, 1)}
-                 {renderDice(3, 2)}
-              </motion.div>
-            )}
-          </AnimatePresence>
+        {/* Dice tray: tumbles while locked, lands on the server's result */}
+        <div className="relative z-20 mt-10 flex h-full w-full items-center justify-center px-4">
+          <DiceTray values={diceResult} tumbling={gameState.status !== 'OPEN' && !diceResult} />
         </div>
-
-        {/* Result Overlay */}
-        <AnimatePresence>
-          {diceResult && gameState.status === 'RESULT' && (
-             <motion.div
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               exit={{ opacity: 0 }}
-               className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-600 to-yellow-500 text-black px-6 py-2 rounded-full font-black text-xl tracking-widest shadow-[0_0_30px_rgba(234,179,8,0.4)] border border-yellow-300 z-30 flex gap-2"
-             >
-                {diceResult.reduce((a,b)=>a+b, 0)} 
-                <span className="font-normal opacity-80">|</span> 
-                {diceResult.reduce((a,b)=>a+b, 0) >= 11 ? 'BIG' : 'SMALL'}
-             </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Betting Grid */}
@@ -412,6 +381,7 @@ export default function DiceGame() {
       {/* Win & Loss Animation Overlay */}
       <WinLossCelebration
         status={celebration.status}
+        net={celebration.net}
         amount={celebration.amount}
         multiplier={celebration.multiplier}
         message={celebration.message}

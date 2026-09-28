@@ -36,23 +36,23 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 px-3 pb-2.5 pt-3 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 sm:px-5">
-      <div aria-hidden="true" className="tiranga-strip absolute inset-x-0 top-0 h-[3px] opacity-90" />
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sky-400 via-emerald-400 to-teal-500" />
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2">
         {/* Brand & back */}
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           {!isHome && (
             <button onClick={() => router.back()} className={iconButton} title="Go back" aria-label="Back">
               <ChevronLeft size={18} />
             </button>
           )}
 
-          <Link href="/" className="group flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-sky-500 text-base font-black text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transition-transform group-hover:scale-105 group-hover:rotate-3">
+          <Link href="/" className="group flex min-w-0 items-center gap-2">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 via-teal-400 to-emerald-500 text-base font-black text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transition-transform group-hover:scale-105 group-hover:rotate-3">
               W
             </span>
-            {/* On small phones inner pages show only the mark, leaving room for the back button and wallet. */}
-            <span className={`leading-none ${isHome ? '' : 'hidden min-[430px]:block'}`}>
-              <span className="block text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">WinDaq</span>
+            {/* The name truncates rather than running under the buttons; inner pages on small phones show only the mark. */}
+            <span className={`min-w-0 leading-none ${isHome ? '' : 'hidden min-[480px]:block'}`}>
+              <span className="block truncate text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">WinDaq</span>
               <span className="mt-0.5 hidden items-center gap-1 text-[10px] font-semibold text-slate-500 min-[380px]:flex">
                 <ShieldCheck size={11} className="text-emerald-600" /> Provably fair
               </span>
@@ -91,16 +91,16 @@ export default function Header() {
           {!isAuthenticated ? (
             <div className="flex items-center gap-1.5">
               <button data-testid="header-guest-btn" onClick={() => loginAsGuest()}
-                className="hidden items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100 min-[420px]:flex"
+                className="hidden items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100 md:flex"
                 title="Play with play money">
                 <Sparkles size={12} /> Guest
               </button>
               <button data-testid="header-login-btn" onClick={() => openAuthModal('LOGIN')}
-                className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 transition hover:border-slate-300 hover:text-slate-900">
-                Log in
+                className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 transition hover:border-slate-300 hover:text-slate-900 max-sm:border-0 max-sm:bg-gradient-to-r max-sm:from-sky-500 max-sm:to-emerald-500 max-sm:px-4 max-sm:py-2 max-sm:text-white max-sm:shadow-[0_6px_16px_rgba(14,165,233,0.35)]">
+                <span className="sm:hidden">Sign in</span><span className="hidden sm:inline">Log in</span>
               </button>
               <button data-testid="header-register-btn" onClick={() => openAuthModal('REGISTER')}
-                className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-[0_6px_16px_rgba(16,185,129,0.35)] transition hover:brightness-105">
+                className="hidden whitespace-nowrap rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-[0_6px_16px_rgba(14,165,233,0.35)] transition hover:brightness-105 sm:block">
                 Sign up
               </button>
             </div>
@@ -121,6 +121,7 @@ export default function Header() {
             </div>
           )}
 
+          {isAuthenticated && (
           <button data-testid="header-deposit-btn" role="button" aria-label="Deposit Funds" onClick={() => setDepositing(true)}
             className="group flex shrink-0 items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 py-1 pl-3 pr-1 text-white shadow-[0_6px_18px_rgba(5,150,105,0.35)] transition hover:shadow-[0_8px_24px_rgba(5,150,105,0.45)]">
             <span className="text-xs font-extrabold tabular-nums tracking-tight sm:text-[13px]">
@@ -130,6 +131,7 @@ export default function Header() {
               <Plus size={14} strokeWidth={3} />
             </span>
           </button>
+          )}
         </div>
       </div>
     </header>

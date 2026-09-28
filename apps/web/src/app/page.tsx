@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Search, ShieldCheck, Wallet, HeartHandshake, ArrowRight, X, Smartphone, Gamepad2, BadgeCheck, Sparkles } from 'lucide-react';
 import GameTile from '@/components/lobby/GameTile';
+import GamePreview from '@/components/lobby/previews/GamePreviews';
 import { CATEGORIES, COMING_SOON_GAMES, LIVE_GAMES, findGame, type GameCategory, type LobbyGame } from '@/lib/games';
 import { useAuthStore } from '@/store/authStore';
-import AshokaChakra from '@/components/ui/AshokaChakra';
 
 type CategoryId = 'all' | GameCategory;
 
@@ -84,8 +84,7 @@ export default function LobbyPage() {
 
           {/* Featured stack */}
           <div className="relative mx-auto hidden h-[460px] w-full max-w-[540px] sm:block" aria-hidden="true">
-            <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-orange-300/45 via-white to-green-300/45 blur-3xl" />
-            <AshokaChakra className="absolute left-1/2 top-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 opacity-[0.07]" />
+            <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-sky-300/50 via-teal-200/40 to-emerald-300/50 blur-3xl" />
             {stack.map((g, i) => (
               <Link key={g.slug} href={g.href} tabIndex={-1}
                 className="lobby-float absolute w-[46%] overflow-hidden rounded-[28px] border-4 border-white transition duration-300 hover:z-20"
@@ -97,8 +96,7 @@ export default function LobbyPage() {
                   animationDelay: `${i * 0.8}s`,
                   boxShadow: `0 30px 60px rgba(15,23,42,0.22), 0 10px 40px ${g.accent}40`
                 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={g.cardImage} alt="" width={400} height={500} className="aspect-[4/5] w-full object-cover" />
+                <div className="aspect-[4/5] w-full"><GamePreview slug={g.slug} /></div>
               </Link>
             ))}
             {HERO_CHIPS.map((c) => (
@@ -121,7 +119,7 @@ export default function LobbyPage() {
             {STEPS.map(({ icon: Icon, title, body }, i) => (
               <div key={title} className="surface-card group relative overflow-hidden p-6 transition hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(15,23,42,0.10)]">
                 <span className="absolute right-5 top-4 text-5xl font-extrabold text-slate-100 transition group-hover:text-emerald-50">{i + 1}</span>
-                <span className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 via-amber-400 to-green-600 text-white shadow-[0_8px_20px_rgba(249,115,22,0.25)]">
+                <span className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 via-teal-400 to-emerald-500 text-white shadow-[0_8px_20px_rgba(14,165,233,0.28)]">
                   <Icon size={20} aria-hidden="true" />
                 </span>
                 <h3 className="relative mt-4 text-lg font-bold text-slate-900">{title}</h3>
@@ -146,8 +144,7 @@ export default function LobbyPage() {
 
         <section className="relative mb-16 overflow-hidden rounded-[32px] bg-white p-8 shadow-[0_24px_60px_rgba(15,23,42,0.08)] ring-1 ring-slate-200 sm:p-12">
           <div aria-hidden="true" className="tiranga-strip absolute inset-x-0 top-0 h-1.5" />
-          <AshokaChakra className="absolute -right-16 -top-16 h-72 w-72 opacity-[0.06]" />
-          <div aria-hidden="true" className="absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-orange-200/40 blur-3xl" />
+          <div aria-hidden="true" className="absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-sky-200/50 blur-3xl" />
           <div className="relative flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
             <div className="max-w-lg">
               <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">New here? Start small.</h2>

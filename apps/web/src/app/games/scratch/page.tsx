@@ -222,7 +222,7 @@ export default function ScratchGame() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 font-sans flex flex-col pb-safe">
+    <div className="min-h-[calc(100dvh-58px)] bg-gradient-to-b from-sky-50 via-white to-emerald-50 font-sans flex flex-col pb-safe">
 
 
       <div className="flex-1 p-4 flex flex-col items-center pb-24 relative">

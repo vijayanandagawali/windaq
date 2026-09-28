@@ -107,6 +107,7 @@ export default function SimulatedLiveTable({
     amount: number;
     multiplier?: number;
     message?: string;
+    net?: number;
   }>({ status: 'IDLE', amount: 0 });
   const [chipFlights, setChipFlights] = useState<any[]>([]);
 
@@ -155,6 +156,7 @@ export default function SimulatedLiveTable({
         status: 'WON',
         amount: settlement.paid,
         multiplier: settlement.bestMultiplier,
+        net: settlement.paid - settlement.staked,
         message: winner ? `${winner} WINS!` : 'YOU WON!'
       });
       setChipFlights(prev => [
@@ -1002,6 +1004,7 @@ export default function SimulatedLiveTable({
       {/* Universal Win & Loss Animation Overlay */}
       <WinLossCelebration
         status={celebration.status}
+        net={celebration.net}
         amount={celebration.amount}
         multiplier={celebration.multiplier}
         message={celebration.message}

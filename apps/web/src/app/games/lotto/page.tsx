@@ -36,6 +36,7 @@ export default function LottoGame() {
     amount: number;
     multiplier?: number;
     message?: string;
+    net?: number;
   }>({ status: 'IDLE', amount: 0 });
 
   // Once-registered socket handlers read the latest round state through refs.
@@ -55,6 +56,7 @@ export default function LottoGame() {
         status: 'WON',
         amount: summary.paid,
         multiplier: Math.round(summary.bestMultiplier),
+        net: summary.paid - summary.staked,
         message: maxMatch >= 3 ? `MATCHED ${maxMatch} NUMBERS!` : 'WINNING TICKET!'
       });
       toast.success(maxMatch >= 3 ? `You matched ${maxMatch} numbers!` : 'Winning ticket!', { icon: '🎉', duration: 5000 });
@@ -202,7 +204,7 @@ export default function LottoGame() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 font-sans flex flex-col pb-safe">
+    <div className="min-h-[calc(100dvh-58px)] bg-gradient-to-b from-sky-50 via-white to-emerald-50 font-sans flex flex-col pb-safe">
 
 
       <div className="flex-1 flex flex-col relative">
@@ -411,6 +413,7 @@ export default function LottoGame() {
       {/* Win / Loss Presentation */}
       <WinLossCelebration
         status={celebration.status}
+        net={celebration.net}
         amount={celebration.amount}
         multiplier={celebration.multiplier}
         message={celebration.message}

@@ -47,6 +47,7 @@ export default function AndarBaharGame() {
     amount: number;
     multiplier?: number;
     message?: string;
+    net?: number;
   }>({ status: 'IDLE', amount: 0 });
 
   // Socket handlers are registered once; refs give them the latest round state without reconnecting.
@@ -132,7 +133,7 @@ export default function AndarBaharGame() {
     pendingSummaryRef.current = null;
     if (summary.paid > 0) {
       audioEngine.play('win');
-      setCelebration({ status: 'WON', amount: summary.paid, multiplier: summary.bestMultiplier, message: `${winner} WINS!` });
+      setCelebration({ status: 'WON', amount: summary.paid, multiplier: summary.bestMultiplier, net: summary.paid - summary.staked, message: `${winner} WINS!` });
       setChipFlights(prev => [
         ...prev,
         {
@@ -255,7 +256,7 @@ export default function AndarBaharGame() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 text-slate-900 font-sans flex flex-col relative">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-sky-50 via-white to-emerald-50 text-slate-900 font-sans flex flex-col relative">
 
 
       {/* Game Stage Area */}
@@ -374,6 +375,7 @@ export default function AndarBaharGame() {
       {/* Win / Loss Presentation */}
       <WinLossCelebration
         status={celebration.status}
+        net={celebration.net}
         amount={celebration.amount}
         multiplier={celebration.multiplier}
         message={celebration.message}

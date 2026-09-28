@@ -7,6 +7,7 @@ import {
   Zap, Clock, DollarSign
 } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
+import { useAuthStore } from '@/store/authStore';
 import { audioEngine } from '@/lib/audioEngine';
 import { stateRecovery } from '@/lib/stateRecovery';
 
@@ -68,6 +69,7 @@ export default function UniversalBetPanel({
   className = ''
 }: UniversalBetPanelProps) {
   const { balance, setDepositing } = useWalletStore();
+  const { isAuthenticated, openAuthModal } = useAuthStore();
 
   // Internal state
   const [amount, setAmount] = useState<number>(100);
@@ -427,6 +429,18 @@ export default function UniversalBetPanel({
           </span>
         </button>
       ) : (
+        // Signed-out visitors and empty wallets get a way forward instead of a dead button.
+        !isAuthenticated ? (
+        <button type="button" data-testid="btn-sign-in-to-play" onClick={() => openAuthModal('LOGIN')}
+          className="w-full py-3.5 rounded-xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-emerald-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.3)] active:scale-[0.98] transition">
+          Sign in to play
+        </button>
+        ) : isOpen && amount > balance ? (
+        <button type="button" data-testid="btn-add-money" onClick={() => setDepositing(true)}
+          className="w-full py-3.5 rounded-xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-[0_10px_24px_rgba(249,115,22,0.3)] active:scale-[0.98] transition">
+          <Plus size={16} /> Add money to bet ₹{amount}
+        </button>
+        ) : (
         // Standard Confirm Bet Button
         <button
           type="button"
@@ -437,8 +451,8 @@ export default function UniversalBetPanel({
             !isOpen
               ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed'
               : !isValid
-              ? 'bg-red-950/40 border border-red-500/30 text-red-700 cursor-not-allowed'
-              : 'bg-gradient-to-r from-neon-mint to-emerald-400 hover:from-emerald-400 hover:to-neon-mint text-deep-ocean shadow-[0_0_20px_rgba(0,255,163,0.35)] active:scale-98'
+              ? 'bg-rose-50 border border-rose-200 text-rose-600 cursor-not-allowed'
+              : 'bg-gradient-to-r from-sky-500 to-emerald-500 hover:brightness-105 text-white shadow-[0_10px_24px_rgba(16,185,129,0.3)] active:scale-[0.98]'
           }`}
         >
           {isLoading ? (
@@ -462,6 +476,7 @@ export default function UniversalBetPanel({
             </div>
           )}
         </button>
+        )
       )}
 
       {/* Bottom Footer Details */}

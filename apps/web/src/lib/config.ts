@@ -33,7 +33,7 @@ async function fetchSocketTicket(): Promise<string | null> {
 }
 
 export function createGameSocket(path = '', options: any = {}): Socket {
-  return getGameSocket(WS_BASE_URL, {
+  const socket = getGameSocket(WS_BASE_URL, {
     transports: ['websocket', 'polling'],
     ...options,
     // Called on every (re)connect, so an expired ticket is replaced automatically.
@@ -41,4 +41,22 @@ export function createGameSocket(path = '', options: any = {}): Socket {
       fetchSocketTicket().then((ticket) => cb({ ...(options.auth || {}), ...(ticket ? { token: ticket } : {}) }));
     }
   });
+
+  // Any game action the server refuses with AUTH_REQUIRED opens the sign-in sheet, so a visitor
+  // who taps "bet" is guided to log in instead of seeing a bare error.
+  const rawEmit = socket.emit.bind(socket);
+  socket.emit = ((event: string, ...args: unknown[]) => {
+    const last = args[args.length - 1];
+    if (typeof last === 'function') {
+      args[args.length - 1] = (res: { code?: string } | undefined) => {
+        if (res?.code === 'AUTH_REQUIRED') {
+          import('@/store/authStore').then((m) => m.useAuthStore.getState().openAuthModal('LOGIN'));
+        }
+        (last as (r: unknown) => void)(res);
+      };
+    }
+    return rawEmit(event, ...args);
+  }) as typeof socket.emit;
+
+  return socket;
 }
