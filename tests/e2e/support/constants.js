@@ -12,6 +12,7 @@ const E2E = {
   // Fixed OTP honoured only because the E2E backend runs with NODE_ENV=test.
   otp: '1234',
   merchantUpi: 'e2e-merchant@upi',
+  bankSmsToken: 'e2e-only-bank-sms-token-' + 'b'.repeat(40),
   jwtSecret: 'e2e-only-jwt-secret-' + 'e'.repeat(48),
   finance: { id: 'usr_e2e_finance', phone: '9000000099', phoneE164: '+919000000099' }
 };

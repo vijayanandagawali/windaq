@@ -115,7 +115,7 @@ export default function PaymentsReviewPage() {
             Payment Review
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Deposits are credited and withdrawals finalized only after a finance officer verifies them. Every action is audit-logged.
+            Deposits are credited automatically when the bank&apos;s credit SMS matches the player&apos;s UTR and amount. Anything unmatched waits here for a finance officer; withdrawals are always paid manually.
           </p>
         </div>
         <button
@@ -204,6 +204,80 @@ export default function PaymentsReviewPage() {
           </table>
         </div>
       </div>
+
+      <BankCreditsPanel reloadToken={reloadToken} />
     </div>
+  );
+}
+
+interface BankCreditRow {
+  id: string;
+  utr: string;
+  amountInr: number;
+  sender: string;
+  payerName?: string | null;
+  status: 'UNMATCHED' | 'MATCHED' | 'AMOUNT_MISMATCH';
+  bankReceivedAt: string;
+}
+
+const CREDIT_BADGE: Record<BankCreditRow['status'], string> = {
+  MATCHED: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+  UNMATCHED: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
+  AMOUNT_MISMATCH: 'text-red-300 bg-red-500/10 border-red-500/30'
+};
+
+/** Money the bank reported as received (forwarded credit SMS), newest first. */
+function BankCreditsPanel({ reloadToken }: { reloadToken: number }) {
+  const [rows, setRows] = useState<BankCreditRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(getApiUrl('/api/payments/admin/bank-credits'), { headers: authHeaders(), cache: 'no-store' })
+      .then(async (res) => {
+        const data = await res.json();
+        if (cancelled) return;
+        if (res.ok && data.success) { setRows(data.data); setError(null); }
+        else setError(data.message || `Could not load bank credits (HTTP ${res.status}).`);
+      })
+      .catch(() => !cancelled && setError('Payment service unreachable.'));
+    return () => { cancelled = true; };
+  }, [reloadToken]);
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-lg font-bold text-white">Bank credits received</h2>
+        <p className="text-xs text-slate-400">From the bank SMS forwarder. UNMATCHED: no player has submitted this UTR yet. AMOUNT_MISMATCH: the player claimed a different amount — resolve manually.</p>
+      </div>
+      {error && <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-sm text-red-300">{error}</div>}
+      <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-x-auto">
+        <table className="w-full text-sm text-left text-slate-300">
+          <thead className="text-xs text-slate-400 uppercase bg-slate-900 border-b border-slate-800">
+            <tr>
+              <th className="px-6 py-3">Received</th>
+              <th className="px-6 py-3">UTR</th>
+              <th className="px-6 py-3">Amount</th>
+              <th className="px-6 py-3">From</th>
+              <th className="px-6 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(rows || []).map((c) => (
+              <tr key={c.id} className="border-b border-slate-800/50">
+                <td className="px-6 py-3 text-xs text-slate-400">{new Date(c.bankReceivedAt).toLocaleString('en-IN')}</td>
+                <td className="px-6 py-3 font-mono text-xs">{c.utr}</td>
+                <td className="px-6 py-3 font-bold text-emerald-400">₹{c.amountInr.toFixed(2)}</td>
+                <td className="px-6 py-3 text-xs">{c.payerName || '—'} <span className="text-slate-500">({c.sender})</span></td>
+                <td className="px-6 py-3"><span className={`rounded border px-2 py-0.5 text-[11px] font-bold ${CREDIT_BADGE[c.status]}`}>{c.status}</span></td>
+              </tr>
+            ))}
+            {rows && rows.length === 0 && (
+              <tr><td colSpan={5} className="px-6 py-6 text-center text-slate-500">No bank credits received yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

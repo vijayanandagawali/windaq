@@ -6,6 +6,7 @@ import { X, ArrowUpRight, ShieldCheck, Zap, Lock } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
+import { getApiUrl } from '@/lib/config';
 import { TransactionStatusAnimation } from '@/components/wallet/TransactionStatusAnimation';
 
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000];
@@ -31,16 +32,36 @@ export default function WithdrawModal() {
     }
   }, [isWithdrawing, isAuthenticated, setWithdrawing, openAuthModal]);
 
+  // Whether withdrawals are open comes from the server's real-money switch.
+  const [paymentsOpen, setPaymentsOpen] = useState<boolean | null>(null);
+
   // Reset state when opened
   React.useEffect(() => {
     if (isWithdrawing) {
       setStep('INPUT');
       setErrorMessage('');
       setLoading(false);
+      setPaymentsOpen(null);
+      fetch(getApiUrl('/api/payments/config'), { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((res) => setPaymentsOpen(Boolean(res?.data?.enabled)))
+        .catch(() => setPaymentsOpen(false));
     }
   }, [isWithdrawing]);
 
   if (!isWithdrawing || !isAuthenticated) return null;
+
+  if (paymentsOpen === false) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" onClick={() => setWithdrawing(false)}>
+        <div role="dialog" aria-modal="true" className="w-full max-w-sm space-y-3 rounded-3xl bg-[#0d1b2a] p-6 text-center ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
+          <h4 className="text-lg font-black text-white">Withdrawals are closed right now</h4>
+          <p className="text-sm text-white/60">Withdrawals are temporarily unavailable. Your balance is safe. Please check back later.</p>
+          <button onClick={() => setWithdrawing(false)} className="w-full rounded-2xl bg-white/10 py-3 text-sm font-bold text-white">Close</button>
+        </div>
+      </div>
+    );
+  }
 
   const handleWithdraw = async () => {
     if (amount < 200) {

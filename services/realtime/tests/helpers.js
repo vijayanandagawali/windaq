@@ -34,6 +34,10 @@ delete process.env.DEV_FIXED_OTP;
 // so this guarantees tests can never send a real SMS.
 process.env.FAST2SMS_API_KEY = '';
 process.env.WINDAQ_TEST_HARNESS = '1';
+// Real-money flows are off by default in every environment; the payment tests exercise them enabled.
+process.env.REAL_MONEY_ENABLED = 'true';
+process.env.MERCHANT_UPI_ID = 'test-merchant@upi';
+process.env.BANK_SMS_TOKEN = 'test-only-bank-sms-token-' + 'y'.repeat(40);
 
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');

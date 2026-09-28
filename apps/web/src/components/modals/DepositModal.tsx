@@ -1,332 +1,301 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShieldCheck, Zap, ArrowDownLeft, Copy, Check, ExternalLink, QrCode, Clock, Loader2 } from 'lucide-react';
+import QRCode from 'qrcode';
+import { X, ArrowDownLeft, Copy, Check, ExternalLink, Loader2, ShieldCheck, Clock, AlertTriangle } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/config';
-import TransactionStatusAnimation from '@/components/wallet/TransactionStatusAnimation';
 import AnimatedWalletBalance from '@/components/wallet/AnimatedWalletBalance';
 
-const PRESETS = [500, 1000, 2000, 5000, 10000];
+const PRESETS = [100, 500, 1000, 2000, 5000];
+const POLL_MS = 4000;
+const POLL_LIMIT_MS = 15 * 60 * 1000;
+
+interface PaymentConfig {
+  enabled: boolean;
+  upiId: string;
+  payeeName: string;
+  minDepositInr: number;
+  maxDepositInr: number;
+}
+
+type Step = 'amount' | 'pay' | 'waiting' | 'credited' | 'rejected';
 
 export default function DepositModal() {
   const { isDepositing, setDepositing, submitDeposit, fetchBalance, balance, availableBalance } = useWalletStore();
-  const { user, isAuthenticated, openAuthModal } = useAuthStore();
-  
-  const [amount, setAmount] = useState<number>(1000);
-  const [utr, setUtr] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [step, setStep] = useState<'amount' | 'pay' | 'verifying' | 'success'>('amount');
-  const [copied, setCopied] = useState<boolean>(false);
-  const [depositResult, setDepositResult] = useState<any>(null);
+  const { isAuthenticated, isGuest, openAuthModal } = useAuthStore();
 
-  // Dynamic Merchant VPA configured via environment or backend (Prompt #69 Phase 13)
-  // No fallback: never show a guessed VPA that could belong to someone else.
-  const merchantUpi = process.env.NEXT_PUBLIC_MERCHANT_UPI_ID || '';
-  const merchantName = 'WinDaq Gaming India';
+  const [config, setConfig] = useState<PaymentConfig | null>(null);
+  const [configError, setConfigError] = useState(false);
+  const [amount, setAmount] = useState<number>(500);
+  const [utr, setUtr] = useState('');
+  const [step, setStep] = useState<Step>('amount');
+  const [submitting, setSubmitting] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [qr, setQr] = useState('');
+  const [intentId, setIntentId] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (isDepositing && !isAuthenticated) {
       setDepositing(false);
       openAuthModal('LOGIN');
-      toast.error('Please login to deposit funds');
+      toast.error('Please log in to deposit');
     }
   }, [isDepositing, isAuthenticated, setDepositing, openAuthModal]);
 
+  // Payment details always come from the server, so the switch and UPI ID can change without a redeploy.
+  useEffect(() => {
+    if (!isDepositing) return;
+    setConfig(null);
+    setConfigError(false);
+    fetch(getApiUrl('/api/payments/config'), { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((res) => (res?.success ? setConfig(res.data) : setConfigError(true)))
+      .catch(() => setConfigError(true));
+  }, [isDepositing]);
+
+  const upiLink = config?.upiId
+    ? `upi://pay?pa=${encodeURIComponent(config.upiId)}&pn=${encodeURIComponent(config.payeeName)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent('WinDaq wallet deposit')}`
+    : '';
+
+  useEffect(() => {
+    if (step !== 'pay' || !upiLink) return;
+    QRCode.toDataURL(upiLink, { margin: 1, width: 260 }).then(setQr).catch(() => setQr(''));
+  }, [step, upiLink]);
+
+  const stopPolling = () => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = null;
+  };
+  useEffect(() => stopPolling, []);
+
+  const startPolling = (id: string) => {
+    stopPolling();
+    const startedAt = Date.now();
+    pollRef.current = setInterval(async () => {
+      if (Date.now() - startedAt > POLL_LIMIT_MS) return stopPolling();
+      try {
+        const res = await (await fetch(getApiUrl(`/api/payments/intent/${id}`), { cache: 'no-store' })).json();
+        const status = res?.data?.status;
+        if (status === 'SUCCESS') {
+          stopPolling();
+          setStep('credited');
+          fetchBalance();
+          toast.success('Payment received. Wallet credited!');
+        } else if (status === 'FAILED') {
+          stopPolling();
+          setStep('rejected');
+        }
+      } catch {
+        // transient network error: keep polling
+      }
+    }, POLL_MS);
+  };
+
   if (!isDepositing || !isAuthenticated) return null;
 
-  if (!merchantUpi) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setDepositing(false)}>
-        <div role="dialog" aria-modal="true" className="w-full max-w-sm bg-[#0d121f] border border-white/10 rounded-3xl p-6 text-center space-y-3" onClick={(e) => e.stopPropagation()}>
-          <h4 className="text-lg font-black text-white">Deposits unavailable</h4>
-          <p className="text-xs text-slate-400">Deposits are temporarily unavailable. Please try again later.</p>
-          <button onClick={() => setDepositing(false)} className="w-full py-3 rounded-2xl bg-white/10 text-white text-sm font-bold cursor-pointer">Close</button>
-        </div>
+  const close = () => {
+    stopPolling();
+    setStep('amount');
+    setUtr('');
+    setIntentId(null);
+    setDepositing(false);
+  };
+
+  const min = config?.minDepositInr ?? 100;
+  const max = config?.maxDepositInr ?? 100000;
+  const amountValid = Number.isInteger(amount) && amount >= min && amount <= max;
+  const utrValid = /^\d{12}$/.test(utr.trim());
+
+  const copyUpi = () => {
+    if (!config?.upiId) return;
+    navigator.clipboard?.writeText(config.upiId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const submit = async () => {
+    if (!utrValid) {
+      toast.error('Enter the 12-digit UPI reference number (UTR) from your payment app.');
+      return;
+    }
+    setSubmitting(true);
+    const res = await submitDeposit(amount, utr.trim(), 'UPI');
+    setSubmitting(false);
+    if (!res.success) {
+      toast.error(res.message || 'Deposit could not be submitted.');
+      return;
+    }
+    setIntentId(res.data?.intentId || null);
+    if (res.data?.status === 'SUCCESS') {
+      setStep('credited');
+      fetchBalance();
+      return;
+    }
+    setStep('waiting');
+    if (res.data?.intentId) startPolling(res.data.intentId);
+  };
+
+  const shell = (children: React.ReactNode) => (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={close}
+          className="fixed inset-0 bg-black/80 backdrop-blur-md" />
+        <motion.div role="dialog" aria-modal="true" aria-label="UPI deposit"
+          initial={{ scale: 0.95, opacity: 0, y: 16 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
+          className="relative z-10 w-full max-w-md max-h-[92dvh] overflow-y-auto overscroll-contain rounded-3xl bg-gradient-to-b from-[#0f2236] to-[#08131f] p-6 text-left ring-1 ring-white/10 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-neon-mint-soft text-neon-mint"><ArrowDownLeft size={22} /></div>
+              <div>
+                <h3 className="text-base font-black text-white">Add money</h3>
+                <p className="text-xs text-white/50">UPI • credited automatically when the bank confirms</p>
+              </div>
+            </div>
+            <button onClick={close} aria-label="Close" className="rounded-xl p-2 text-white/50 hover:bg-white/10 hover:text-white"><X size={18} /></button>
+          </div>
+          {children}
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+
+  if (isGuest) {
+    return shell(
+      <p className="mt-5 text-sm text-white/70">Guest accounts use play money only. Log in with your mobile number to add real money.</p>
+    );
+  }
+
+  if (!config && !configError) {
+    return shell(<div className="flex justify-center py-12 text-neon-mint"><Loader2 className="animate-spin" size={28} /></div>);
+  }
+
+  if (configError || !config?.enabled) {
+    return shell(
+      <div className="mt-6 space-y-3 text-center">
+        <Clock className="mx-auto text-gold-warning" size={32} />
+        <h4 className="text-lg font-black text-white">Deposits are closed right now</h4>
+        <p className="text-sm text-white/60">Adding money is temporarily unavailable. Please check back later.</p>
+        <button onClick={close} className="mt-2 w-full rounded-2xl bg-white/10 py-3 text-sm font-bold text-white">Close</button>
       </div>
     );
   }
 
-  const upiDeepLink = `upi://pay?pa=${encodeURIComponent(merchantUpi)}&pn=${encodeURIComponent(merchantName)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent('WinDaq_Wallet_Deposit')}`;
+  return shell(
+    <>
+      <div className="mt-4 flex items-center justify-between rounded-2xl bg-white/5 p-3 ring-1 ring-white/10">
+        <span className="text-xs font-semibold text-white/50">Available balance</span>
+        <AnimatedWalletBalance value={availableBalance || balance} className="text-sm text-neon-mint" />
+      </div>
 
-  const handleCopyUpi = () => {
-    if (typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(merchantUpi);
-      setCopied(true);
-      toast.success('Merchant UPI ID copied to clipboard!');
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  // Opens the player's UPI app with the payment pre-filled. Nothing is submitted here:
-  // after paying, the player enters the UTR from their app so finance can verify it.
-  const handleOpenUpiApp = (app: string) => {
-    if (typeof window !== 'undefined') window.location.assign(upiDeepLink);
-    toast(`After paying in ${app}, enter the 12-digit UTR below to submit your deposit.`, { icon: '📲', duration: 5000 });
-  };
-
-  const handleSubmitUtr = async () => {
-    const cleanUtr = utr.trim();
-    if (!cleanUtr || cleanUtr.length < 6) {
-      toast.error('Please enter a valid 12-digit UPI Reference / UTR number');
-      return;
-    }
-
-    setStep('verifying');
-    setLoading(true);
-
-    const res = await submitDeposit(amount, cleanUtr, 'MANUAL_UPI');
-    setLoading(false);
-
-    if (res.success) {
-      setDepositResult(res.data);
-      setStep('success');
-      toast.success(res.message || 'Deposit submitted for verification.');
-    } else {
-      setStep('pay');
-      toast.error(res.message || 'Deposit could not be verified.');
-    }
-  };
-
-  const handleClose = () => {
-    setStep('amount');
-    setUtr('');
-    setDepositing(false);
-  };
-
-  return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        {/* Backdrop */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={handleClose}
-          className="fixed inset-0 bg-black/80 backdrop-blur-md"
-        />
-
-        {/* Modal Window */}
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative z-10 w-full max-w-md max-h-[90dvh] overflow-y-auto overscroll-contain bg-gradient-to-b from-[#161224] via-[#0d121f] to-[#080c14] border border-amber-500/30 rounded-3xl p-6 shadow-2xl text-left"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                <ArrowDownLeft size={22} />
-              </div>
-              <div>
-                <h3 className="font-black text-white text-base tracking-tight uppercase">
-                  UPI Deposit
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Pay by UPI • Credited after verification
-                </p>
-              </div>
+      {step === 'amount' && (
+        <div className="mt-5 space-y-5">
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-white/50">Amount</p>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+              {PRESETS.map((p) => (
+                <button key={p} data-testid={`deposit-preset-${p}`} onClick={() => setAmount(p)}
+                  className={`rounded-xl py-3 text-sm font-black transition ${amount === p ? 'bg-neon-mint text-deep-ocean' : 'bg-white/5 text-white/80 ring-1 ring-white/10 hover:bg-white/10'}`}>
+                  ₹{p.toLocaleString('en-IN')}
+                </button>
+              ))}
             </div>
-            <button
-              onClick={handleClose}
-              aria-label="Close Deposit Modal"
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              <X size={18} />
+          </div>
+          <label className="block">
+            <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/50">Or enter amount (₹{min} – ₹{max.toLocaleString('en-IN')})</span>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-white/50">₹</span>
+              <input type="number" inputMode="numeric" min={min} max={max} value={amount || ''}
+                onChange={(e) => setAmount(Math.floor(Number(e.target.value) || 0))}
+                className="w-full rounded-xl bg-black/30 py-3 pl-8 pr-4 font-mono text-base font-bold text-white ring-1 ring-white/10 outline-none focus:ring-neon-mint/60" />
+            </div>
+          </label>
+          <button onClick={() => setStep('pay')} disabled={!amountValid}
+            className="w-full rounded-2xl bg-neon-mint py-3.5 text-sm font-black text-deep-ocean transition hover:bg-neon-mint-hover disabled:opacity-40">
+            Continue to pay ₹{(amount || 0).toLocaleString('en-IN')}
+          </button>
+        </div>
+      )}
+
+      {step === 'pay' && (
+        <div className="mt-5 space-y-5">
+          <button onClick={() => setStep('amount')} className="text-xs font-bold text-neon-mint hover:underline">← Change amount</button>
+
+          <div className="rounded-2xl bg-gold-warning/10 p-3 text-xs text-gold-warning ring-1 ring-gold-warning/30">
+            Pay <b>exactly ₹{amount.toLocaleString('en-IN')}</b>. A different amount cannot be matched automatically.
+          </div>
+
+          <div className="flex flex-col items-center gap-3 rounded-2xl bg-white p-4">
+            {qr
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={qr} alt={`UPI QR code to pay ₹${amount}`} width={220} height={220} className="h-[220px] w-[220px]" />
+              : <div className="flex h-[220px] w-[220px] items-center justify-center text-slate-400"><Loader2 className="animate-spin" /></div>}
+            <p className="text-center text-xs font-semibold text-slate-600">Scan with any UPI app</p>
+          </div>
+
+          <a href={upiLink} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white/10 py-3 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15 sm:hidden">
+            Open UPI app <ExternalLink size={14} />
+          </a>
+
+          <div className="flex items-center justify-between gap-2 rounded-2xl bg-black/30 p-3 ring-1 ring-white/10">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white/40">UPI ID</p>
+              <p className="truncate font-mono text-sm font-bold text-white">{config.upiId}</p>
+            </div>
+            <button onClick={copyUpi} className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-bold text-neon-mint">
+              {copied ? <Check size={14} /> : <Copy size={14} />}{copied ? 'Copied' : 'Copy'}
             </button>
           </div>
 
-          {/* Current Available Balance Banner */}
-          <div className="mt-4 p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
-            <span className="text-xs text-slate-400 font-semibold">Current Available:</span>
-            <AnimatedWalletBalance value={availableBalance || balance} className="text-sm text-emerald-400" />
+          <div className="space-y-2 border-t border-white/10 pt-4">
+            <label htmlFor="deposit-utr" className="block text-xs font-bold uppercase tracking-wider text-white/50">After paying, enter the 12-digit UTR</label>
+            <p className="text-[11px] text-white/40">Find it in your UPI app under the payment details (UPI Ref No. / UTR).</p>
+            <div className="flex gap-2">
+              <input id="deposit-utr" inputMode="numeric" maxLength={12} placeholder="e.g. 526712345678" value={utr}
+                onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                className="min-w-0 flex-1 rounded-xl bg-black/30 px-3.5 py-3 font-mono text-sm text-white ring-1 ring-white/10 outline-none focus:ring-neon-mint/60" />
+              <button onClick={submit} disabled={!utrValid || submitting}
+                className="rounded-xl bg-neon-mint px-4 text-sm font-black text-deep-ocean disabled:opacity-40">
+                {submitting ? <Loader2 className="animate-spin" size={16} /> : 'Submit'}
+              </button>
+            </div>
           </div>
+        </div>
+      )}
 
-          {/* STEP 1: Amount Selection */}
-          {step === 'amount' && (
-            <div className="mt-5 space-y-5">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  Select Deposit Amount
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {PRESETS.map((preset) => (
-                    <button
-                      key={preset}
-                      data-testid={`deposit-preset-${preset}`}
-                      onClick={() => setAmount(preset)}
-                      className={`py-3 rounded-xl font-mono font-black text-sm border transition-all cursor-pointer ${
-                        amount === preset
-                          ? 'bg-amber-500 text-black border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)] scale-105'
-                          : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      ₹{preset.toLocaleString('en-IN')}
-                    </button>
-                  ))}
-                </div>
-              </div>
+      {step === 'waiting' && (
+        <div className="mt-8 space-y-4 text-center">
+          <Loader2 className="mx-auto animate-spin text-neon-mint" size={36} />
+          <h4 className="text-base font-black text-white">Waiting for the bank to confirm</h4>
+          <p className="mx-auto max-w-xs text-sm text-white/60">
+            Your ₹{amount.toLocaleString('en-IN')} will be added automatically, usually within a minute. You can close this window — it will still be credited.
+          </p>
+          <p className="font-mono text-[11px] text-white/40">UTR {utr} • Request {intentId?.slice(0, 8)}</p>
+          <button onClick={close} className="w-full rounded-2xl bg-white/10 py-3 text-sm font-bold text-white">Close</button>
+        </div>
+      )}
 
-              {/* Custom Amount Input */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  Or Enter Custom Amount (₹100 – ₹1,00,000)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
-                  <input
-                    type="number"
-                    min="100"
-                    max="100000"
-                    value={amount}
-                    onChange={(e) => setAmount(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-4 py-3 text-white font-mono font-bold text-base focus:outline-none focus:border-amber-500 transition-colors"
-                  />
-                </div>
-              </div>
+      {step === 'credited' && (
+        <div className="mt-8 space-y-4 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-neon-mint-soft text-neon-mint"><ShieldCheck size={32} /></div>
+          <h4 className="text-lg font-black text-white">₹{amount.toLocaleString('en-IN')} added</h4>
+          <p className="text-sm text-white/60">The bank confirmed your payment and your wallet has been credited.</p>
+          <button onClick={close} className="w-full rounded-2xl bg-neon-mint py-3 text-sm font-black text-deep-ocean">Start playing</button>
+        </div>
+      )}
 
-              {/* Continue to Payment Button */}
-              <button
-                onClick={() => setStep('pay')}
-                disabled={amount < 100}
-                className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-sm rounded-2xl shadow-lg transition-all active:scale-98 cursor-pointer disabled:opacity-50"
-              >
-                PROCEED TO PAY ₹{amount.toLocaleString('en-IN')}
-              </button>
-            </div>
-          )}
-
-          {/* STEP 2: Payment Methods & QR Presentation */}
-          {step === 'pay' && (
-            <div className="mt-5 space-y-5">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => setStep('amount')}
-                  className="text-xs text-amber-400 hover:underline cursor-pointer"
-                >
-                  ← Change Amount (₹{amount})
-                </button>
-                <span className="text-xs text-slate-400 font-mono">Amount: ₹{amount}</span>
-              </div>
-
-              {/* Merchant VPA Display */}
-              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Merchant Official UPI VPA</span>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-xs font-bold text-white truncate">{merchantUpi}</span>
-                  <button
-                    onClick={handleCopyUpi}
-                    className="shrink-0 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold text-amber-400 flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    {copied ? <Check size={14} /> : <Copy size={14} />}
-                    <span>{copied ? 'Copied' : 'Copy'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* UPI Intent One-Click Apps */}
-              <div>
-                <span className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
-                  Open your UPI app
-                </span>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {['PhonePe', 'Google Pay', 'Paytm', 'BHIM UPI'].map((app) => (
-                    <button
-                      key={app}
-                      onClick={() => handleOpenUpiApp(app)}
-                      className="py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
-                    >
-                      <span>{app}</span>
-                      <ExternalLink size={12} className="opacity-60" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Manual UTR Input */}
-              <div className="pt-3 border-t border-white/10 space-y-2.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Paid via QR or UPI? Enter 12-Digit UTR
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g. 423985729104"
-                    value={utr}
-                    onChange={(e) => setUtr(e.target.value)}
-                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-amber-500"
-                  />
-                  <button
-                    onClick={handleSubmitUtr}
-                    className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs rounded-xl transition-all active:scale-95 cursor-pointer"
-                  >
-                    CONFIRM
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3: Server Verifying State */}
-          {step === 'verifying' && (
-            <div className="mt-8 mb-4 text-center space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                <Loader2 size={32} className="animate-spin" />
-              </div>
-              <h4 className="text-base font-black text-white uppercase tracking-tight">
-                Verifying Authoritative Deposit...
-              </h4>
-              <p className="text-xs text-slate-400 max-w-xs mx-auto">
-                Consulting PostgreSQL ledger and payment gateway settlement pipeline. Do not close this window.
-              </p>
-              <TransactionStatusAnimation status="PROCESSING" />
-            </div>
-          )}
-
-          {/* STEP 4: Success State with Confirmed Balance */}
-          {step === 'success' && (
-            <div className="mt-6 space-y-5 text-center">
-              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.3)]">
-                <Check size={32} strokeWidth={3} />
-              </div>
-              <div>
-                <h4 className="text-lg font-black text-white uppercase tracking-tight">
-                  Deposit Submitted
-                </h4>
-                <p className="text-xs text-emerald-400 font-mono mt-0.5">
-                  ₹{amount.toLocaleString('en-IN')} will be credited once the payment is verified
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 text-left text-xs font-mono">
-                <div className="flex justify-between text-slate-400">
-                  <span>UTR / Reference:</span>
-                  <span className="text-white font-bold">{depositResult?.utr || '—'}</span>
-                </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>Request ID:</span>
-                  <span className="text-slate-300 truncate max-w-[180px]">{depositResult?.intentId || '—'}</span>
-                </div>
-                <div className="flex justify-between border-t border-white/10 pt-2 text-slate-400">
-                  <span>Status:</span>
-                  <span className="text-amber-400 font-bold">Awaiting verification</span>
-                </div>
-              </div>
-
-              <button
-                onClick={handleClose}
-                className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-              >
-                RETURN TO LOBBY
-              </button>
-            </div>
-          )}
-        </motion.div>
-      </div>
-    </AnimatePresence>
+      {step === 'rejected' && (
+        <div className="mt-8 space-y-4 text-center">
+          <AlertTriangle className="mx-auto text-danger" size={32} />
+          <h4 className="text-lg font-black text-white">Deposit not approved</h4>
+          <p className="text-sm text-white/60">We could not match this payment. If money left your account, contact support with UTR {utr}.</p>
+          <button onClick={close} className="w-full rounded-2xl bg-white/10 py-3 text-sm font-bold text-white">Close</button>
+        </div>
+      )}
+    </>
   );
 }

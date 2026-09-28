@@ -2,7 +2,38 @@ const { test, expect } = require('@playwright/test');
 const { E2E } = require('./support/constants');
 const { uniquePhone, loginViaUi, tokenFromPage, apiLogin, apiBalance } = require('./support/flows');
 
-test('deposit is credited only after finance verifies it, exactly once', async ({ page, browser, request }) => {
+async function submitDepositViaUi(page, utr) {
+  await page.getByRole('button', { name: /^DEPOSIT$/ }).first().click();
+  await page.getByTestId('deposit-preset-1000').click();
+  await page.getByRole('button', { name: /Continue to pay/ }).click();
+  await expect(page.getByText(E2E.merchantUpi)).toBeVisible();
+  await expect(page.getByAltText(/UPI QR code/)).toBeVisible();
+  await page.getByLabel('After paying, enter the 12-digit UTR').fill(utr);
+  await page.getByRole('button', { name: 'Submit' }).click();
+}
+
+test('a deposit is credited automatically when the bank credit SMS arrives', async ({ page, request }) => {
+  const phone = uniquePhone();
+  await loginViaUi(page, phone);
+  const playerToken = await tokenFromPage(page);
+  const utr = `5${Date.now()}`.slice(0, 12);
+
+  await submitDepositViaUi(page, utr);
+  await expect(page.getByRole('heading', { name: 'Waiting for the bank to confirm' })).toBeVisible();
+  expect((await apiBalance(request, playerToken)).balancePaise).toBe('0');
+
+  // The merchant's phone forwards the bank SMS.
+  const sms = await request.post(`${E2E.backendUrl}/api/payments/bank-sms`, {
+    headers: { 'x-windaq-sms-token': E2E.bankSmsToken },
+    data: { from: 'AD-SBIUPI', text: `Dear UPI user A/C X1234 credited by Rs1000.00 on date 28Sep26 trf from E2E PLAYER Refno ${utr}. -SBI`, receivedStamp: Date.now() }
+  });
+  expect((await sms.json()).matched).toBe(true);
+
+  await expect(page.getByRole('heading', { name: '₹1,000 added' })).toBeVisible({ timeout: 15000 });
+  expect((await apiBalance(request, playerToken)).balancePaise).toBe('100000');
+});
+
+test('an unmatched deposit is credited only after finance verifies it, exactly once', async ({ page, browser, request }) => {
   const phone = uniquePhone();
   await loginViaUi(page, phone);
   const playerToken = await tokenFromPage(page);
@@ -11,14 +42,9 @@ test('deposit is credited only after finance verifies it, exactly once', async (
   expect((await apiBalance(request, playerToken)).balancePaise).toBe('0');
 
   // Player submits a deposit with a UTR through the deposit modal.
-  await page.getByRole('button', { name: /^DEPOSIT$/ }).first().click();
-  await page.getByRole('button', { name: /PROCEED TO PAY/ }).click();
-  await expect(page.getByText(E2E.merchantUpi)).toBeVisible();
   const utr = `7${Date.now()}`.slice(0, 12);
-  await page.getByPlaceholder('e.g. 423985729104').fill(utr);
-  await page.getByRole('button', { name: 'CONFIRM' }).click();
-  await expect(page.getByRole('heading', { name: 'Deposit Submitted' })).toBeVisible();
-  await expect(page.getByText('Awaiting verification')).toBeVisible();
+  await submitDepositViaUi(page, utr);
+  await expect(page.getByRole('heading', { name: 'Waiting for the bank to confirm' })).toBeVisible();
 
   // Still not credited.
   expect((await apiBalance(request, playerToken)).balancePaise).toBe('0');

@@ -769,6 +769,24 @@ model PaymentIntent {
   user              User     @relation(fields: [userId], references: [id])
 }
 
+// Money actually received in the merchant bank account, as reported by the bank's credit SMS
+// (forwarded from the account holder's phone). Deposits are credited automatically only when a
+// player's submitted UTR and amount match one of these rows.
+model BankCredit {
+  id               String   @id @default(uuid())
+  utr              String   @unique
+  amount           BigInt   // in paise
+  sender           String   // SMS sender header, e.g. AD-SBIUPI
+  payerName        String?
+  bankReceivedAt   DateTime
+  matchedIntentId  String?  @unique
+  status           String   @default("UNMATCHED") // UNMATCHED, MATCHED, AMOUNT_MISMATCH
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
 // --- BONUS & PROMOTION ENGINE ---
 
 model Campaign {

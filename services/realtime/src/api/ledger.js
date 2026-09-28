@@ -4,7 +4,14 @@ const prisma = new PrismaClient();
 const router = express.Router();
 const { getWallet } = require('../services/walletService');
 const manualPayments = require('../services/manualPaymentService');
+const bankSms = require('../services/bankSmsService');
 const { requireRole } = require('../middleware/AdminRBAC');
+
+function rejectIfRealMoneyDisabled(res) {
+  if (bankSms.isRealMoneyEnabled()) return false;
+  res.status(503).json({ success: false, code: 'PAYMENTS_DISABLED', message: 'Deposits and withdrawals are currently unavailable.' });
+  return true;
+}
 
 function sendPaymentError(res, error, action) {
   if (error instanceof manualPayments.PaymentRequestError) {
@@ -310,23 +317,31 @@ router.get('/transactions/:id', async (req, res) => {
  * payment on the bank statement (see /api/payments/admin/deposits). Path kept for client compatibility.
  */
 router.post('/deposit/instant', async (req, res) => {
+  if (rejectIfRealMoneyDisabled(res)) return;
   try {
     const { intent, duplicate } = await manualPayments.createDepositRequest(prisma, req.user, {
       amount: req.body?.amount,
       utr: req.body?.utr
     });
-    res.status(duplicate ? 200 : 202).json({
+    // If the bank's credit SMS for this UTR has already arrived, the deposit is credited right now.
+    const match = await bankSms.tryMatchUtr(prisma, intent.metadata?.utr);
+    const credited = match.matched || intent.status === 'SUCCESS';
+    const wallet = credited ? await getWallet(prisma, req.user.userId) : null;
+    res.status(credited || duplicate ? 200 : 202).json({
       success: true,
-      status: 'PENDING_REVIEW',
-      message: duplicate
-        ? 'This deposit was already submitted and is awaiting verification.'
-        : 'Deposit submitted. Your balance will be credited once the payment is verified.',
+      status: credited ? 'SUCCESS' : 'PENDING_REVIEW',
+      message: credited
+        ? 'Payment received. Your wallet has been credited.'
+        : duplicate
+          ? 'This deposit was already submitted and is awaiting the bank confirmation.'
+          : 'Deposit submitted. It will be credited automatically as soon as the bank confirms the payment.',
       data: {
         intentId: intent.id,
         utr: intent.metadata?.utr,
         amount: Number(intent.amount) / 100,
-        status: intent.status,
-        isDuplicate: duplicate
+        status: credited ? 'SUCCESS' : intent.status,
+        isDuplicate: duplicate,
+        ...(wallet ? { availableBalance: wallet.availableBalanceNumber } : {})
       }
     });
   } catch (error) {
@@ -340,6 +355,7 @@ router.post('/deposit/instant', async (req, res) => {
  * nothing is paid out automatically. Path kept for client compatibility.
  */
 router.post('/withdraw/instant', async (req, res) => {
+  if (rejectIfRealMoneyDisabled(res)) return;
   try {
     const { intent, duplicate } = await manualPayments.createWithdrawalRequest(prisma, req.user, {
       amount: req.body?.amount,

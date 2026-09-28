@@ -20,7 +20,10 @@ const backendEnv = {
   DEV_FIXED_OTP: E2E.otp,
   FAST2SMS_API_KEY: '',
   WINDAQ_TEST_HARNESS: '1',
-  FRONTEND_URL: E2E.webUrl
+  FRONTEND_URL: E2E.webUrl,
+  REAL_MONEY_ENABLED: 'true',
+  MERCHANT_UPI_ID: E2E.merchantUpi,
+  BANK_SMS_TOKEN: E2E.bankSmsToken
 };
 
 const webEnv = {

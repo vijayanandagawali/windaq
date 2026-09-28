@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const paymentService = require('../services/paymentService');
 const manualPayments = require('../services/manualPaymentService');
+const bankSms = require('../services/bankSmsService');
 const { requireRole, logAudit } = require('../middleware/AdminRBAC');
 const { requireAuth } = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
@@ -28,6 +29,37 @@ function serializeIntent(intent) {
 }
 
 // --- CLIENT ROUTES ---
+
+// Public: whether real-money deposits are open and where to pay. Never exposes secrets.
+router.get('/config', (req, res) => {
+  res.json({ success: true, data: bankSms.getPaymentConfig() });
+});
+
+// Bank credit SMS forwarded from the merchant account holder's phone (see bankSmsService).
+// Authenticated with a long shared token; the forwarder app sends it in the X-Windaq-Sms-Token header.
+router.post('/bank-sms', async (req, res) => {
+  if (!bankSms.isValidForwarderToken(req.headers['x-windaq-sms-token'])) {
+    return res.status(401).json({ success: false, code: 'UNAUTHORIZED' });
+  }
+  try {
+    const body = req.body || {};
+    const result = await bankSms.ingestBankSms(prisma, {
+      sender: body.from ?? body.sender ?? body.address,
+      text: body.text ?? body.message ?? body.body,
+      receivedAt: body.receivedStamp ?? body.sentStamp ?? body.timestamp
+    });
+    // The match itself is recorded on the PaymentIntent (reviewedBy AUTO_BANK_SMS) and the BankCredit row.
+    if (result.matched) console.log(`[BankSMS] Auto-credited deposit ${result.intentId}`);
+    res.json({
+      success: true,
+      accepted: result.accepted,
+      reason: result.reason || null,
+      matched: Boolean(result.matched)
+    });
+  } catch (error) {
+    sendError(res, error, 'bank sms');
+  }
+});
 
 // Mock-provider deposit/withdraw initiation is disabled: the only supported player flow is the
 // verified manual UPI workflow (/api/ledger/deposit/instant and /api/ledger/withdraw/instant).
@@ -86,6 +118,19 @@ router.get('/admin/withdrawals/pending', requireAuth, requireRole(FINANCE_ROLES)
     res.json({ success: true, data: await listPending('WITHDRAWAL') });
   } catch (error) {
     sendError(res, error, 'list withdrawals');
+  }
+});
+
+// Bank credits that have not been matched to a deposit request (for reconciliation).
+router.get('/admin/bank-credits', requireAuth, requireRole(FINANCE_ROLES), async (req, res) => {
+  try {
+    const credits = await prisma.bankCredit.findMany({ orderBy: { createdAt: 'desc' }, take: 100 });
+    res.json({
+      success: true,
+      data: credits.map((c) => ({ ...c, amount: c.amount.toString(), amountInr: Number(c.amount) / 100 }))
+    });
+  } catch (error) {
+    sendError(res, error, 'list bank credits');
   }
 });
 
