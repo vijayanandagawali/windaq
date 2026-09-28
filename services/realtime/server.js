@@ -80,6 +80,13 @@ async function startServer() {
         expireStaleDeposits(paymentsPrisma).catch((err) => console.error('[Deposits] expiry sweep failed:', err.message));
       }, 5 * 60 * 1000).unref();
 
+      // Casino Hold'em: fold hands left undecided and finish any interrupted settlement.
+      const casinoHoldem = require('./src/services/casinoHoldem');
+      setInterval(() => {
+        casinoHoldem.expireStale().catch((err) => console.error('[Holdem] expiry sweep failed:', err.message));
+        casinoHoldem.recoverStuckCalls().catch((err) => console.error('[Holdem] recovery failed:', err.message));
+      }, 60 * 1000).unref();
+
       // Start Game Engines
       console.log('✈️ Starting Aviator Engine loop...');
       const aviatorEngine = new AviatorEngine(io);

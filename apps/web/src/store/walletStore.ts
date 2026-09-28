@@ -69,6 +69,9 @@ interface WalletState {
   setAuthenticatedUser: (user: { id: string; phone: string; role?: string; isGuest?: boolean }, initialBalance?: number) => void;
   resetWallet: () => void;
   fetchBalance: () => Promise<void>;
+  /** Delays live (socket-pushed) balance refreshes while a result is being revealed; 0 releases. */
+  holdLiveBalance: (ms: number) => void;
+  balanceHoldUntil: number;
   fetchTransactions: () => Promise<void>;
   initRealtimeSync: () => void;
 }
@@ -104,6 +107,9 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   isNotifOpen: false,
   transactions: [],
   isLoading: false,
+  balanceHoldUntil: 0,
+
+  holdLiveBalance: (ms) => set({ balanceHoldUntil: ms > 0 ? Date.now() + ms : 0 }),
 
   setBalance: (amount) => set({ balance: amount, availableBalance: amount - get().lockedBalance }),
 
@@ -285,6 +291,12 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     try {
       const s = createGameSocket();
       s.on('WALLET_UPDATED', (payload: any) => {
+        // A game revealing a result asks for a short hold so the header does not give the outcome away.
+        const wait = get().balanceHoldUntil - Date.now();
+        if (wait > 0) {
+          setTimeout(() => { get().fetchBalance(); get().fetchTransactions(); }, wait);
+          return;
+        }
         get().fetchBalance();
         get().fetchTransactions();
       });

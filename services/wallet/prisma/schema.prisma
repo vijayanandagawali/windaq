@@ -436,6 +436,30 @@ model BlackjackHand {
   user        User          @relation(fields: [userId], references: [id])
 }
 
+// --- CASINO HOLD'EM (player vs dealer) ---
+// One row per hand. The deck comes from serverSeed + clientSeed (hash shown at the deal,
+// seed revealed at settlement). Ante and call are separate ledger bets: `<id>` and `<id>-call`.
+model CasinoHoldemHand {
+  id             String   @id @default(uuid())
+  userId         String
+  ante           BigInt   // paise
+  call           BigInt   @default(0) // paise, 2x ante once the player calls
+  status         String   @default("DECIDING") // DECIDING, FOLDED, SETTLED
+  serverSeed     String
+  serverSeedHash String
+  clientSeed     String
+  playerCards    Json
+  dealerCards    Json
+  board          Json     // all five community cards; only the flop is shown while deciding
+  result         Json?
+  payout         BigInt   @default(0) // paise, ante + call returns
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
 // --- RUMMY GAMES ---
 
 model RummyGame {

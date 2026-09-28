@@ -439,6 +439,7 @@ const HISTORY_SOURCES = {
   scratch: { ledger: 'SCRATCH_BET' },
   slots: { ledger: 'SLOTS_BET' },
   aviator: { ledger: 'AVIATOR_BET' },
+  'texas-holdem': { ledger: 'HOLDEM_BET' },
   'andar-bahar': { table: 'andar-bahar' },
   'dragon-tiger': { table: 'dragon-tiger' },
   'teen-patti': { table: 'teen-patti-2020' }

@@ -89,8 +89,8 @@ export const GAMES: LobbyGame[] = [
     accent: '#FF5FA2', ...art('teen-patti')
   },
   {
-    slug: 'texas-holdem', name: 'Texas Hold’em', href: '/games/texas-holdem', category: 'table', status: 'coming-soon',
-    tagline: 'Real-player tables are on the way', highlight: 'Coming soon', minBet: 10,
+    slug: 'texas-holdem', name: 'Casino Hold’em', href: '/games/texas-holdem', category: 'table', status: 'live',
+    tagline: 'Your best five cards against the dealer', highlight: 'Royal flush pays 100:1', minBet: 10,
     accent: '#26F0B2', ...art('texas-holdem')
   },
   {
