@@ -11,6 +11,7 @@ const { DiceEngine } = require('../src/services/diceEngine');
 const { LottoEngine } = require('../src/services/lottoEngine');
 const { DragonTigerEngine } = require('../src/services/tableGames/DragonTigerEngine');
 const { AndarBaharEngine } = require('../src/services/tableGames/AndarBaharEngine');
+const { TeenPatti2020Engine } = require('../src/services/tableGames/TeenPatti2020Engine');
 const provablyFair = require('../src/services/ProvablyFairService');
 const { RouletteEngine } = require('../src/services/tableGames/RouletteEngine');
 const { UNIVERSAL_PHASES } = require('../src/services/engine/UniversalRoundEngine');
@@ -51,12 +52,14 @@ test.before(async () => {
   engines.dt = new DragonTigerEngine('Standard', core);
   engines.roulette = new RouletteEngine('Auto', core);
   engines.ab = new AndarBaharEngine('Auto', core);
+  engines.tp = new TeenPatti2020Engine('Auto', core);
   initSockets(core, io, {
     colourEngines: { '1min': engines.colour },
     diceEngine: engines.dice,
     lottoEngine: engines.lotto,
     dragontigerEngine: engines.dt,
     andarbaharEngine: engines.ab,
+    teenpatti2020Engine: engines.tp,
     rouletteEngine: engines.roulette
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -178,6 +181,37 @@ test('andar bahar: deals a real deck and settles main and joker bets', async () 
   await engines.ab.onSettlement(engines.ab.roundId, result);
   assert.equal(await balanceOf(player.id), 100000n - 30000n + 20000n + 19000n, 'BAHAR 2x and JOKER_RED 1.9x paid once');
   await h.assertLedgerMatchesWallet(assert, player.id);
+});
+
+// ---------------- Teen Patti 20-20 ----------------
+test('teen patti 20-20: deals A/B alternately from one shuffle and settles main and pair plus bets once', async () => {
+  const deal = provablyFair.deriveTeenPattiResult('server-seed', 'client-seed', 0).outcome;
+  const deck = provablyFair.shuffleDeck('server-seed', 'client-seed', 0);
+  assert.deepEqual(deal.playerA, [deck[0], deck[2], deck[4]]);
+  assert.deepEqual(deal.playerB, [deck[1], deck[3], deck[5]]);
+
+  const player = await h.createUser({ balancePaise: 100000n });
+  const socket = await connect(player);
+  await openRound(engines.tp);
+  assert.equal((await emitAck(socket, 'tg:bet', { gameId: 'teen-patti-2020', room: 'Auto', market: 'PLAYER_C', amount: 100 })).code, 'INVALID_BET');
+  for (const market of ['PLAYER_A', 'PLAYER_B', 'PAIR_PLUS_A', 'PAIR_PLUS_B']) {
+    const res = await emitAck(socket, 'tg:bet', { gameId: 'teen-patti-2020', room: 'Auto', market, amount: 100 });
+    assert.equal(res.success, true, JSON.stringify(res));
+  }
+  // A: pair of 9s (Pair Plus 2x) beats B: ace high.
+  const result = {
+    playerA: [{ suit: 'S', rank: 9 }, { suit: 'H', rank: 9 }, { suit: 'D', rank: 4 }],
+    playerB: [{ suit: 'C', rank: 14 }, { suit: 'D', rank: 10 }, { suit: 'H', rank: 6 }],
+    winner: 'A'
+  };
+  await engines.tp.onSettlement(engines.tp.roundId, result);
+  await engines.tp.onSettlement(engines.tp.roundId, result);
+  assert.equal(await balanceOf(player.id), 100000n - 40000n + 19800n + 20000n, 'PLAYER_A 1.98x and PAIR_PLUS_A 2x paid once');
+  await h.assertLedgerMatchesWallet(assert, player.id);
+
+  // An exact tie returns both main bets.
+  assert.equal(engines.tp.calculatePayouts('PLAYER_A', { ...result, winner: 'TIE' }), 1);
+  assert.equal(engines.tp.calculatePayouts('PLAYER_B', { ...result, winner: 'TIE' }), 1);
 });
 
 // ---------------- Roulette ----------------

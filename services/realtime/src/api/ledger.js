@@ -440,7 +440,8 @@ const HISTORY_SOURCES = {
   slots: { ledger: 'SLOTS_BET' },
   aviator: { ledger: 'AVIATOR_BET' },
   'andar-bahar': { table: 'andar-bahar' },
-  'dragon-tiger': { table: 'dragon-tiger' }
+  'dragon-tiger': { table: 'dragon-tiger' },
+  'teen-patti': { table: 'teen-patti-2020' }
 };
 
 /** Start of the current day in India (UTC+5:30), as a Date. */

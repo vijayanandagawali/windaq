@@ -118,6 +118,24 @@ const DEFAULT_GAME_CONFIGS = {
       FIRST_BET: 1.25
     }
   },
+  'teen-patti-2020': {
+    gameSlug: 'teen-patti-2020',
+    name: 'Teen Patti 20-20',
+    category: 'TABLE',
+    isEnabled: true,
+    isMaintenance: false,
+    maintenanceMessage: 'Deck change in progress.',
+    visibility: 'VISIBLE',
+    dealerSpeed: 1.0,
+    minBet: 10,
+    maxBet: 50000,
+    roundDuration: 34,
+    bettingDuration: 15,
+    activePayoutVersion: 1,
+    variants: [{ id: 'auto', name: 'Teen Patti 20-20', isEnabled: true, minBet: 10, maxBet: 50000 }],
+    // Informational: the engine's payouts are fixed in TeenPatti2020Engine.
+    payoutRules: { PLAYER_A: 1.98, PLAYER_B: 1.98, PAIR_PLUS_PAIR: 2, PAIR_PLUS_COLOR: 5, PAIR_PLUS_SEQUENCE: 7, PAIR_PLUS_TRAIL: 31, PAIR_PLUS_PURE_SEQUENCE: 41 }
+  },
   'blackjack': {
     gameSlug: 'blackjack',
     name: 'Blackjack Classic',

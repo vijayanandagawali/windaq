@@ -9,7 +9,8 @@ const { requirePlayer, parseStake, replyError, GameError } = require('../service
 // Markets each tg:bet table accepts (must match the engine's calculatePayouts).
 const TABLE_MARKETS = {
   'dragon-tiger': ['DRAGON', 'TIGER', 'TIE'],
-  'andar-bahar': ['ANDAR', 'BAHAR', 'JOKER_RED', 'JOKER_BLACK']
+  'andar-bahar': ['ANDAR', 'BAHAR', 'JOKER_RED', 'JOKER_BLACK'],
+  'teen-patti-2020': ['PLAYER_A', 'PLAYER_B', 'PAIR_PLUS_A', 'PAIR_PLUS_B']
 };
 
 function handleTableSockets(socket, io, engines) {
@@ -32,7 +33,7 @@ function handleTableSockets(socket, io, engines) {
     }
 
     // Retrieve engine
-    const engineKey = `${gameId.replace('-', '')}Engine`;
+    const engineKey = `${gameId.replace(/-/g, '')}Engine`;
     const engine = engines[engineKey];
     
     if (engine) {
@@ -82,7 +83,7 @@ function handleTableSockets(socket, io, engines) {
       return callback({ success: false, message: op.message });
     }
 
-    const engineKey = `${String(gameId || '').replace('-', '')}Engine`;
+    const engineKey = `${String(gameId || '').replace(/-/g, '')}Engine`;
     const engine = engines[engineKey];
     if (!engine || !TABLE_MARKETS[gameId]) {
       return callback({ success: false, code: 'INVALID_GAME', message: 'Unknown table.' });

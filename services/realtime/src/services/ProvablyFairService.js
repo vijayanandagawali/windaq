@@ -138,4 +138,30 @@ class ProvablyFairService {
   }
 }
 
+/**
+ * Teen Patti 20-20: from a shuffled deck, cards are dealt alternately to Player A and Player B
+ * (A gets cards 1, 3, 5; B gets 2, 4, 6), exactly as a dealer would.
+ */
+ProvablyFairService.prototype.deriveTeenPattiResult = function deriveTeenPattiResult(serverSeed, clientSeed, nonce = 0) {
+  const { evaluate, compare } = require('./cards/teenPattiHands');
+  const hash = this._generateHash(serverSeed, clientSeed, nonce);
+  const deck = this.shuffleDeck(serverSeed, clientSeed, nonce);
+  const playerA = [deck[0], deck[2], deck[4]];
+  const playerB = [deck[1], deck[3], deck[5]];
+  const cmp = compare(playerA, playerB);
+  const handA = evaluate(playerA);
+  const handB = evaluate(playerB);
+  return {
+    outcome: {
+      playerA,
+      playerB,
+      handA: { category: handA.name, label: handA.label },
+      handB: { category: handB.name, label: handB.label },
+      winner: cmp > 0 ? 'A' : cmp < 0 ? 'B' : 'TIE'
+    },
+    hash,
+    version: 'tp-2020-v1'
+  };
+};
+
 module.exports = new ProvablyFairService();

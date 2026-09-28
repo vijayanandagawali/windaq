@@ -31,6 +31,7 @@ const { DiceEngine } = require('./src/services/diceEngine');
 const { DragonTigerEngine } = require('./src/services/tableGames/DragonTigerEngine');
 const { RouletteEngine } = require('./src/services/tableGames/RouletteEngine');
 const { AndarBaharEngine } = require('./src/services/tableGames/AndarBaharEngine');
+const { TeenPatti2020Engine } = require('./src/services/tableGames/TeenPatti2020Engine');
 const walletService = require('./src/services/walletService');
 const adminGameConfigService = require('./src/services/adminGameConfigService');
 const { tableManager } = require('./src/services/tableGames/VirtualTableManager');
@@ -110,6 +111,10 @@ async function startServer() {
       const andarBaharEngine = new AndarBaharEngine('Auto', coreManager);
       andarBaharEngine.start();
 
+      console.log('🂡 Starting Teen Patti 20-20 Engine...');
+      const teenPattiEngine = new TeenPatti2020Engine('Auto', coreManager);
+      teenPattiEngine.start();
+
       // Register all engines with Central Round Registry
       RoundRegistry.register(aviatorEngine);
       RoundRegistry.register(colourEngine1m);
@@ -119,6 +124,7 @@ async function startServer() {
       RoundRegistry.register(dragontigerEngine);
       RoundRegistry.register(rouletteEngine);
       RoundRegistry.register(andarBaharEngine);
+      RoundRegistry.register(teenPattiEngine);
 
       // Initialize Multi-Table Virtual Dealer Manager
       tableManager.setIO(io);
@@ -137,7 +143,7 @@ async function startServer() {
       }, 1000);
 
       // Init Sockets
-      initSockets(coreManager, io, { aviatorEngine, colourEngine1m, colourEngines: { '1min': colourEngine1m, '3min': colourEngine3m }, lottoEngine, diceEngine, dragontigerEngine, rouletteEngine, andarbaharEngine: andarBaharEngine });
+      initSockets(coreManager, io, { aviatorEngine, colourEngine1m, colourEngines: { '1min': colourEngine1m, '3min': colourEngine3m }, lottoEngine, diceEngine, dragontigerEngine, rouletteEngine, andarbaharEngine: andarBaharEngine, teenpatti2020Engine: teenPattiEngine });
     });
   } catch (err) {
     console.error('Failed to start server:', err);

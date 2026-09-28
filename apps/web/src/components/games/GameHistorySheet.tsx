@@ -19,7 +19,8 @@ export const HISTORY_GAME_NAMES: Record<string, string> = {
   slots: 'Slots',
   aviator: 'Aviator',
   'andar-bahar': 'Andar Bahar',
-  'dragon-tiger': 'Dragon Tiger'
+  'dragon-tiger': 'Dragon Tiger',
+  'teen-patti': 'Teen Patti 20-20'
 };
 
 interface HistoryBet {

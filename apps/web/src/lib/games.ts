@@ -84,8 +84,8 @@ export const GAMES: LobbyGame[] = [
     accent: '#FFD166', ...art('scratch')
   },
   {
-    slug: 'teen-patti', name: 'Teen Patti', href: '/games/teen-patti', category: 'table', status: 'coming-soon',
-    tagline: 'Real-player tables are on the way', highlight: 'Coming soon', minBet: 10,
+    slug: 'teen-patti', name: 'Teen Patti 20-20', href: '/games/teen-patti', category: 'table', status: 'live',
+    tagline: 'Player A or Player B — which hand wins?', highlight: 'Pair+ up to 41x', minBet: 10,
     accent: '#FF5FA2', ...art('teen-patti')
   },
   {

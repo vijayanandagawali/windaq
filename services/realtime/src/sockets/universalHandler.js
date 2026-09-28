@@ -9,7 +9,7 @@ function handleUniversalSockets(socket, io, engines = {}) {
     console.log(`Client ${socket.id} joined universal room: ${roomName} (user: ${userId})`);
 
     // Look up engine
-    const engineKey = `${gameId.replace('-', '')}Engine`;
+    const engineKey = `${gameId.replace(/-/g, '')}Engine`;
     const engine = engines[engineKey] || engines[gameId];
 
     if (engine && typeof engine.getSnapshot === 'function') {
