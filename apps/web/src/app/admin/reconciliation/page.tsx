@@ -176,7 +176,7 @@ export default function AdminReconciliationPage() {
             <ShieldCheck className="text-emerald-600 w-8 h-8" />
             <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">Wallet Reconciliation Engine</h1>
             <span className="text-[11px] font-mono bg-emerald-500/10 text-emerald-600 px-2.5 py-1 rounded-full border border-emerald-500/20 font-bold">
-              PROMPT #69 AUDIT ACTIVE
+              AUDIT ACTIVE
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">

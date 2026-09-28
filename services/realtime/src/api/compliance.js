@@ -63,7 +63,7 @@ router.post('/rg-limits', requireAuth, async (req, res) => {
 // --- ADMIN ROUTES ---
 
 // Get Pending KYC
-router.get('/admin/kyc', requireRole(['SUPPORT', 'RISK', 'SUPER_ADMIN']), async (req, res) => {
+router.get('/admin/kyc', requireAuth, requireRole(['SUPPORT', 'RISK', 'SUPER_ADMIN']), async (req, res) => {
   try {
     const profiles = await prisma.kycProfile.findMany({
       where: { status: 'PENDING' },
@@ -83,7 +83,7 @@ router.get('/admin/kyc', requireRole(['SUPPORT', 'RISK', 'SUPER_ADMIN']), async 
 });
 
 // Approve/Reject KYC
-router.post('/admin/kyc/:id/review', requireRole(['SUPPORT', 'RISK', 'SUPER_ADMIN']), async (req, res) => {
+router.post('/admin/kyc/:id/review', requireAuth, requireRole(['SUPPORT', 'RISK', 'SUPER_ADMIN']), async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body; // 'APPROVED' or 'REJECTED'

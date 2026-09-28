@@ -31,8 +31,37 @@ const adminRoutes = [
   ['POST', '/api/wager/settle'],
   ['POST', '/api/sports/admin/settle'],
   ['GET', '/api/payments/admin/withdrawals/pending'],
-  ['GET', '/api/payments/admin/deposits/pending']
+  ['GET', '/api/payments/admin/deposits/pending'],
+  ['GET', '/api/compliance/admin/kyc'],
+  ['POST', '/api/compliance/admin/kyc/KYC-1/review'],
+  ['GET', '/api/admin/users'],
+  ['GET', '/api/admin/risk/flags'],
+  ['GET', '/api/admin/reconciliation/summary'],
+  ['GET', '/api/admin/reconciliation/cases']
 ];
+
+// Every GET the admin console loads must answer an admin (a 401 here signs the admin out in the browser).
+const adminConsoleReads = [
+  '/api/admin/dashboard', '/api/admin/users', '/api/admin/users?q=98', '/api/compliance/admin/kyc', '/api/admin/risk/flags',
+  '/api/admin/reconciliation/summary', '/api/admin/reconciliation/cases?status=ALL', '/api/admin/adjustments', '/api/admin/audit',
+  '/api/ledger?limit=100', '/api/payments/admin/deposits/pending', '/api/payments/admin/withdrawals/pending', '/api/payments/admin/bank-credits',
+  '/api/admin/history'
+];
+
+test('every admin console read succeeds for a super admin', async () => {
+  const admin = await h.createUser({ role: 'SUPER_ADMIN' });
+  const token = h.tokenFor(admin);
+  for (const route of adminConsoleReads) {
+    const res = await http.request('GET', route, { token });
+    assert.equal(res.status, 200, `GET ${route} returned ${res.status}: ${res.text.slice(0, 160)}`);
+  }
+  const users = await http.request('GET', '/api/admin/users', { token });
+  const me = users.body.data.find((u) => u.id === admin.id);
+  assert.equal(me.role, 'SUPER_ADMIN');
+  assert.equal(typeof me.balance, 'number');
+  const summary = await http.request('GET', '/api/admin/reconciliation/summary', { token });
+  assert.equal(typeof summary.body.data.totalWallets, 'number');
+});
 
 test('admin routes reject anonymous requests', async () => {
   for (const [method, route] of adminRoutes) {

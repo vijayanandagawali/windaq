@@ -41,27 +41,53 @@ router.get('/dashboard', requireRole(['SUPPORT', 'RISK', 'FINANCE', 'SUPER_ADMIN
 // --- USERS ---
 router.get('/users', requireRole(['SUPPORT', 'RISK', 'FINANCE', 'SUPER_ADMIN']), async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        phone: true,
-        role: true,
-        createdAt: true,
-        wallets: { select: { id: true, balance: true, currency: true } }
-      },
-      take: 50,
-      orderBy: { createdAt: 'desc' }
-    });
-    
-    // Convert BigInt to string for JSON serialization
-    const serialized = users.map(u => ({
-      ...u,
-      wallets: u.wallets.map(w => ({ ...w, balance: w.balance.toString() }))
-    }));
+    // Optional search by phone digits (e.g. last 4) and simple paging.
+    const digits = String(req.query.q || '').replace(/\D/g, '').slice(0, 12);
+    const take = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+    const skip = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const where = digits ? { phone: { contains: digits } } : {};
 
-    res.json({ success: true, data: serialized });
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          phone: true,
+          role: true,
+          createdAt: true,
+          wallets: {
+            where: { currency: 'INR' },
+            select: { balance: true, lockedBalance: true, totalDeposited: true, totalWithdrawn: true, totalWon: true, totalLost: true }
+          }
+        },
+        take,
+        skip,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.user.count({ where })
+    ]);
+
+    const rupees = (paise) => Number(paise || 0n) / 100;
+    const data = users.map((u) => {
+      const w = u.wallets[0];
+      return {
+        id: u.id,
+        phone: u.phone,
+        role: u.role,
+        createdAt: u.createdAt,
+        balance: rupees(w?.balance),
+        locked: rupees(w?.lockedBalance),
+        deposited: rupees(w?.totalDeposited),
+        withdrawn: rupees(w?.totalWithdrawn),
+        won: rupees(w?.totalWon),
+        lost: rupees(w?.totalLost)
+      };
+    });
+
+    res.json({ success: true, data, total });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[GET /api/admin/users Error]:', error.message);
+    res.status(500).json({ success: false, message: 'Users could not be loaded.' });
   }
 });
 
@@ -186,10 +212,8 @@ router.get('/risk/flags', requireRole(['RISK', 'SUPER_ADMIN']), async (req, res)
     const flags = await prisma.riskFlag.findMany({
       where: { status: { in: ['OPEN', 'INVESTIGATING'] } },
       include: { 
-        user: { 
-          select: { phone: true },
-          include: { riskProfile: true }
-        } 
+        // Prisma rejects select + include together; select the relation instead.
+        user: { select: { phone: true, riskProfile: true } }
       },
       orderBy: [
         { severity: 'desc' }, // Critical first

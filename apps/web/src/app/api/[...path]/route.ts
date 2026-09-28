@@ -109,12 +109,25 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const body = await upstream.arrayBuffer();
   const response = new NextResponse(body, { status: upstream.status, headers: { 'content-type': contentType } });
 
-  // Logout, or a session the backend no longer accepts: drop the cookie.
+  // Logout, or the backend says this session itself is no longer valid: drop the cookie.
+  // Any other 401 (e.g. one route refusing access) must not sign the player out everywhere.
   const endsSession = SESSION_ENDING_PATHS.has(route) && upstream.ok;
-  if (sessionToken && (endsSession || upstream.status === 401)) {
+  if (sessionToken && (endsSession || (upstream.status === 401 && isDeadSessionResponse(body)))) {
     response.cookies.set(SESSION_COOKIE, '', sessionCookieOptions(request, 0));
   }
   return response;
+}
+
+const DEAD_SESSION_CODES = new Set(['SESSION_EXPIRED', 'SESSION_REVOKED', 'SESSION_INVALID', 'INVALID_TOKEN']);
+
+/** True when a 401 body carries one of the backend's session-is-gone codes. */
+function isDeadSessionResponse(body: ArrayBuffer): boolean {
+  try {
+    const code = JSON.parse(new TextDecoder().decode(body))?.code;
+    return typeof code === 'string' && DEAD_SESSION_CODES.has(code);
+  } catch {
+    return false;
+  }
 }
 
 export { proxy as GET, proxy as POST, proxy as PUT, proxy as PATCH, proxy as DELETE };
