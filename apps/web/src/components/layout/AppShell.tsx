@@ -66,7 +66,8 @@ export default function AppShell({ children }: AppShellProps) {
 
         {/* Main Content Area */}
         <main className={`flex-1 w-full ${isImmersiveGame ? 'pb-0' : 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-0'}`}>
-          {children}
+          {/* Opacity-only fade: a transform here would re-anchor fixed overlays inside pages. */}
+          <div key={pathname} className="animate-page">{children}</div>
         </main>
 
         {/* Brand Trust Footer (Shown on non-immersive pages) */}

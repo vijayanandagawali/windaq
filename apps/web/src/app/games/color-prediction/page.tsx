@@ -188,7 +188,7 @@ export default function ColorPrediction() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] bg-deep-ocean font-sans selection:bg-neon-mint relative flex flex-col pb-safe overflow-y-auto">
+    <div className="min-h-[calc(100dvh-58px)] bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 font-sans relative flex flex-col pb-safe">
 
 
       {/* Tabs */}

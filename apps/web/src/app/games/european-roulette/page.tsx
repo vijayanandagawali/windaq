@@ -284,7 +284,7 @@ export default function RouletteGame() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] w-full bg-white text-white font-sans selection:bg-neon-mint flex flex-col overflow-y-auto">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 text-slate-900 font-sans flex flex-col">
       {/* Top HUD Bar */}
       <div className="bg-white/80 border-b border-slate-200 px-4 py-2 flex items-center justify-between z-30 backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -295,7 +295,7 @@ export default function RouletteGame() {
             </span>
           </div>
           {gameState.roundId && (
-            <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-[11px] font-mono text-amber-700">
+            <div className="hidden sm:flex items-center gap-1 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-[11px] font-mono text-amber-700">
               <span className="text-slate-500">ROUND:</span>
               <span className="font-bold">{gameState.roundId}</span>
             </div>
@@ -320,7 +320,7 @@ export default function RouletteGame() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-900/30 via-transparent to-transparent opacity-60" />
         
         {/* Timer / Status */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-white/80 border border-slate-200 px-5 py-1.5 rounded-full flex items-center gap-3 backdrop-blur-md z-20 shadow-lg">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/80 border border-slate-200 px-5 py-1.5 rounded-full flex items-center gap-3 backdrop-blur-md z-20 shadow-lg">
            {gameState.status === 'OPEN' ? (
              <>
                <div className="w-2 h-2 rounded-full bg-neon-mint animate-pulse" />
@@ -419,8 +419,10 @@ export default function RouletteGame() {
       </div>
 
       {/* Betting Grid */}
-      <div className="flex-1 p-2 sm:p-4 overflow-y-auto bg-white">
-        <div className="max-w-4xl mx-auto">
+      <div className="flex-1 p-2 sm:p-4">
+        {/* On phones the table keeps a readable width and scrolls sideways instead of squashing. */}
+        <div className="max-w-4xl mx-auto overflow-x-auto pb-2">
+        <div className="min-w-[600px] sm:min-w-0">
           
           {/* Main Grid Wrapper */}
           <div className="flex border-b border-r border-slate-200 bg-slate-100 rounded-xl overflow-hidden shadow-2xl">
@@ -498,6 +500,7 @@ export default function RouletteGame() {
           
         </div>
       </div>
+        </div>
 
       {/* Chip Selector Footer */}
       <div className="bg-white/80 border-t border-slate-200 p-4 sticky bottom-0 z-40 backdrop-blur-md">

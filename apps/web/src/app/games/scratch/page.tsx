@@ -222,10 +222,10 @@ export default function ScratchGame() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] bg-white font-sans selection:bg-neon-mint flex flex-col pb-safe overflow-y-auto">
+    <div className="min-h-[calc(100dvh-58px)] bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 font-sans flex flex-col pb-safe">
 
 
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center pb-24 relative">
+      <div className="flex-1 p-4 flex flex-col items-center pb-24 relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-deep-ocean to-slate-50 pointer-events-none" />
 
         {/* Balance Display */}

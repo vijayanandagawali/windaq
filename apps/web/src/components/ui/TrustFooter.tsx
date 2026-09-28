@@ -19,7 +19,8 @@ const LINKS = [
 
 export default function TrustFooter() {
   return (
-    <footer className="mt-4 w-full border-t border-slate-200 bg-white px-4 pb-32 pt-12 lg:pb-12">
+    <footer className="relative mt-4 w-full border-t border-slate-200 bg-white px-4 pb-32 pt-12 lg:pb-12">
+      <div aria-hidden="true" className="tiranga-strip absolute inset-x-0 top-0 h-1" />
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
           <div className="max-w-sm">

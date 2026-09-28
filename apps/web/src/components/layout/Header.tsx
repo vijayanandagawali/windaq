@@ -35,7 +35,8 @@ export default function Header() {
   const iconButton = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:shadow-sm transition cursor-pointer';
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 px-3 py-2.5 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 sm:px-5">
+    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 px-3 pb-2.5 pt-3 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 sm:px-5">
+      <div aria-hidden="true" className="tiranga-strip absolute inset-x-0 top-0 h-[3px] opacity-90" />
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2">
         {/* Brand & back */}
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -49,7 +50,8 @@ export default function Header() {
             <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-sky-500 text-base font-black text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transition-transform group-hover:scale-105 group-hover:rotate-3">
               W
             </span>
-            <span className="leading-none">
+            {/* On small phones inner pages show only the mark, leaving room for the back button and wallet. */}
+            <span className={`leading-none ${isHome ? '' : 'hidden min-[430px]:block'}`}>
               <span className="block text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">WinDaq</span>
               <span className="mt-0.5 hidden items-center gap-1 text-[10px] font-semibold text-slate-500 min-[380px]:flex">
                 <ShieldCheck size={11} className="text-emerald-600" /> Provably fair
@@ -80,7 +82,7 @@ export default function Header() {
           </button>
 
           <button onClick={() => setControlsOpen(true)} data-testid="header-sound-btn" role="button"
-            className={`${iconButton} ${soundEnabled ? '' : 'text-rose-500'} ${isAuthenticated ? '' : 'hidden min-[420px]:flex'}`}
+            className={`${iconButton} ${soundEnabled ? '' : 'text-rose-500'} hidden min-[430px]:flex`}
             title={soundEnabled ? `Sound on (${Math.round(volume * 100)}%)` : 'Sound muted'}
             aria-label={soundEnabled ? 'Sound Settings (Active)' : 'Sound Settings (Muted)'}>
             {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
@@ -113,7 +115,7 @@ export default function Header() {
                   {user?.isGuest ? 'Guest' : (user?.phone ? user.phone.slice(-4) : 'Profile')}
                 </span>
               </Link>
-              <button data-testid="header-logout-btn" onClick={() => logout()} className={`${iconButton} hover:text-rose-600`} title="Log out" aria-label="Log Out">
+              <button data-testid="header-logout-btn" onClick={() => logout()} className={`${iconButton} hidden hover:text-rose-600 min-[430px]:flex`} title="Log out" aria-label="Log Out">
                 <LogOut size={14} />
               </button>
             </div>

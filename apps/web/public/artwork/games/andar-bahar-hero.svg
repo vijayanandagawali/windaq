@@ -1,4 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1920" height="1080" preserveAspectRatio="xMidYMid slice">
+<svg data-wd-animated="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1920" height="1080" preserveAspectRatio="xMidYMid slice">
+  <style>
+    .wd-float{animation:wdFloat 3.6s ease-in-out infinite}
+    .wd-float2{animation:wdFloat 4.4s ease-in-out infinite reverse}
+    .wd-spin{transform-box:fill-box;transform-origin:center;animation:wdSpin 14s linear infinite}
+    .wd-spin-fast{transform-box:fill-box;transform-origin:center;animation:wdSpin 3s linear infinite}
+    .wd-pulse{transform-box:fill-box;transform-origin:center;animation:wdPulse 2.4s ease-in-out infinite}
+    .wd-bounce{animation:wdBounce 1.8s cubic-bezier(.3,0,.4,1) infinite}
+    .wd-blink{animation:wdBlink 1.6s ease-in-out infinite}
+    .wd-glow{animation:wdGlow 3s ease-in-out infinite}
+    .wd-shine{animation:wdShine 6.5s ease-in-out infinite}
+    @keyframes wdFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+    @keyframes wdSpin{to{transform:rotate(360deg)}}
+    @keyframes wdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+    @keyframes wdBounce{0%,100%{transform:translateY(0)}35%{transform:translateY(-38px)}55%{transform:translateY(0)}70%{transform:translateY(-12px)}85%{transform:translateY(0)}}
+    @keyframes wdBlink{0%,100%{opacity:1}50%{opacity:.3}}
+    @keyframes wdGlow{0%,100%{opacity:.08}50%{opacity:.22}}
+    @keyframes wdShine{0%{transform:translateX(-1100px)}40%,100%{transform:translateX(1600px)}}
+    @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+  </style>
   <defs>
     <!-- Background Gradients -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -56,7 +75,7 @@
   <rect width="1000" height="1000" fill="url(#bgGrad)"/>
   
   <!-- Subtle Ambient Glow -->
-  <circle cx="500" cy="500" r="450" fill="#9333EA" opacity="0.08" filter="url(#dropGlow)"/>
+  <circle cx="500" cy="500" r="450" fill="#9333EA" opacity="0.08" filter="url(#dropGlow)" class="wd-glow"/>
 
   <!-- Geometric Grid Texture -->
   <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
@@ -76,28 +95,30 @@
       <!-- Andar Bahar Split Table -->
       <g transform="translate(500, 480)">
         <!-- Center Joker Card -->
-        <g transform="translate(0, -90)">
+        <g class="wd-float"><g transform="translate(0, -90)">
           <rect x="-90" y="-135" width="180" height="270" rx="14" fill="#FFFFFF" stroke="#F59E0B" stroke-width="6" filter="url(#dropGlow)"/>
           <text x="-65" y="-90" font-family="'Outfit', sans-serif" font-size="34" font-weight="900" fill="#E11D48">K</text>
           <text x="-65" y="-55" font-family="'Outfit', sans-serif" font-size="30" fill="#E11D48">♥</text>
           <text x="0" y="25" font-family="'Outfit', sans-serif" font-size="70" fill="#E11D48" text-anchor="middle">♥</text>
           <rect x="-70" y="80" width="140" height="26" rx="13" fill="#F59E0B"/>
           <text x="0" y="98" font-family="'Outfit', sans-serif" font-size="16" font-weight="900" fill="#1a0a24" text-anchor="middle">JOKER</text>
-        </g>
+        </g></g>
 
         <!-- Andar Box (Left - Blue) -->
-        <g transform="translate(-230, 140)">
+        <g class="wd-float2" style="animation-delay:0.2s"><g transform="translate(-230, 140)">
           <rect x="-140" y="-70" width="280" height="140" rx="20" fill="#1E3A8A" stroke="#3B82F6" stroke-width="5" filter="url(#dropGlow)"/>
           <text x="0" y="-15" font-family="'Outfit', sans-serif" font-size="32" font-weight="900" fill="#FFFFFF" text-anchor="middle">ANDAR</text>
           <text x="0" y="30" font-family="'Outfit', sans-serif" font-size="20" font-weight="700" fill="#93C5FD" text-anchor="middle">1 : 0.90</text>
-        </g>
+        </g></g>
 
         <!-- Bahar Box (Right - Purple/Pink) -->
-        <g transform="translate(230, 140)">
+        <g class="wd-float" style="animation-delay:0.5s"><g transform="translate(230, 140)">
           <rect x="-140" y="-70" width="280" height="140" rx="20" fill="#701A75" stroke="#EC4899" stroke-width="5" filter="url(#dropGlow)"/>
           <text x="0" y="-15" font-family="'Outfit', sans-serif" font-size="32" font-weight="900" fill="#FFFFFF" text-anchor="middle">BAHAR</text>
           <text x="0" y="30" font-family="'Outfit', sans-serif" font-size="20" font-weight="700" fill="#FBCFE8" text-anchor="middle">1 : 1.00</text>
-        </g>
+        </g></g>
       </g>
     
+  <defs><linearGradient id="wdShine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.38"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+  <g transform="rotate(18 500 500)"><rect class="wd-shine" style="animation-delay:0.8s" x="0" y="-400" width="260" height="1800" fill="url(#wdShine)"/></g>
 </svg>

@@ -1,4 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="800" height="1000" preserveAspectRatio="xMidYMid slice">
+<svg data-wd-animated="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="800" height="1000" preserveAspectRatio="xMidYMid slice">
+  <style>
+    .wd-float{animation:wdFloat 3.6s ease-in-out infinite}
+    .wd-float2{animation:wdFloat 4.4s ease-in-out infinite reverse}
+    .wd-spin{transform-box:fill-box;transform-origin:center;animation:wdSpin 14s linear infinite}
+    .wd-spin-fast{transform-box:fill-box;transform-origin:center;animation:wdSpin 3s linear infinite}
+    .wd-pulse{transform-box:fill-box;transform-origin:center;animation:wdPulse 2.4s ease-in-out infinite}
+    .wd-bounce{animation:wdBounce 1.8s cubic-bezier(.3,0,.4,1) infinite}
+    .wd-blink{animation:wdBlink 1.6s ease-in-out infinite}
+    .wd-glow{animation:wdGlow 3s ease-in-out infinite}
+    .wd-shine{animation:wdShine 6.5s ease-in-out infinite}
+    @keyframes wdFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+    @keyframes wdSpin{to{transform:rotate(360deg)}}
+    @keyframes wdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+    @keyframes wdBounce{0%,100%{transform:translateY(0)}35%{transform:translateY(-38px)}55%{transform:translateY(0)}70%{transform:translateY(-12px)}85%{transform:translateY(0)}}
+    @keyframes wdBlink{0%,100%{opacity:1}50%{opacity:.3}}
+    @keyframes wdGlow{0%,100%{opacity:.08}50%{opacity:.22}}
+    @keyframes wdShine{0%{transform:translateX(-1100px)}40%,100%{transform:translateX(1600px)}}
+    @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+  </style>
   <defs>
     <!-- Background Gradients -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -56,7 +75,7 @@
   <rect width="1000" height="1000" fill="url(#bgGrad)"/>
   
   <!-- Subtle Ambient Glow -->
-  <circle cx="500" cy="500" r="450" fill="#FF3366" opacity="0.08" filter="url(#dropGlow)"/>
+  <circle cx="500" cy="500" r="450" fill="#FF3366" opacity="0.08" filter="url(#dropGlow)" class="wd-glow"/>
 
   <!-- Geometric Grid Texture -->
   <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
@@ -82,21 +101,23 @@
         <line x1="500" y1="50" x2="500" y2="950"/>
       </g>
       <!-- Exponential curve -->
-      <path d="M 100 800 Q 400 780 600 500 T 880 220" fill="none" stroke="#FF3366" stroke-width="8" stroke-linecap="round"/>
+      <g class="wd-blink"><path d="M 100 800 Q 400 780 600 500 T 880 220" fill="none" stroke="#FF3366" stroke-width="8" stroke-linecap="round"/></g>
       <path d="M 100 800 Q 400 780 600 500 T 880 220 L 880 800 Z" fill="url(#curveGlow)" opacity="0.25"/>
       <!-- Jet Plane -->
-      <g transform="translate(820, 200) rotate(-35) scale(1.6)">
+      <g class="wd-float"><g transform="translate(820, 200) rotate(-35) scale(1.6)">
         <polygon points="0,-40 25,30 0,20 -25,30" fill="#FFFFFF"/>
         <polygon points="0,-40 10,25 0,18 -10,25" fill="#FF3366"/>
         <polygon points="0,20 15,40 0,35 -15,40" fill="#FF8C00"/>
         <!-- Jet exhaust flame -->
         <ellipse cx="0" cy="45" rx="8" ry="25" fill="#FFD700" opacity="0.8"/>
         <ellipse cx="0" cy="48" rx="4" ry="15" fill="#FF3366" opacity="0.9"/>
-      </g>
+      </g></g>
       <!-- Multiplier Pill -->
-      <g transform="translate(500, 380)">
+      <g class="wd-pulse" style="animation-delay:0.3s"><g transform="translate(500, 380)">
         <rect x="-140" y="-45" width="280" height="90" rx="45" fill="#FF3366" filter="url(#dropGlow)"/>
         <text x="0" y="14" font-family="'Outfit', 'Inter', sans-serif" font-size="44" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">18.42x</text>
-      </g>
+      </g></g>
     
+  <defs><linearGradient id="wdShine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.38"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+  <g transform="rotate(18 500 500)"><rect class="wd-shine" style="animation-delay:2.4000000000000004s" x="0" y="-400" width="260" height="1800" fill="url(#wdShine)"/></g>
 </svg>

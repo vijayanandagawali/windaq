@@ -1,4 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1920" height="1080" preserveAspectRatio="xMidYMid slice">
+<svg data-wd-animated="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1920" height="1080" preserveAspectRatio="xMidYMid slice">
+  <style>
+    .wd-float{animation:wdFloat 3.6s ease-in-out infinite}
+    .wd-float2{animation:wdFloat 4.4s ease-in-out infinite reverse}
+    .wd-spin{transform-box:fill-box;transform-origin:center;animation:wdSpin 14s linear infinite}
+    .wd-spin-fast{transform-box:fill-box;transform-origin:center;animation:wdSpin 3s linear infinite}
+    .wd-pulse{transform-box:fill-box;transform-origin:center;animation:wdPulse 2.4s ease-in-out infinite}
+    .wd-bounce{animation:wdBounce 1.8s cubic-bezier(.3,0,.4,1) infinite}
+    .wd-blink{animation:wdBlink 1.6s ease-in-out infinite}
+    .wd-glow{animation:wdGlow 3s ease-in-out infinite}
+    .wd-shine{animation:wdShine 6.5s ease-in-out infinite}
+    @keyframes wdFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+    @keyframes wdSpin{to{transform:rotate(360deg)}}
+    @keyframes wdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+    @keyframes wdBounce{0%,100%{transform:translateY(0)}35%{transform:translateY(-38px)}55%{transform:translateY(0)}70%{transform:translateY(-12px)}85%{transform:translateY(0)}}
+    @keyframes wdBlink{0%,100%{opacity:1}50%{opacity:.3}}
+    @keyframes wdGlow{0%,100%{opacity:.08}50%{opacity:.22}}
+    @keyframes wdShine{0%{transform:translateX(-1100px)}40%,100%{transform:translateX(1600px)}}
+    @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+  </style>
   <defs>
     <!-- Background Gradients -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -56,7 +75,7 @@
   <rect width="1000" height="1000" fill="url(#bgGrad)"/>
   
   <!-- Subtle Ambient Glow -->
-  <circle cx="500" cy="500" r="450" fill="#EC4899" opacity="0.08" filter="url(#dropGlow)"/>
+  <circle cx="500" cy="500" r="450" fill="#EC4899" opacity="0.08" filter="url(#dropGlow)" class="wd-glow"/>
 
   <!-- Geometric Grid Texture -->
   <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
@@ -76,36 +95,38 @@
       <!-- 3 Royal Cards Fanned Out -->
       <g transform="translate(500, 500)">
         <!-- Left Card (A Diamonds) -->
-        <g transform="translate(-140, 20) rotate(-18)">
+        <g class="wd-float"><g transform="translate(-140, 20) rotate(-18)">
           <rect x="-110" y="-170" width="220" height="340" rx="16" fill="#FFFFFF" stroke="#F59E0B" stroke-width="5" filter="url(#dropGlow)"/>
           <text x="-75" y="-115" font-family="'Outfit', sans-serif" font-size="44" font-weight="900" fill="#E11D48">A</text>
           <text x="-75" y="-70" font-family="'Outfit', sans-serif" font-size="36" fill="#E11D48">♦</text>
           <text x="0" y="30" font-family="'Outfit', sans-serif" font-size="90" fill="#E11D48" text-anchor="middle">♦</text>
-        </g>
+        </g></g>
         
         <!-- Right Card (A Clubs) -->
-        <g transform="translate(140, 20) rotate(18)">
+        <g class="wd-float2" style="animation-delay:0.3s"><g transform="translate(140, 20) rotate(18)">
           <rect x="-110" y="-170" width="220" height="340" rx="16" fill="#FFFFFF" stroke="#F59E0B" stroke-width="5" filter="url(#dropGlow)"/>
           <text x="-75" y="-115" font-family="'Outfit', sans-serif" font-size="44" font-weight="900" fill="#1e1e1e">A</text>
           <text x="-75" y="-70" font-family="'Outfit', sans-serif" font-size="36" fill="#1e1e1e">♣</text>
           <text x="0" y="30" font-family="'Outfit', sans-serif" font-size="90" fill="#1e1e1e" text-anchor="middle">♣</text>
-        </g>
+        </g></g>
 
         <!-- Center Card (A Hearts - Foreground) -->
-        <g transform="translate(0, -20)">
+        <g class="wd-float" style="animation-delay:0.6s"><g transform="translate(0, -20)">
           <rect x="-120" y="-180" width="240" height="360" rx="18" fill="#FFFFFF" stroke="#EC4899" stroke-width="6" filter="url(#dropGlow)"/>
           <text x="-80" y="-120" font-family="'Outfit', sans-serif" font-size="48" font-weight="900" fill="#E11D48">A</text>
           <text x="-80" y="-70" font-family="'Outfit', sans-serif" font-size="40" fill="#E11D48">♥</text>
           <text x="0" y="35" font-family="'Outfit', sans-serif" font-size="100" fill="#E11D48" text-anchor="middle">♥</text>
-        </g>
+        </g></g>
 
         <!-- Gold Chips in foreground -->
-        <g transform="translate(0, 260)">
+        <g class="wd-pulse"><g transform="translate(0, 260)">
           <ellipse cx="-80" cy="0" rx="60" ry="24" fill="#F59E0B" stroke="#FFFFFF" stroke-width="3"/>
           <ellipse cx="80" cy="0" rx="60" ry="24" fill="#EC4899" stroke="#FFFFFF" stroke-width="3"/>
           <ellipse cx="0" cy="-15" rx="75" ry="30" fill="url(#goldGradient)" stroke="#FFFFFF" stroke-width="4"/>
           <text x="0" y="-6" font-family="'Outfit', sans-serif" font-size="28" font-weight="900" fill="#240713" text-anchor="middle">₹10,000</text>
-        </g>
+        </g></g>
       </g>
     
+  <defs><linearGradient id="wdShine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.38"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+  <g transform="rotate(18 500 500)"><rect class="wd-shine" style="animation-delay:3.2s" x="0" y="-400" width="260" height="1800" fill="url(#wdShine)"/></g>
 </svg>

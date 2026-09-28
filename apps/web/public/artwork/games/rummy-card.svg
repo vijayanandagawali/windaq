@@ -1,4 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="800" height="1000" preserveAspectRatio="xMidYMid slice">
+<svg data-wd-animated="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="800" height="1000" preserveAspectRatio="xMidYMid slice">
+  <style>
+    .wd-float{animation:wdFloat 3.6s ease-in-out infinite}
+    .wd-float2{animation:wdFloat 4.4s ease-in-out infinite reverse}
+    .wd-spin{transform-box:fill-box;transform-origin:center;animation:wdSpin 14s linear infinite}
+    .wd-spin-fast{transform-box:fill-box;transform-origin:center;animation:wdSpin 3s linear infinite}
+    .wd-pulse{transform-box:fill-box;transform-origin:center;animation:wdPulse 2.4s ease-in-out infinite}
+    .wd-bounce{animation:wdBounce 1.8s cubic-bezier(.3,0,.4,1) infinite}
+    .wd-blink{animation:wdBlink 1.6s ease-in-out infinite}
+    .wd-glow{animation:wdGlow 3s ease-in-out infinite}
+    .wd-shine{animation:wdShine 6.5s ease-in-out infinite}
+    @keyframes wdFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+    @keyframes wdSpin{to{transform:rotate(360deg)}}
+    @keyframes wdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+    @keyframes wdBounce{0%,100%{transform:translateY(0)}35%{transform:translateY(-38px)}55%{transform:translateY(0)}70%{transform:translateY(-12px)}85%{transform:translateY(0)}}
+    @keyframes wdBlink{0%,100%{opacity:1}50%{opacity:.3}}
+    @keyframes wdGlow{0%,100%{opacity:.08}50%{opacity:.22}}
+    @keyframes wdShine{0%{transform:translateX(-1100px)}40%,100%{transform:translateX(1600px)}}
+    @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+  </style>
   <defs>
     <!-- Background Gradients -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -56,7 +75,7 @@
   <rect width="1000" height="1000" fill="url(#bgGrad)"/>
   
   <!-- Subtle Ambient Glow -->
-  <circle cx="500" cy="500" r="450" fill="#8B5CF6" opacity="0.08" filter="url(#dropGlow)"/>
+  <circle cx="500" cy="500" r="450" fill="#8B5CF6" opacity="0.08" filter="url(#dropGlow)" class="wd-glow"/>
 
   <!-- Geometric Grid Texture -->
   <g stroke="#FFFFFF" stroke-width="1" opacity="0.04">
@@ -96,17 +115,19 @@
         </g>
 
         <!-- Wild Joker Card (Foreground) -->
-        <g transform="translate(140, -20) rotate(16)">
+        <g class="wd-float"><g transform="translate(140, -20) rotate(16)">
           <rect x="-60" y="-95" width="120" height="190" rx="12" fill="#FDF4FF" stroke="#F43F5E" stroke-width="5" filter="url(#dropGlow)"/>
           <text x="-40" y="-60" font-family="'Outfit', sans-serif" font-size="26" font-weight="900" fill="#8B5CF6">JK</text>
           <text x="0" y="20" font-family="'Outfit', sans-serif" font-size="52" fill="#F43F5E" text-anchor="middle">🃏</text>
           <rect x="-45" y="55" width="90" height="24" rx="12" fill="#8B5CF6"/>
           <text x="0" y="72" font-family="'Outfit', sans-serif" font-size="14" font-weight="900" fill="#FFFFFF" text-anchor="middle">JOKER</text>
-        </g>
+        </g></g>
 
         <!-- Pure Sequence Verified Badge -->
-        <rect x="-200" y="180" width="400" height="66" rx="33" fill="#10B981" stroke="#FFFFFF" stroke-width="3"/>
+        <g class="wd-pulse"><rect x="-200" y="180" width="400" height="66" rx="33" fill="#10B981" stroke="#FFFFFF" stroke-width="3"/></g>
         <text x="0" y="224" font-family="'Outfit', sans-serif" font-size="26" font-weight="900" fill="#FFFFFF" text-anchor="middle">✓ PURE SEQUENCE (0 PTS)</text>
       </g>
     
+  <defs><linearGradient id="wdShine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.38"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+  <g transform="rotate(18 500 500)"><rect class="wd-shine" style="animation-delay:1.6s" x="0" y="-400" width="260" height="1800" fill="url(#wdShine)"/></g>
 </svg>

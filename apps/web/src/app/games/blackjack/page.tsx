@@ -182,7 +182,7 @@ export default function BlackjackGame() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-emerald-50 via-white to-sky-50 text-slate-900 font-sans flex flex-col relative overflow-y-auto">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 text-slate-900 font-sans flex flex-col relative">
 
 
       {/* Table Area */}
@@ -207,7 +207,7 @@ export default function BlackjackGame() {
 
         {/* Center Logo / Status */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 text-center pointer-events-none">
-           <h2 className="text-4xl sm:text-6xl font-black text-slate-500 tracking-[0.5em] mb-2 uppercase">Blackjack</h2>
+           <h2 className="text-3xl sm:text-6xl font-black text-slate-300 tracking-[0.3em] sm:tracking-[0.5em] mb-2 uppercase">Blackjack</h2>
            <p className="text-xl font-bold text-yellow-500/50 uppercase tracking-widest">Pays 3 to 2</p>
         </div>
 
@@ -257,13 +257,13 @@ export default function BlackjackGame() {
       <div className="h-24 sm:h-28 bg-white/80 border-t border-slate-200 z-20 flex items-center justify-center px-4 backdrop-blur-md">
         
         {(!gameState || gameState.status === 'BETTING' || gameState.status === 'SETTLED') && (
-           <div className="flex gap-4 items-center w-full max-w-3xl">
-             <div className="flex-1 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+           <div className="flex gap-3 sm:gap-4 items-center w-full max-w-3xl">
+             <div className="flex-1 min-w-0 flex gap-1.5 sm:gap-2 overflow-x-auto pt-3 pb-1 scrollbar-hide">
                {CHIP_VALUES.map(val => (
                  <button 
                    key={val}
                    onClick={() => setSelectedChips(val)}
-                   className={`relative w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center border-2 shadow-[0_4px_10px_rgba(15,23,42,0.13)] transition-transform ${selectedChips === val ? 'scale-110 -translate-y-2 border-yellow-400 bg-yellow-400/20' : 'border-gray-500 bg-slate-100 opacity-80 hover:opacity-100'}`}
+                   className={`relative w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0 flex items-center justify-center border-2 shadow-[0_4px_10px_rgba(15,23,42,0.13)] transition-transform ${selectedChips === val ? 'scale-110 -translate-y-2 border-yellow-400 bg-yellow-400/20' : 'border-gray-500 bg-slate-100 opacity-80 hover:opacity-100'}`}
                  >
                     <div className="absolute inset-1 border border-slate-200 rounded-full border-dashed" />
                     <span className={`font-black text-xs ${selectedChips === val ? 'text-yellow-600 drop-shadow-[0_0_5px_rgba(250,204,21,0.8)]' : 'text-slate-600'}`}>{val >= 1000 ? `${val/1000}k` : val}</span>
@@ -272,7 +272,7 @@ export default function BlackjackGame() {
              </div>
              <button 
                onClick={placeBet}
-               className="bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase tracking-widest px-6 py-4 rounded-xl shadow-[0_0_20px_rgba(234,179,8,0.4)] transition-all active:scale-95"
+               className="shrink-0 bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase tracking-widest px-4 py-3 sm:px-6 sm:py-4 rounded-xl shadow-[0_0_20px_rgba(234,179,8,0.4)] transition-all active:scale-95"
              >
                Deal
              </button>

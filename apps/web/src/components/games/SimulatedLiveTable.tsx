@@ -466,8 +466,9 @@ export default function SimulatedLiveTable({
       </div>
 
       {/* Phase Breadcrumbs Tracker */}
-      <div className="bg-slate-100 border-b border-slate-200 px-4 py-1.5 flex items-center justify-between text-[11px] overflow-x-auto scrollbar-hide">
-        <div className="flex items-center gap-1.5 md:gap-3 mx-auto">
+      <div className="bg-slate-100 border-b border-slate-200 px-4 py-1.5 text-[11px] overflow-x-auto scrollbar-hide">
+        {/* w-max + mx-auto: centred when it fits, scrollable from the first step when it does not. */}
+        <div className="flex w-max items-center gap-1.5 md:gap-3 mx-auto">
           {phasesOrder.map((p, idx) => {
             const isActive = state.phase === p.key || 
               (p.key === 'BETTING_CLOSED' && (state.phase === 'BETTING_CLOSING' || state.phase === 'BETTING_LOCKED')) ||

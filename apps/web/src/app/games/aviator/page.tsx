@@ -321,7 +321,7 @@ export default function AviatorGame() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] bg-gradient-to-b from-sky-100 via-sky-50 to-white font-sans relative flex flex-col overflow-y-auto">
+    <div className="min-h-[calc(100dvh-58px)] bg-gradient-to-b from-sky-100 via-sky-50 to-white font-sans relative flex flex-col">
 
 
       {/* Game Area (The Canvas & Multiplier) */}

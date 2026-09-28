@@ -255,14 +255,14 @@ export default function AndarBaharGame() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-emerald-50 via-white to-sky-50 text-white font-sans selection:bg-yellow-500 flex flex-col relative overflow-y-auto">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 text-slate-900 font-sans flex flex-col relative">
 
 
       {/* Game Stage Area */}
       <div className="flex-1 w-full relative flex flex-col items-center py-6 px-4">
         
         {/* Timer / Status */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/80 border border-slate-200 px-6 py-2 rounded-full flex items-center gap-3 backdrop-blur-md z-30 shadow-lg">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/80 border border-slate-200 px-6 py-2 rounded-full flex items-center gap-3 backdrop-blur-md z-30 shadow-lg">
            {gameState.status === 'OPEN' ? (
              <>
                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />

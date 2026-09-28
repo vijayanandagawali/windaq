@@ -202,10 +202,10 @@ export default function LottoGame() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] bg-white font-sans selection:bg-neon-mint flex flex-col pb-safe overflow-y-auto">
+    <div className="min-h-[calc(100dvh-58px)] bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 font-sans flex flex-col pb-safe">
 
 
-      <div className="flex-1 overflow-y-auto flex flex-col relative">
+      <div className="flex-1 flex flex-col relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-white to-slate-50 pointer-events-none" />
 
         {/* Top Info Panel with 3D Blower Sphere */}

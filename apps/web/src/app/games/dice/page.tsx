@@ -224,7 +224,7 @@ export default function DiceGame() {
   };
 
   return (
-    <div className="h-[calc(100dvh-58px)] w-full bg-white text-white font-sans selection:bg-neon-mint flex flex-col overflow-y-auto">
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-orange-50/60 via-white to-emerald-50/60 text-slate-900 font-sans flex flex-col">
 
 
       {/* Game Stage Area */}
@@ -234,7 +234,7 @@ export default function DiceGame() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/30 via-transparent to-transparent opacity-60" />
         
         {/* Timer / Status */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/80 border border-slate-200 px-6 py-2 rounded-full flex items-center gap-3 backdrop-blur-md z-10 shadow-lg">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/80 border border-slate-200 px-6 py-2 rounded-full flex items-center gap-3 backdrop-blur-md z-10 shadow-lg">
            {gameState.status === 'OPEN' ? (
              <>
                <div className="w-2 h-2 rounded-full bg-neon-mint animate-pulse" />
@@ -291,7 +291,7 @@ export default function DiceGame() {
       </div>
 
       {/* Betting Grid */}
-      <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
+      <div className="flex-1 p-4 sm:p-6">
          
          <div className="max-w-3xl mx-auto space-y-4">
             
@@ -370,7 +370,7 @@ export default function DiceGame() {
       </div>
 
       {/* Universal Bet Panel Footer */}
-      <div className="bg-white/80 border-t border-slate-200 p-3 sm:p-4 sticky bottom-0 z-40 backdrop-blur-md">
+      <div className="bg-white/90 border-t border-slate-200 p-3 sm:p-4 sm:sticky sm:bottom-0 z-40 backdrop-blur-md">
          <div className="max-w-3xl mx-auto">
             <UniversalBetPanel
               title="Dice Bet Engine"
