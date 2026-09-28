@@ -8,7 +8,8 @@ import toast from 'react-hot-toast';
 import { Socket } from '@/lib/gameSocket';
 import { createGameSocket } from '@/lib/config';
 import { useBetSettlements, type SettlementSummary } from '@/hooks/useBetSettlements';
-import SimulatedLiveTable, { SimulatedLiveState } from '@/components/games/SimulatedLiveTable';
+import type { SimulatedLiveState } from '@/components/games/tableTypes';
+import DragonTigerTable from '@/components/games/DragonTigerTable';
 import { stateRecovery } from '@/lib/stateRecovery';
 
 export default function DragonTigerGamePage() {
@@ -305,20 +306,8 @@ export default function DragonTigerGamePage() {
   }, [socket, tableState.phase, fetchBalance, userId]);
 
   return (
-    <div className="min-h-[calc(100dvh-58px)] w-full max-w-[100vw] bg-white text-slate-900 flex flex-col overflow-y-auto overflow-x-hidden">
-
-
-      {/* Simulated Live Table Component */}
-      <div className="flex-1 overflow-hidden relative">
-        <SimulatedLiveTable
-          state={tableState}
-          balance={balance}
-          onPlaceBet={handlePlaceBet}
-          gameTitle="Dragon Tiger"
-          roomName="VIP Simulated Live Suite #1"
-          settlement={settlement}
-        />
-      </div>
+    <div className="min-h-[calc(100dvh-58px)] w-full bg-gradient-to-b from-sky-50 via-white to-emerald-50 text-slate-900">
+      <DragonTigerTable state={tableState} balance={balance} onPlaceBet={handlePlaceBet} settlement={settlement} />
 
     </div>
   );

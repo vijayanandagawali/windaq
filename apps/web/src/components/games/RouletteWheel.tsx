@@ -86,7 +86,8 @@ export default function RouletteWheel({
         const winIndex = WHEEL_NUMBERS.indexOf(winningNumber);
 
         if (winIndex !== -1) {
-          settleProgressRef.current = Math.min(1, settleProgressRef.current + 0.015);
+          // ~3s deceleration: long enough for the table to watch the ball hunt for its pocket.
+          settleProgressRef.current = Math.min(1, settleProgressRef.current + 0.0062);
           const prog = settleProgressRef.current;
 
           // Wheel slows down gradually

@@ -4,7 +4,6 @@ const { settleBet } = require('../gameBets');
 const prisma = new PrismaClient();
 const { UniversalRoundEngine, UNIVERSAL_PHASES } = require('../engine/UniversalRoundEngine');
 const { dealerRegistry } = require('../dealers/VirtualDealerRegistry');
-const { botFramework } = require('../simulation/SimulatedOpponentFramework');
 
 class BaseTableEngine extends UniversalRoundEngine {
   constructor(gameId, room = 'Standard', coreManager, customDurations = {}) {
@@ -148,26 +147,7 @@ class BaseTableEngine extends UniversalRoundEngine {
 
   async onBettingOpen(roundId) {
     this.updateDealerState(UNIVERSAL_PHASES.BETTING_OPEN);
-    
-    // Auto-schedule sandbox test bots for simulation and load validation
-    try {
-      const allowedMarkets = this.gameId === 'dragon-tiger' 
-        ? ['DRAGON', 'TIGER', 'TIE'] 
-        : this.gameId === 'andar-bahar' 
-        ? ['ANDAR', 'BAHAR'] 
-        : ['RED', 'BLACK'];
-
-      botFramework.scheduleBotActionsForRound(
-        this.tableId, 
-        this.gameId, 
-        allowedMarkets, 
-        (botBet) => {
-          this.emitEvent('tg:simulated_bet', { roundId, ...botBet });
-        }
-      );
-    } catch (err) {
-      console.error(`[BaseTableEngine:${this.gameId}] Error scheduling bot bets:`, err.message);
-    }
+    // No simulated bettors are broadcast to players: every bet shown on a table is a real one.
   }
 
   async onBettingClosing(roundId) {

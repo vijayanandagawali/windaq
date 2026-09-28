@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
+import { PlayingCard, type Suit } from '@/components/lobby/previews/primitives';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Socket } from '@/lib/gameSocket';
@@ -27,6 +28,7 @@ export default function BlackjackGame() {
     amount: number;
     multiplier?: number;
     message?: string;
+    net?: number;
   }>({ status: 'IDLE', amount: 0 });
 
   useEffect(() => {
@@ -60,6 +62,7 @@ export default function BlackjackGame() {
             status: 'WON',
             amount: totalPayout,
             multiplier: isBj ? 2.5 : 2.0,
+            net: totalPayout - state.hands.reduce((sum: number, h: any) => sum + Number(h.bet || 0), 0),
             message: isBj ? 'NATURAL BLACKJACK!' : 'YOU WON THE HAND!'
           });
         } else if (hasLoss) {
@@ -127,42 +130,18 @@ export default function BlackjackGame() {
   };
 
   const renderCard = (cardStr: string | null, index: number, hidden: boolean = false) => {
-    if (hidden || !cardStr) {
-      return (
-        <motion.div 
-          initial={{ x: 50, y: -200, opacity: 0, rotateY: 180 }}
-          animate={{ x: index * 20, y: 0, opacity: 1, rotateY: 180 }}
-          transition={{ type: "spring", damping: 15 }}
-          className="absolute w-16 h-24 sm:w-20 sm:h-28 rounded-lg bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blue-900 border-2 border-slate-200 shadow-xl"
-        />
-      );
-    }
-    
-    const rank = cardStr[0];
-    const suit = cardStr[1];
-    
-    const suitColors: Record<string, string> = { 'H': 'text-red-500', 'D': 'text-red-500', 'C': 'text-gray-900', 'S': 'text-gray-900' };
-    const suitSymbols: Record<string, string> = { 'H': '♥', 'D': '♦', 'C': '♣', 'S': '♠' };
-    
+    // Stable key per position: when the dealer's hole card is revealed the same card turns over.
+    const rank = cardStr ? (cardStr[0] === 'T' ? '10' : cardStr[0]) : 'A';
+    const suit = (cardStr ? cardStr[1] : 'S') as Suit;
     return (
-      <motion.div 
-        key={cardStr + index}
-        initial={{ x: 50, y: -200, opacity: 0 }}
-        animate={{ x: index * 20, y: 0, opacity: 1 }}
-        transition={{ type: "spring", damping: 15 }}
-        className="absolute w-16 h-24 sm:w-20 sm:h-28 rounded-lg bg-white shadow-xl flex flex-col justify-between p-1.5 sm:p-2 border border-gray-200"
+      <motion.div
+        key={index}
+        initial={{ x: 60, y: -220, opacity: 0, rotate: 10 }}
+        animate={{ x: index * 24, y: 0, opacity: 1, rotate: index % 2 ? 3 : -3 }}
+        transition={{ type: 'spring', damping: 16, stiffness: 170, delay: index * 0.12 }}
+        className="absolute text-[30px] sm:text-[36px]"
       >
-        <div className={`text-sm sm:text-base font-bold leading-none ${suitColors[suit]}`}>
-          {rank === 'T' ? '10' : rank}
-          <div className="text-xs sm:text-sm">{suitSymbols[suit]}</div>
-        </div>
-        <div className={`text-3xl absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20 ${suitColors[suit]}`}>
-          {suitSymbols[suit]}
-        </div>
-        <div className={`text-sm sm:text-base font-bold leading-none rotate-180 self-end ${suitColors[suit]}`}>
-          {rank === 'T' ? '10' : rank}
-          <div className="text-xs sm:text-sm">{suitSymbols[suit]}</div>
-        </div>
+        <PlayingCard rank={rank} suit={suit} faceDown={hidden || !cardStr} className="w-16 sm:w-20" />
       </motion.div>
     );
   };
@@ -186,11 +165,11 @@ export default function BlackjackGame() {
 
 
       {/* Table Area */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
+      <div className="relative m-3 flex min-h-[440px] flex-1 flex-col items-center justify-center overflow-hidden rounded-[32px] bg-[radial-gradient(ellipse_at_50%_20%,#22C3A6,#0B6B5C_80%)] p-4 shadow-[inset_0_12px_32px_rgba(0,0,0,0.3),0_18px_40px_rgba(11,107,92,0.25)] ring-4 ring-amber-200/70">
         
         {/* Dealer Zone */}
         <div className="absolute top-10 sm:top-20 flex flex-col items-center">
-          <div className="text-yellow-600 font-bold tracking-widest text-xs uppercase mb-2">Dealer Must Draw to 16</div>
+          <div className="mb-2 text-xs font-bold uppercase tracking-widest text-amber-200">Dealer hits soft 17, stands on hard 17</div>
           <div className="relative w-48 h-28 flex justify-center">
             {gameState?.dealerCards?.map((card: any, i: number) => {
               // Hide second card if playing
@@ -207,8 +186,8 @@ export default function BlackjackGame() {
 
         {/* Center Logo / Status */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 text-center pointer-events-none">
-           <h2 className="text-3xl sm:text-6xl font-black text-slate-300 tracking-[0.3em] sm:tracking-[0.5em] mb-2 uppercase">Blackjack</h2>
-           <p className="text-xl font-bold text-yellow-500/50 uppercase tracking-widest">Pays 3 to 2</p>
+           <h2 className="mb-2 text-3xl font-black uppercase tracking-[0.3em] text-white/30 sm:text-6xl sm:tracking-[0.5em]">Blackjack</h2>
+           <p className="text-lg font-bold uppercase tracking-widest text-amber-200/70">Blackjack pays 3 to 2</p>
         </div>
 
         {/* Player Zone */}
@@ -230,7 +209,7 @@ export default function BlackjackGame() {
                          'bg-red-600 text-white border-red-400'
                        }`}
                      >
-                       {hand.status} {hand.payout > 0 ? `+₹${hand.payout}` : ''}
+                       {hand.status}{hand.payout > 0 ? ` · paid ₹${hand.payout}` : ''}
                      </motion.div>
                    )}
                    
@@ -297,6 +276,7 @@ export default function BlackjackGame() {
         amount={celebration.amount}
         multiplier={celebration.multiplier}
         message={celebration.message}
+        net={celebration.net}
         onDismiss={() => setCelebration({ status: 'IDLE', amount: 0 })}
       />
 

@@ -316,3 +316,12 @@ body {
 @keyframes wd-rays { to { transform: rotate(360deg); } }
 .wd-rays { animation: wd-rays 22s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .wd-rays { animation: none; } }
+
+/* Aviator flight scene */
+@keyframes wd-clouds { from { background-position: 0 0, 0 0, 0 0; } to { background-position: -400px 0, -600px 0, -500px 0; } }
+.wd-clouds { animation: wd-clouds 9s linear infinite; background-repeat: repeat-x; }
+@keyframes wd-flame { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.wd-flame { animation: wd-flame 0.18s linear infinite; }
+@keyframes wd-plane-exit { to { transform: translate(55vw, -55vh); opacity: 0; } }
+.wd-plane-exit { animation: wd-plane-exit 0.9s cubic-bezier(.5,0,.9,.5) forwards; }
+@media (prefers-reduced-motion: reduce) { .wd-clouds, .wd-flame, .wd-plane-exit { animation: none; } }

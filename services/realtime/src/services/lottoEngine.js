@@ -21,7 +21,7 @@ class LottoEngine extends UniversalRoundEngine {
       BETTING_OPEN: 240, // 4 mins
       BETTING_CLOSED: 30, // 30 sec locked
       PLAYING: 15,       // Drawing balls
-      RESULT: 5,         // Show numbers
+      RESULT_REVEAL: 5,  // Show numbers (six balls are drawn one by one on the client)
       SETTLEMENT: 5,     // Payout tickets
       COMPLETED: 2,
       NEXT_ROUND: 2

@@ -45,6 +45,9 @@ export default function RouletteGame() {
   
   const [timeLeft, setTimeLeft] = useState<number>(60);
   const [resultNumber, setResultNumber] = useState<number | null>(null);
+  // The number shown to the player: set only when the ball has physically dropped, so the
+  // banner, table highlight and history never spoil the spin.
+  const [revealedNumber, setRevealedNumber] = useState<number | null>(null);
   // Lets the once-registered socket handlers know a result is showing without reconnecting.
   const hasResultRef = useRef(false);
   const [history, setHistory] = useState<any[]>([]);
@@ -122,6 +125,8 @@ export default function RouletteGame() {
   // Handle wheel settle completion (triggered only after deceleration into server pocket)
   const handleSettleComplete = (settledWinNumber: number) => {
     settledNumberRef.current = settledWinNumber;
+    setRevealedNumber(settledWinNumber);
+    setHistory(prev => [{ resultNumber: settledWinNumber, resultTime: new Date() }, ...prev].slice(0, 25));
     if (pendingSummaryRef.current) showOutcome(pendingSummaryRef.current, settledWinNumber);
     setTimeout(() => fetchBalance(), 1500);
   };
@@ -145,6 +150,7 @@ export default function RouletteGame() {
       if (data.status === 'OPEN' && hasResultRef.current) {
         hasResultRef.current = false;
         settledNumberRef.current = null;
+        setRevealedNumber(null);
         pendingSummaryRef.current = null;
         setResultNumber(null);
         setMyBets({}); // Clear bets for new round
@@ -165,7 +171,6 @@ export default function RouletteGame() {
       setGameState((p: any) => ({ ...p, status: 'RESULT' }));
       hasResultRef.current = true;
       setResultNumber(data.resultNumber);
-      setHistory(prev => [{ resultNumber: data.resultNumber, resultTime: new Date() }, ...prev].slice(0, 25));
     });
 
     s.on('RESULT_HISTORY_UPDATED', (data: any) => {
@@ -259,7 +264,7 @@ export default function RouletteGame() {
 
   const renderNumberCell = (n: number) => {
     const betKey = `STRAIGHT_${n}`;
-    const isWinner = resultNumber === n;
+    const isWinner = revealedNumber === n;
     return (
       <button 
         key={n}
@@ -344,18 +349,18 @@ export default function RouletteGame() {
           <RouletteWheel 
             isSpinning={['LOCKED', 'BETTING_LOCKED', 'PLAYING'].includes(gameState.status)}
             winningNumber={resultNumber} 
-            size={190}
+            size={250}
             onSettleComplete={handleSettleComplete}
           />
-          {resultNumber !== null && (
+          {revealedNumber !== null && (
             <motion.div
               initial={{ scale: 0, y: 10 }}
               animate={{ scale: 1, y: 0 }}
               className="mt-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black px-4 py-1 rounded-full font-black text-sm tracking-widest shadow-[0_0_20px_rgba(234,179,8,0.7)] flex items-center gap-2"
             >
               <span>WINNER:</span>
-              <span className={`text-base font-black px-2 py-0.5 rounded-md ${isRed(resultNumber) ? 'bg-red-600 text-white' : resultNumber === 0 ? 'bg-emerald-600 text-white' : 'bg-white text-slate-900'}`}>
-                {resultNumber} {resultNumber === 0 ? '(GREEN)' : isRed(resultNumber) ? '(RED)' : '(BLACK)'}
+              <span className={`text-base font-black px-2 py-0.5 rounded-md ${isRed(revealedNumber) ? 'bg-red-600 text-white' : revealedNumber === 0 ? 'bg-emerald-600 text-white' : 'bg-white text-slate-900'}`}>
+                {revealedNumber} {revealedNumber === 0 ? '(GREEN)' : isRed(revealedNumber) ? '(RED)' : '(BLACK)'}
               </span>
             </motion.div>
           )}

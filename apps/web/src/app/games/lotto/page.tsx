@@ -126,7 +126,7 @@ export default function LottoGame() {
               if (pendingSummaryRef.current) showOutcome(pendingSummaryRef.current, allNums);
             }, 600);
           }
-        }, 600 * (idx + 1));
+        }, 1300 * (idx + 1));
       });
       
       // Refresh history
@@ -134,7 +134,7 @@ export default function LottoGame() {
         s.emit('lotto:history', { room: '5min' }, (res: any) => {
           if (res.success) setHistory(res.data);
         });
-      }, 600 * (allNums.length + 1));
+      }, 1300 * (allNums.length + 1));
     });
 
     return () => { 
@@ -267,22 +267,19 @@ export default function LottoGame() {
               <div className="flex gap-2 h-16 items-center justify-center">
                 <AnimatePresence>
                   {(revealedBalls || []).map((num, idx) => {
-                   const colorClass = 
-                     num <= 10 ? 'from-amber-300 to-yellow-500 text-black border-yellow-200' :
-                     num <= 20 ? 'from-blue-400 to-blue-600 text-white border-blue-200' :
-                     num <= 30 ? 'from-red-400 to-red-600 text-white border-red-200' :
-                     num <= 40 ? 'from-emerald-400 to-emerald-600 text-white border-emerald-200' :
-                     'from-purple-400 to-purple-600 text-white border-purple-200';
-
+                   const shell = num <= 10 ? '#F59E0B' : num <= 20 ? '#3B82F6' : num <= 30 ? '#EF4444' : num <= 40 ? '#10B981' : '#8B5CF6';
+                   // Drawn numbers the player holds get a gold ring as they land.
+                   const onTicket = myTickets.some((t) => t.numbers.includes(num));
                    return (
-                     <motion.div 
+                     <motion.div
                        key={`${num}-${idx}`}
-                       initial={{ scale: 0, opacity: 0, y: -40 }}
-                       animate={{ scale: 1, opacity: 1, y: 0 }}
-                       transition={{ type: 'spring', stiffness: 280, damping: 16 }}
-                       className={`w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br ${colorClass} flex items-center justify-center shadow-[0_0_25px_rgba(250,204,21,0.6)] border-2`}
+                       initial={{ scale: 0, opacity: 0, y: -60, rotate: -180 }}
+                       animate={{ scale: 1, opacity: 1, y: 0, rotate: 0 }}
+                       transition={{ type: 'spring', stiffness: 220, damping: 14 }}
+                       className={`relative flex h-12 w-12 items-center justify-center rounded-full md:h-14 md:w-14 ${onTicket ? 'ring-4 ring-amber-300 ring-offset-2 ring-offset-white' : ''}`}
+                       style={{ background: `radial-gradient(circle at 32% 28%, #ffffff 0 10%, ${shell} 42% 100%)`, boxShadow: 'inset -5px -7px 12px rgba(0,0,0,0.25), 0 8px 16px rgba(15,23,42,0.25)' }}
                      >
-                       <span className="font-black text-xl md:text-2xl drop-shadow">{num}</span>
+                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-black text-slate-900 shadow-inner md:h-8 md:w-8 md:text-base">{num}</span>
                      </motion.div>
                    );
                  })}

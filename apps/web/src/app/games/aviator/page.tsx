@@ -12,6 +12,7 @@ import { createGameSocket } from '@/lib/config';
 import { audioEngine } from '@/lib/audioEngine';
 import { useAuthStore } from '@/store/authStore';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
+import AviatorFlight from '@/components/games/AviatorFlight';
 
 interface CashoutResult {
   success: boolean;
@@ -332,12 +333,7 @@ export default function AviatorGame() {
            {provablyFairHash ? `Hash: ${provablyFairHash.substring(0, 12)}...` : 'Connecting RNG...'}
         </div>
 
-        <canvas 
-          ref={canvasRef} 
-          width={800} 
-          height={400} 
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <AviatorFlight multiplier={parseFloat(multiplier)} phase={gameState} />
         
         {/* Multiplier Display */}
         <div className="relative z-10 flex flex-col items-center">

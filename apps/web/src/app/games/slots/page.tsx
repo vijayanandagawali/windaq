@@ -143,7 +143,7 @@ export default function SlotsGame() {
                 });
               }
             }
-          }, 600 + reelIdx * 250);
+          }, 700 + reelIdx * 420);
         });
       } else {
         clearInterval(spinInterval);
