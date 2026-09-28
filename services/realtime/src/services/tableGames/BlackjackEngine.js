@@ -1,7 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const crypto = require('crypto');
-const { ensureUserAndWallet } = require('../walletService');
+const { settleBet } = require('../gameBets');
 
 class BlackjackEngine {
   constructor() {
@@ -60,9 +60,8 @@ class BlackjackEngine {
     return cards.length === 2 && this.calculateHandValue(cards).total === 21;
   }
 
-  async createGame(userId) {
-    await ensureUserAndWallet(prisma, userId);
-    const shoe = this.generateShoe(6);
+  async createGame(userId, shoe = null) {
+    shoe = shoe && shoe.length >= 20 ? shoe : this.generateShoe(6);
     return await prisma.blackjackGame.create({
       data: {
         userId,
@@ -80,8 +79,11 @@ class BlackjackEngine {
     });
   }
 
-  async dealInitialCards(gameId, betAmount) {
-    // This assumes bet has already been deducted from wallet in handler
+  /**
+   * Deals a new round. The stake (betPaise) must already be debited through the ledger with
+   * handId as the bet reference.
+   */
+  async dealInitialCards(gameId, betPaise, handId) {
     const game = await this.getGame(gameId);
     let shoe = game.shoe;
     
@@ -120,12 +122,13 @@ class BlackjackEngine {
     }
 
     // Create hand in DB
-    const hand = await prisma.blackjackHand.create({
+    await prisma.blackjackHand.create({
       data: {
+        id: handId,
         gameId,
         userId: game.userId,
         cards: playerHand,
-        bet: betAmount,
+        bet: betPaise,
         status: handStatus
       }
     });
@@ -244,70 +247,68 @@ class BlackjackEngine {
     const dBJ = this.isBlackjack(game.dealerCards);
 
     for (const hand of game.hands) {
-      let payout = 0;
+      const bet = BigInt(hand.bet);
+      let payout = 0n;
       let newStatus = hand.status; // keeps BUST or BLACKJACK
 
       if (hand.status === 'BUST') {
-        payout = 0;
+        payout = 0n;
       } else if (hand.status === 'BLACKJACK') {
         if (dBJ) {
-          payout = Number(hand.bet); // Push
+          payout = bet; // Push
           newStatus = 'PUSH';
         } else {
-          payout = Number(hand.bet) * 2.5; // 3:2 payout
+          payout = (bet * 5n) / 2n; // 3:2 payout (stake included)
         }
       } else if (dBJ) {
-        payout = 0;
         newStatus = 'LOST';
       } else {
         const pVal = this.calculateHandValue(hand.cards).total;
-        if (dealerVal > 21) {
-          payout = Number(hand.bet) * 2;
-          newStatus = 'WON';
-        } else if (pVal > dealerVal) {
-          payout = Number(hand.bet) * 2;
+        if (dealerVal > 21 || pVal > dealerVal) {
+          payout = bet * 2n;
           newStatus = 'WON';
         } else if (pVal === dealerVal) {
-          payout = Number(hand.bet);
+          payout = bet;
           newStatus = 'PUSH';
         } else {
-          payout = 0;
           newStatus = 'LOST';
         }
       }
 
-      await prisma.blackjackHand.update({
-        where: { id: hand.id },
-        data: { payout: payout, status: newStatus }
-      });
-
-      // Credit payout to wallet if won or pushed
-      if (payout > 0) {
-        try {
-          const payoutPaise = BigInt(Math.floor(payout * 100));
-          const { wallet } = await ensureUserAndWallet(prisma, hand.userId);
-          const newBal = wallet.balance + payoutPaise;
-          await prisma.wallet.update({
-            where: { id: wallet.id },
-            data: { balance: newBal }
-          });
-          await prisma.transaction.create({
-            data: {
-              walletId: wallet.id,
-              idempotencyKey: `bj_settle_${hand.id}_${Date.now()}`,
-              type: newStatus === 'PUSH' ? 'REFUND' : 'BET_WIN',
-              amount: payoutPaise,
-              balanceAfter: newBal,
-              reference: `bj_hand_${hand.id}`
-            }
-          });
-        } catch (wErr) {
-          console.error('[Blackjack Settlement Error]', wErr.message);
-        }
+      try {
+        // Ledger first, idempotent per hand id: a hand can never be paid twice.
+        await settleBet(hand.userId, bet, payout, 'blackjack', hand.id);
+        await prisma.blackjackHand.update({ where: { id: hand.id }, data: { payout, status: newStatus } });
+      } catch (err) {
+        console.error('[Blackjack] Settlement failed for hand', hand.id, err.message);
       }
     }
 
     return await this.getGame(game.id);
+  }
+
+  /**
+   * Public view of a game: never includes the shoe, and hides the dealer's hole card until the
+   * round is settled. Amounts are in rupees.
+   */
+  toPublicState(game) {
+    if (!game) return null;
+    const settled = game.status === 'SETTLED';
+    const dealerCards = (game.dealerCards || []).map((card, i) => (!settled && i === 1 ? { hidden: true } : card));
+    return {
+      id: game.id,
+      status: game.status,
+      activeHandIndex: game.activeHandIndex,
+      dealerCards,
+      dealerTotal: settled ? this.calculateHandValue(game.dealerCards || []).total : null,
+      hands: (game.hands || []).map((h) => ({
+        id: h.id,
+        cards: h.cards,
+        status: h.status,
+        bet: Number(h.bet) / 100,
+        payout: Number(h.payout || 0) / 100
+      }))
+    };
   }
 }
 

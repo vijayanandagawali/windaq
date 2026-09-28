@@ -1,48 +1,61 @@
-const { PrismaClient } = require('@prisma/client');
 const { ScratchEngine, TIERS } = require('../services/scratchEngine');
-const { ensureUserAndWallet } = require('../services/walletService');
+const { requirePlayer, debitStake, settleBet, replyError, GameError, prisma } = require('../services/gameBets');
 
-const prisma = new PrismaClient();
 const engine = new ScratchEngine();
+const AUTO_SETTLE_AFTER_MS = 15 * 60 * 1000;
+
+/**
+ * Settles a ticket exactly once: flips isRevealed atomically, then pays through the ledger
+ * (idempotent per ticket id). Returns false when another caller already revealed it.
+ */
+async function revealAndSettle(ticket) {
+  const claimed = await prisma.scratchTicket.updateMany({
+    where: { id: ticket.id, isRevealed: false },
+    data: { isRevealed: true, revealedAt: new Date() }
+  });
+  if (claimed.count !== 1) return false;
+  await settleBet(ticket.userId, ticket.price, ticket.payout, 'scratch', ticket.id);
+  return true;
+}
+
+// Tickets bought but never scratched are settled automatically so winnings are never stranded.
+let sweeperStarted = false;
+function startSweeper() {
+  if (sweeperStarted || process.env.NODE_ENV === 'test') return;
+  sweeperStarted = true;
+  setInterval(async () => {
+    try {
+      const stale = await prisma.scratchTicket.findMany({
+        where: { isRevealed: false, purchasedAt: { lt: new Date(Date.now() - AUTO_SETTLE_AFTER_MS) } },
+        take: 200
+      });
+      for (const ticket of stale) await revealAndSettle(ticket).catch((err) => console.error('[Scratch] auto-settle failed', ticket.id, err.message));
+    } catch (err) {
+      console.error('[Scratch] sweeper error', err.message);
+    }
+  }, 60 * 1000).unref();
+}
 
 function handleScratchSockets(socket, io) {
-  
-  socket.on('scratch:buy', async (data, callback) => {
-    const resolvedUserId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
-    if (!resolvedUserId) {
-      return callback({ success: false, code: 'AUTH_REQUIRED', message: 'You must be logged in to buy scratch cards.' });
-    }
-    const userId = resolvedUserId;
-    const { tierId } = data;
-    const tier = TIERS[tierId];
-    
-    if (!tier) return callback({ success: false, message: 'Invalid ticket tier.' });
+  startSweeper();
 
+  socket.on('scratch:buy', async (data = {}, callback) => {
     try {
-      const result = await prisma.$transaction(async (tx) => {
-        // Fetch wallet, auto-provision guest for testing if needed
-        let { wallet } = await ensureUserAndWallet(tx, userId);
-        
-        const pricePaise = BigInt(tier.price * 100);
+      const userId = requirePlayer(socket);
+      const tierId = data.tierId;
+      const tier = Object.prototype.hasOwnProperty.call(TIERS, tierId) ? TIERS[tierId] : null;
+      if (!tier) throw new GameError('INVALID_BET', 'Invalid ticket tier.');
 
-        if (wallet.balance < pricePaise) {
-          throw new Error('Insufficient balance in wallet.');
-        }
+      const pricePaise = BigInt(tier.price * 100);
+      const ticketData = engine.generateTicket(tierId);
 
-        // 1. Deduct ticket price
-        const newBalance = wallet.balance - pricePaise;
-        await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
-
-        // 2. Generate secure ticket
-        const ticketData = engine.generateTicket(tierId);
-        
-        // 3. Record Immutable Ticket
-        const ticket = await tx.scratchTicket.create({
+      const { ticket, newBalance } = await prisma.$transaction(async (tx) => {
+        const created = await tx.scratchTicket.create({
           data: {
             userId,
             tier: tierId,
             price: pricePaise,
-            payout: BigInt(ticketData.payout * 100),
+            payout: BigInt(Math.round(ticketData.payout * 100)),
             grid: ticketData.grid,
             isRevealed: false,
             serverSeed: ticketData.serverSeed,
@@ -50,84 +63,36 @@ function handleScratchSockets(socket, io) {
             nonce: ticketData.nonce
           }
         });
-
-        // 4. Record Financial Transaction for Buy
-        await tx.transaction.create({
-          data: {
-            walletId: wallet.id,
-            idempotencyKey: `scratch-buy-${ticket.id}`,
-            type: 'BET_PLACE',
-            amount: pricePaise,
-            balanceAfter: newBalance,
-            reference: ticket.id
-          }
-        });
-
-        return {
-          ticketId: ticket.id,
-          grid: ticketData.grid,
-          payout: ticketData.payout, // Send payout to client so it knows what to animate, but it's not credited yet
-          newBalance: newBalance.toString()
-        };
+        const balance = await debitStake(tx, userId, pricePaise, 'scratch', created.id);
+        return { ticket: created, newBalance: balance };
       });
 
-      callback({ success: true, data: result });
-      
-    } catch (e) {
-      console.error('Scratch buy error', e);
-      callback({ success: false, message: e.message });
+      if (typeof callback === 'function') {
+        // The grid is sent so the card can be drawn; the prize is only credited on reveal.
+        callback({ success: true, data: { ticketId: ticket.id, grid: ticketData.grid, payout: ticketData.payout, newBalance: Number(newBalance) } });
+      }
+    } catch (err) {
+      replyError(callback, err, 'Scratch buy');
     }
   });
 
-  socket.on('scratch:reveal', async (data, callback) => {
-    const { ticketId, userId } = data;
-
+  socket.on('scratch:reveal', async (data = {}, callback) => {
     try {
-      const result = await prisma.$transaction(async (tx) => {
-        const ticket = await tx.scratchTicket.findUnique({ where: { id: ticketId } });
-        if (!ticket) throw new Error("Ticket not found.");
-        if (ticket.userId !== userId) throw new Error("Unauthorized.");
-        if (ticket.isRevealed) throw new Error("Ticket already revealed.");
+      const userId = requirePlayer(socket);
+      const ticket = typeof data.ticketId === 'string'
+        ? await prisma.scratchTicket.findUnique({ where: { id: data.ticketId } })
+        : null;
+      if (!ticket || ticket.userId !== userId) throw new GameError('NOT_FOUND', 'Ticket not found.');
+      if (!(await revealAndSettle(ticket))) throw new GameError('ALREADY_REVEALED', 'Ticket already revealed.');
 
-        // Mark as revealed
-        await tx.scratchTicket.update({
-          where: { id: ticketId },
-          data: { isRevealed: true, revealedAt: new Date() }
-        });
-
-        let { wallet } = await ensureUserAndWallet(tx, userId);
-        let newBalance = wallet.balance;
-
-        // Credit winnings if any
-        if (ticket.payout > 0n) {
-          newBalance = wallet.balance + ticket.payout;
-          await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
-
-          await tx.transaction.create({
-            data: {
-              walletId: wallet.id,
-              idempotencyKey: `scratch-win-${ticket.id}`,
-              type: 'BET_WIN',
-              amount: ticket.payout,
-              balanceAfter: newBalance,
-              reference: ticket.id
-            }
-          });
-        }
-
-        return {
-          payout: Number(ticket.payout) / 100,
-          newBalance: newBalance.toString()
-        };
-      });
-
-      callback({ success: true, data: result });
-
-    } catch (e) {
-      console.error('Scratch reveal error', e);
-      callback({ success: false, message: e.message });
+      const wallet = await prisma.wallet.findFirst({ where: { userId, currency: 'INR' } });
+      if (typeof callback === 'function') {
+        callback({ success: true, data: { payout: Number(ticket.payout) / 100, newBalance: Number(wallet.balance) } });
+      }
+    } catch (err) {
+      replyError(callback, err, 'Scratch reveal');
     }
   });
 }
 
-module.exports = { handleScratchSockets };
+module.exports = { handleScratchSockets, revealAndSettle };

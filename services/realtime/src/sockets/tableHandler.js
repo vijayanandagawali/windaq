@@ -4,6 +4,13 @@ const walletService = require('../services/walletService');
 const riskService = require('../services/riskService');
 const complianceService = require('../services/complianceService');
 const adminGameConfigService = require('../services/adminGameConfigService');
+const { requirePlayer, parseStake, replyError, GameError } = require('../services/gameBets');
+
+// Markets each tg:bet table accepts (must match the engine's calculatePayouts).
+const TABLE_MARKETS = {
+  'dragon-tiger': ['DRAGON', 'TIGER', 'TIE'],
+  'andar-bahar': ['ANDAR', 'BAHAR', 'JOKER_RED', 'JOKER_BLACK']
+};
 
 function handleTableSockets(socket, io, engines) {
   
@@ -61,13 +68,13 @@ function handleTableSockets(socket, io, engines) {
 
   // Handle Bet placement
   socket.on('tg:bet', async (data, callback) => {
-    const resolvedUserId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
-    if (!resolvedUserId) {
-      return callback({ success: false, code: 'AUTH_REQUIRED', message: 'You must be logged in to place bets.' });
+    let userId;
+    try {
+      userId = requirePlayer(socket);
+    } catch (err) {
+      return replyError(callback, err, 'Table bet');
     }
-    const userId = resolvedUserId;
-    const { gameId, room = 'Standard', market, amount, idempotencyKey } = data;
-    const betAmount = BigInt(Math.floor(amount * 100)); // converting to paise
+    const { gameId, room = 'Standard', market, idempotencyKey } = data || {};
 
     // Check if game or variant is operational (admin controls)
     const op = adminGameConfigService.isGameOperational(gameId, room);
@@ -75,27 +82,30 @@ function handleTableSockets(socket, io, engines) {
       return callback({ success: false, message: op.message });
     }
 
-    const minBetLimit = op.minBet || 10;
-    const maxBetLimit = op.maxBet || 50000;
-    const minPaise = BigInt(minBetLimit * 100);
-    const maxPaise = BigInt(maxBetLimit * 100);
-
-    if (betAmount < minPaise) {
-      return callback({ success: false, message: `Minimum bet is ₹${minBetLimit}.` });
-    }
-    if (betAmount > maxPaise) {
-      return callback({ success: false, message: `Maximum bet limit is ₹${maxBetLimit}.` });
-    }
-
-    const engineKey = `${gameId?.replace('-', '')}Engine`;
+    const engineKey = `${String(gameId || '').replace('-', '')}Engine`;
     const engine = engines[engineKey];
+    if (!engine || !TABLE_MARKETS[gameId]) {
+      return callback({ success: false, code: 'INVALID_GAME', message: 'Unknown table.' });
+    }
+
+    let betAmount;
+    try {
+      // The page sends rupees; strict validation (no NaN, negatives or >2 decimals).
+      betAmount = parseStake(data.amount, { min: op.minBet || 10, max: op.maxBet || 50000 });
+    } catch (err) {
+      return replyError(callback, err, 'Table bet');
+    }
+    const amount = Number(betAmount) / 100;
+    if (!(TABLE_MARKETS[gameId] || []).includes(market)) {
+      return callback({ success: false, code: 'INVALID_BET', message: 'Invalid bet selection.' });
+    }
 
     // Server-authoritative phase check
     if (engine && !engine.isBettingAcceptable()) {
       if (engine.isMaintenance) {
         return callback({ success: false, message: engine.maintenanceMessage || 'Game is currently undergoing scheduled maintenance.' });
       }
-      return callback({ success: false, message: 'Betting is currently closed for this round.' });
+      return callback({ success: false, code: 'BETTING_CLOSED', message: 'Betting is currently closed for this round.' });
     }
 
     try {
@@ -110,7 +120,7 @@ function handleTableSockets(socket, io, engines) {
 
         if (!round) {
           await riskService.flagUser(userId, 'IMPOSSIBLE_STATE', { action: 'tg:bet', error: 'No open round', gameId, room }, 'HIGH');
-          throw new Error('No open round available.');
+          throw new GameError('BETTING_CLOSED', 'No open round available.');
         }
 
         await walletService.ensureUserAndWallet(tx, userId);
@@ -118,7 +128,7 @@ function handleTableSockets(socket, io, engines) {
         // Idempotency check: if an idempotencyKey is provided, check if a bet already exists
         if (idempotencyKey) {
           const existingBet = await tx.tableGameBet.findFirst({
-            where: { id: idempotencyKey }
+            where: { id: String(idempotencyKey), userId }
           });
           if (existingBet) {
             console.log(`[Idempotency] Duplicate bet detected for key ${idempotencyKey}, returning existing receipt`);
@@ -182,12 +192,11 @@ function handleTableSockets(socket, io, engines) {
 
       callback({ success: true, data: { ...result, myBets: activeUserBets } });
     } catch (e) {
-      console.error('Table Game bet error:', e);
       const isDuplicate = await riskService.checkIdempotencyError(e, userId, 'tg:bet', data);
       if (isDuplicate) {
-        return callback({ success: false, message: 'Duplicate bet detected.' });
+        return callback({ success: false, code: 'DUPLICATE_BET', message: 'Duplicate bet detected.' });
       }
-      callback({ success: false, message: e.message });
+      replyError(callback, e, 'Table bet');
     }
   });
 

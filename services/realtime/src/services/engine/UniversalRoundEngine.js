@@ -203,6 +203,7 @@ class UniversalRoundEngine {
     ].includes(this.currentPhase);
 
     return {
+      ...this.getBettingClock(now),
       roundId: this.roundId,
       gameId: this.gameId,
       variantId: this.room,
@@ -514,6 +515,20 @@ class UniversalRoundEngine {
   /**
    * Checks if betting is currently open (authoritative server check)
    */
+  /**
+   * The betting clock every client shows. Bets are accepted through BETTING_OPEN and BETTING_CLOSING
+   * (see isBettingAcceptable), so lockTime is the end of BETTING_CLOSING.
+   */
+  getBettingClock(now = Date.now()) {
+    if (this.currentPhase === UNIVERSAL_PHASES.BETTING_OPEN) {
+      return { status: 'OPEN', lockTime: this.phaseEndsAt + (this.phaseDurations.BETTING_CLOSING || 0) * 1000, now };
+    }
+    if (this.currentPhase === UNIVERSAL_PHASES.BETTING_CLOSING) {
+      return { status: 'OPEN', lockTime: this.phaseEndsAt, now };
+    }
+    return { status: this.currentPhase, lockTime: now, now };
+  }
+
   isBettingAcceptable() {
     if (this.isMaintenance || !this.isEnabled) return false;
     const isBettingPhase = (this.currentPhase === UNIVERSAL_PHASES.BETTING_OPEN || 
@@ -738,7 +753,7 @@ class UniversalRoundEngine {
           variantId: this.room,
           room: this.room,
           phase: this.currentPhase,
-          status: this.currentPhase,
+          ...this.getBettingClock(now),
           sequenceNumber: this.sequenceNumber.toString(),
           serverTime: now,
           phaseEndsAt: this.phaseEndsAt,
@@ -762,6 +777,8 @@ class UniversalRoundEngine {
         this.emitEvent('COUNTDOWN', tickPayload);
         this.emitEvent('round:tick', tickPayload);
         this.emitEvent('tg:tick', tickPayload);
+        // Per-second hook for engines with game-specific tick events.
+        if (typeof this.onTick === 'function') this.onTick(now);
 
       } catch (err) {
         console.error(`[UniversalEngine:${this.gameId}] Error in loop:`, err.message);

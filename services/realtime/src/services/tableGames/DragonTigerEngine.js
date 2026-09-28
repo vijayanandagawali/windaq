@@ -62,7 +62,7 @@ class DragonTigerEngine extends BaseTableEngine {
     const payoutRules = rules || this.snapshottedPayoutRules || {
       DRAGON: 2.0,
       TIGER: 2.0,
-      TIE: 9.0,
+      TIE: 12.0, // 11:1
       SUITED_TIE: 50.0
     };
 
@@ -79,7 +79,7 @@ class DragonTigerEngine extends BaseTableEngine {
     }
 
     if (market === 'TIE') {
-      if (w === 'TIE') return Number(payoutRules.TIE || 9.0);
+      if (w === 'TIE') return Number(payoutRules.TIE || 12.0);
       return 0.0;
     }
 

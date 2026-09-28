@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { settleBet } = require('./gameBets');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const provablyFair = require('./ProvablyFairService');
@@ -117,6 +118,7 @@ class DiceEngine extends UniversalRoundEngine {
     this.io.to(`dice:${this.room}`).emit('dice:result', {
       rollId: roundId,
       dice,
+      diceResult: dice,
       serverSeed: this.serverSeed
     });
 
@@ -158,33 +160,13 @@ class DiceEngine extends UniversalRoundEngine {
 
       for (const bet of bets) {
         const multiplier = this.evaluateBet(bet, dice);
-
-        if (multiplier > 0) {
-          const payout = BigInt(Math.floor(Number(bet.amount) * multiplier));
-
-          await prisma.$transaction(async (tx) => {
-            await tx.diceBet.update({
-              where: { id: bet.id },
-              data: { payout }
-            });
-
-            const wallet = await tx.wallet.findFirst({ where: { userId: bet.userId, currency: 'INR' } });
-            if (wallet) {
-              const newBalance = wallet.balance + payout;
-              await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
-
-              await tx.transaction.create({
-                data: {
-                  walletId: wallet.id,
-                  idempotencyKey: `dice-win-${bet.id}`,
-                  type: 'BET_WIN',
-                  amount: payout,
-                  balanceAfter: newBalance,
-                  reference: bet.id
-                }
-              });
-            }
-          });
+        const payout = multiplier > 0 ? bet.amount * BigInt(multiplier) : 0n;
+        try {
+          // Idempotent per bet id: re-running settlement never pays twice.
+          await settleBet(bet.userId, bet.amount, payout, 'dice', bet.id);
+          if (payout > 0n) await prisma.diceBet.update({ where: { id: bet.id }, data: { payout } });
+        } catch (err) {
+          console.error(`[DiceEngine:${this.room}] Settlement failed for bet ${bet.id}:`, err.message);
         }
       }
 
@@ -224,14 +206,12 @@ class DiceEngine extends UniversalRoundEngine {
           gameId: 'dice',
           room: this.room,
           phase: this.currentPhase,
-          status: this.currentPhase === UNIVERSAL_PHASES.BETTING_OPEN ? 'OPEN' : this.currentPhase,
+          ...this.getBettingClock(now),
           serverTime: now,
           phaseEndsAt: this.phaseEndsAt,
           phaseTimeLeft: this.phaseTimeLeft,
           totalPhaseDuration: this.totalPhaseDuration,
-          lockTime: this.phaseEndsAt - 5000,
           resultTime: this.phaseEndsAt,
-          now,
           serverSeedHash: this.serverSeedHash,
           result: this.currentResult,
           history: this.history.slice(0, 15)
@@ -249,4 +229,4 @@ class DiceEngine extends UniversalRoundEngine {
   }
 }
 
-module.exports = { DiceEngine };
+module.exports = { DiceEngine, PAYOUTS };

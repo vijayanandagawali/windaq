@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { UniversalRoundEngine, UNIVERSAL_PHASES } = require('./engine/UniversalRoundEngine');
+const { settleBet } = require('./gameBets');
 
 class ColourEngine extends UniversalRoundEngine {
   constructor(io, roomName = '1min', durationMs = 60000) {
@@ -138,42 +139,21 @@ class ColourEngine extends UniversalRoundEngine {
       });
 
       for (const bet of bets) {
-        let isWin = false;
+        const isWin =
+          (bet.betType === 'color' && bet.betValue === result.color) ||
+          (bet.betType === 'number' && parseInt(bet.betValue, 10) === result.number) ||
+          (bet.betType === 'size' && bet.betValue === result.size);
+        const payout = isWin ? (bet.amount * BigInt(Math.round((bet.multiplier || 2) * 100))) / 100n : 0n;
 
-        if (bet.betType === 'color' && bet.betValue === result.color) isWin = true;
-        else if (bet.betType === 'number' && parseInt(bet.betValue) === result.number) isWin = true;
-        else if (bet.betType === 'size' && bet.betValue === result.size) isWin = true;
-
-        if (isWin) {
-          const payout = BigInt(Math.floor(Number(bet.amount) * (bet.multiplier || 2)));
-          await prisma.$transaction(async (tx) => {
-            await tx.colourBet.update({
-              where: { id: bet.id },
-              data: { status: 'WON', payout }
-            });
-
-            const wallet = await tx.wallet.findFirst({ where: { userId: bet.userId, currency: 'INR' } });
-            if (wallet) {
-              const newBalance = wallet.balance + payout;
-              await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
-
-              await tx.transaction.create({
-                data: {
-                  walletId: wallet.id,
-                  idempotencyKey: `colour-win-${bet.id}`,
-                  type: 'BET_WIN',
-                  amount: payout,
-                  balanceAfter: newBalance,
-                  reference: bet.id
-                }
-              });
-            }
-          });
-        } else {
+        try {
+          // Ledger first (idempotent per bet id), then the bet record.
+          await settleBet(bet.userId, bet.amount, payout, 'colour', bet.id);
           await prisma.colourBet.update({
             where: { id: bet.id },
-            data: { status: 'LOST', payout: 0n }
+            data: { status: isWin ? 'WON' : 'LOST', payout }
           });
+        } catch (err) {
+          console.error(`[ColourEngine:${this.roomName}] Settlement failed for bet ${bet.id}:`, err.message);
         }
       }
 

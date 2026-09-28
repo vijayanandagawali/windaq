@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
+const { settleBet } = require('../gameBets');
 const prisma = new PrismaClient();
 const provablyFair = require('../ProvablyFairService');
 const { UniversalRoundEngine, UNIVERSAL_PHASES } = require('../engine/UniversalRoundEngine');
@@ -154,21 +155,16 @@ class RouletteEngine extends UniversalRoundEngine {
 
       for (const bet of bets) {
         const payoutMultiplier = this.evaluateBet(bet, winningNumber);
-
-        if (payoutMultiplier > 0) {
-          const payout = BigInt(Math.floor(Number(bet.amount) * payoutMultiplier));
+        const payout = payoutMultiplier > 0 ? bet.amount * BigInt(payoutMultiplier) : 0n;
+        if (payout > 0n) {
           totalPayout += payout;
           winnersCount++;
-
-          await prisma.$transaction(async (tx) => {
-            await tx.rouletteBet.update({
-              where: { id: bet.id },
-              data: { payout }
-            });
-
-            // Universal Settlement Engine integration with exactly-once ledger transaction
-            await walletService.settleWin(tx, bet.userId, bet.amount, payout, 'ROULETTE_WIN', bet.id);
-          });
+        }
+        try {
+          await settleBet(bet.userId, bet.amount, payout, 'roulette', bet.id);
+          if (payout > 0n) await prisma.rouletteBet.update({ where: { id: bet.id }, data: { payout } });
+        } catch (err) {
+          console.error(`[RouletteEngine:${this.room}] Settlement failed for bet ${bet.id}:`, err.message);
         }
       }
 
@@ -202,14 +198,17 @@ class RouletteEngine extends UniversalRoundEngine {
     this.animationState = null;
   }
 
+  onTick() {
+    this.emitLegacyTick();
+  }
+
   emitLegacyTick() {
+    const now = Date.now();
     this.emitEvent('roulette:tick', {
       roundId: this.roundId,
-      status: this.currentPhase === UNIVERSAL_PHASES.BETTING_OPEN ? 'OPEN' : this.currentPhase,
+      ...this.getBettingClock(now),
       phase: this.currentPhase,
-      lockTime: this.phaseEndsAt,
       resultTime: this.phaseEndsAt + 8000,
-      now: Date.now(),
       timeLeft: this.phaseTimeLeft
     });
   }

@@ -1,24 +1,22 @@
 const { authenticateSocketTicket } = require('../services/sessionService');
 const riskService = require('../services/riskService');
-const { initPokerSockets } = require('./pokerHandler');
 const { handleColourSockets } = require('./colourHandler');
 const { handleSlotSockets } = require('./slotHandler');
 const { handleScratchSockets } = require('./scratchHandler');
 const { handleLottoSockets } = require('./lottoHandler');
-const { handleTeenPattiSockets } = require('./teenPattiHandler');
 const { handleDiceSockets } = require('./diceHandler');
 const { handleTableSockets } = require('./tableHandler');
 const { handleRouletteSockets } = require('./rouletteHandler');
 const { handleBlackjackSockets } = require('./blackjackHandler');
-const { handleRummySockets } = require('./rummyHandler');
-const { handleLiveDealerSockets } = require('./liveDealerHandler');
 const { handleUniversalSockets } = require('./universalHandler');
 const CoreSocketManager = require('./CoreSocketManager');
 const { installRoomGuard, isAllowedClientRoom } = require('./roomGuard');
+const { installHandlerGuard } = require('./handlerGuard');
 
 // Store active connections per user to enforce limits
 const activeUserConnections = new Map();
-const MAX_CONNECTIONS_PER_USER = 3;
+// Each tab opens a wallet socket plus a game socket, so allow a few tabs per player.
+const MAX_CONNECTIONS_PER_USER = 10;
 
 /**
  * High-performance WebSocket Engine Initialization
@@ -44,6 +42,7 @@ function initSockets(coreManager, io, engines = {}) {
       // Enforce Connection Limits per User
       const userConns = activeUserConnections.get(effectiveUserId) || 0;
       if (userConns >= MAX_CONNECTIONS_PER_USER) {
+        console.warn(`[Socket] Connection limit reached for user ${effectiveUserId}`);
         return next(new Error('Connection Limit Exceeded'));
       }
       activeUserConnections.set(effectiveUserId, userConns + 1);
@@ -68,6 +67,8 @@ function initSockets(coreManager, io, engines = {}) {
 
     // All client-driven joins are filtered; only the server may join private rooms.
     const serverJoin = installRoomGuard(socket);
+    // A malformed client event (missing ack, bad payload) must never crash the process.
+    installHandlerGuard(socket);
     if (uid && uid !== 'guest') {
       serverJoin(`user:${uid}`);
     }
@@ -97,18 +98,19 @@ function initSockets(coreManager, io, engines = {}) {
     });
 
     // Initialize module-specific sockets
-    initPokerSockets(io, socket);
-    handleColourSockets(socket, io);
+    handleColourSockets(socket, io, engines.colourEngines);
     handleSlotSockets(socket, io);
     handleScratchSockets(socket, io);
     handleLottoSockets(socket, io, engines);
-    handleTeenPattiSockets(socket, io, engines);
     handleDiceSockets(socket, io, engines);
     handleTableSockets(socket, io, engines);
     handleRouletteSockets(socket, io, engines);
     handleBlackjackSockets(socket, io, engines.blackjackEngine);
-    handleRummySockets(socket, io, engines.rummyRoom);
-    handleLiveDealerSockets(socket, io, engines.liveRouletteEngine);
+    // Multiplayer card tables (Teen Patti, Hold'em, Rummy) are not offered for real money until
+    // real matchmaking exists: the previous tables seated house bots against players.
+    for (const event of ['tp:join', 'tp:action', 'poker_join', 'poker_action', 'rm:join', 'rm:draw', 'rm:discard', 'rm:declare', 'rm:drop']) {
+      socket.on(event, (data, callback) => callback({ success: false, code: 'COMING_SOON', message: 'This table is coming soon.' }));
+    }
     handleUniversalSockets(socket, io, engines);
 
     // Aviator betting — server-authoritative. The engine owns stake, multiplier and payout;

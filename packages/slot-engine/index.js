@@ -1,16 +1,19 @@
 const crypto = require('crypto');
 
 // --- Symbols ---
+// Line payouts are multiples of the per-line bet (total stake / 20); scatter pays multiply the total stake.
+// Tuned 2026-09-28: the original table returned ~144% (house lost money). This table measured
+// 95.6% RTP over 800,000 simulated spins (see services/realtime/tests/slots.rtp.test.js).
 const SYMBOLS = {
-  WILD: { id: 'WILD', type: 'wild', payout: [0, 0, 50, 200, 1000] },
-  SCATTER: { id: 'SCATTER', type: 'scatter', payout: [0, 0, 2, 10, 100] }, // Payouts are multipliers of total stake
-  H1: { id: 'H1', type: 'high', payout: [0, 0, 40, 150, 500] },
-  H2: { id: 'H2', type: 'high', payout: [0, 0, 30, 100, 300] },
-  H3: { id: 'H3', type: 'high', payout: [0, 0, 20, 50, 200] },
-  L1: { id: 'L1', type: 'low', payout: [0, 0, 10, 25, 100] },
-  L2: { id: 'L2', type: 'low', payout: [0, 0, 10, 25, 100] },
-  L3: { id: 'L3', type: 'low', payout: [0, 0, 5, 15, 50] },
-  L4: { id: 'L4', type: 'low', payout: [0, 0, 5, 15, 50] }
+  WILD: { id: 'WILD', type: 'wild', payout: [0, 0, 35, 140, 700] },
+  SCATTER: { id: 'SCATTER', type: 'scatter', payout: [0, 0, 1, 5, 50] },
+  H1: { id: 'H1', type: 'high', payout: [0, 0, 28, 105, 350] },
+  H2: { id: 'H2', type: 'high', payout: [0, 0, 21, 70, 210] },
+  H3: { id: 'H3', type: 'high', payout: [0, 0, 14, 35, 140] },
+  L1: { id: 'L1', type: 'low', payout: [0, 0, 7, 18, 70] },
+  L2: { id: 'L2', type: 'low', payout: [0, 0, 7, 18, 70] },
+  L3: { id: 'L3', type: 'low', payout: [0, 0, 4, 11, 35] },
+  L4: { id: 'L4', type: 'low', payout: [0, 0, 4, 11, 35] }
 };
 
 // --- Reels (Simplified Weights for RNG) ---
@@ -50,7 +53,7 @@ const PAYLINES = [
 ];
 
 class SlotEngine {
-  constructor(config = 'v1-OceanTreasures-96RTP') {
+  constructor(config = 'v2-OceanTreasures-95.6RTP') {
     this.configVersion = config;
     this.reels = REELS;
     this.paylines = PAYLINES;

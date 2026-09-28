@@ -1,6 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
-const { ensureUserAndWallet } = require('../services/walletService');
-const prisma = new PrismaClient();
+const crypto = require('crypto');
+const { PAYOUTS: DICE_PAYOUTS } = require('../services/diceEngine');
+const { requirePlayer, parseStake, debitStake, replyError, GameError, prisma } = require('../services/gameBets');
 
 function handleDiceSockets(socket, io, engines) {
   const diceEngine = engines.diceEngine;
@@ -12,11 +12,11 @@ function handleDiceSockets(socket, io, engines) {
 
     if (diceEngine && diceEngine.currentRoll) {
       socket.emit('dice:tick', {
-        rollId: diceEngine.currentRoll.id,
-        status: diceEngine.currentRoll.status,
-        lockTime: diceEngine.currentRoll.lockTime.getTime(),
-        resultTime: diceEngine.currentRoll.resultTime.getTime(),
-        now: Date.now()
+        rollId: diceEngine.roundId,
+        roundId: diceEngine.roundId,
+        phase: diceEngine.currentPhase,
+        ...diceEngine.getBettingClock(),
+        resultTime: diceEngine.phaseEndsAt
       });
     }
   });
@@ -26,75 +26,32 @@ function handleDiceSockets(socket, io, engines) {
     socket.leave(`dice:${room}`);
   });
 
-  socket.on('dice:bet', async (data, callback) => {
-    const resolvedUserId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
-    if (!resolvedUserId) {
-      return callback({ success: false, code: 'AUTH_REQUIRED', message: 'You must be logged in to place dice bets.' });
-    }
-    const userId = resolvedUserId;
-    const { room, market, amount } = data;
-    const betAmount = BigInt(amount * 100); // converting to paise
-
-    if (betAmount < 1000n) { // Minimum 10 INR
-      return callback({ success: false, message: 'Minimum bet is ₹10.' });
-    }
-
+  socket.on('dice:bet', async (data = {}, callback) => {
     try {
-      const result = await prisma.$transaction(async (tx) => {
-        const roll = await tx.diceRoll.findFirst({
-          where: { room: room || '1min', status: 'OPEN' },
-          orderBy: { startTime: 'desc' }
-        });
+      const userId = requirePlayer(socket);
+      if (!diceEngine) throw new GameError('GAME_UNAVAILABLE', 'Dice is not available right now.');
+      const market = String(data.market || '').toUpperCase();
+      if (!DICE_PAYOUTS[market]) throw new GameError('INVALID_BET', 'Invalid dice market.');
+      // The page sends rupees.
+      const amountPaise = parseStake(data.amount, { min: diceEngine.minBet, max: diceEngine.maxBet });
 
-        if (!roll) throw new Error('No open round available.');
-        if (new Date() >= roll.lockTime) throw new Error('Round is locked.');
+      const roll = diceEngine.currentRoll;
+      if (!roll || !diceEngine.isBettingAcceptable()) {
+        throw new GameError('BETTING_CLOSED', 'Betting is closed for this roll.');
+      }
 
-        let { wallet } = await ensureUserAndWallet(tx, userId);
-
-        if (wallet.balance < betAmount) throw new Error('Insufficient balance.');
-
-        const newBalance = wallet.balance - betAmount;
-        await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
-
-        const bet = await tx.diceBet.create({
-          data: {
-            userId,
-            rollId: roll.id,
-            market,
-            amount: betAmount
-          }
-        });
-
-        await tx.transaction.create({
-          data: {
-            walletId: wallet.id,
-            idempotencyKey: `dice-bet-${bet.id}`,
-            type: 'BET_PLACE',
-            amount: betAmount,
-            balanceAfter: newBalance,
-            reference: bet.id
-          }
-        });
-
-        return {
-          betId: bet.id,
-          rollId: roll.id,
-          market,
-          newBalance: newBalance.toString()
-        };
+      const betId = crypto.randomUUID();
+      const newBalance = await prisma.$transaction(async (tx) => {
+        const balance = await debitStake(tx, userId, amountPaise, 'dice', betId);
+        await tx.diceBet.create({ data: { id: betId, userId, rollId: roll.id, market, amount: amountPaise } });
+        return balance;
       });
 
-      // Broadcast bet to room for live ticker
-      io.to(`dice:${room || '1min'}`).emit('dice:live_bet', {
-        userId: userId.substring(0,4) + '***',
-        market,
-        amount
-      });
-
-      callback({ success: true, data: result });
-    } catch (e) {
-      console.error('Dice bet error:', e);
-      callback({ success: false, message: e.message });
+      if (typeof callback === 'function') {
+        callback({ success: true, data: { betId, rollId: roll.id, market, newBalance: Number(newBalance) / 100 } });
+      }
+    } catch (err) {
+      replyError(callback, err, 'Dice bet');
     }
   });
 

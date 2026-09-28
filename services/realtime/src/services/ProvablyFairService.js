@@ -77,30 +77,64 @@ class ProvablyFairService {
   }
 
   /**
-   * Derives Andar Bahar Result
-   * A simplified approximation for the sake of the engine: picks Joker, then determines which side hits first.
+   * Unbiased integer in [0, max) drawn from an HMAC-SHA256 byte stream (rejection sampling, no modulo bias).
+   */
+  _makeIntStream(serverSeed, clientSeed, nonce) {
+    let counter = 0;
+    let buffer = Buffer.alloc(0);
+    const nextUint32 = () => {
+      if (buffer.length < 4) {
+        const block = crypto.createHmac('sha256', serverSeed).update(`${clientSeed}:${nonce}:${counter++}`).digest();
+        buffer = Buffer.concat([buffer, block]);
+      }
+      const value = buffer.readUInt32BE(0);
+      buffer = buffer.subarray(4);
+      return value;
+    };
+    return (max) => {
+      const limit = Math.floor(0x100000000 / max) * max;
+      let value;
+      do { value = nextUint32(); } while (value >= limit);
+      return value % max;
+    };
+  }
+
+  /**
+   * Fisher-Yates shuffle of a 52-card deck from the seeds. Ranks are 2-14 (J=11, Q=12, K=13, A=14).
+   */
+  shuffleDeck(serverSeed, clientSeed, nonce = 0) {
+    const nextInt = this._makeIntStream(serverSeed, clientSeed, nonce);
+    const deck = [];
+    for (const suit of ['S', 'H', 'D', 'C']) {
+      for (let rank = 2; rank <= 14; rank++) deck.push({ suit, rank });
+    }
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = nextInt(i + 1);
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    return deck;
+  }
+
+  /**
+   * Derives an Andar Bahar deal from a real shuffled deck: the top card is the joker, then cards are dealt
+   * alternately to Andar (first) and Bahar until one matches the joker's rank. That side wins.
    */
   deriveAndarBaharResult(serverSeed, clientSeed, nonce = 0) {
     const hash = this._generateHash(serverSeed, clientSeed, nonce);
-    
-    const SUITS = ['S', 'H', 'D', 'C'];
-    const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-    
-    // Pick Joker
-    const jHex = hash.substring(0, 4);
-    const jRankIdx = parseInt(jHex, 16) % RANKS.length;
-    const jokerCard = { suit: SUITS[parseInt(jHex, 16) % 4], rank: RANKS[jRankIdx] };
-
-    // We'll use the next hex segments to simulate dealing until the rank matches.
-    // For provable fairness without simulating a 52 card deck pop sequence entirely, 
-    // we determine the winner by whether the first match index in a generated sequence is even (Andar) or odd (Bahar).
-    const sequenceHex = hash.substring(4, 20); // 16 chars
-    const matchIdx = parseInt(sequenceHex, 16) % 20; // simulate match happening between 1st and 20th card
-    
-    const winner = matchIdx % 2 === 0 ? 'ANDAR' : 'BAHAR';
-    const totalCards = matchIdx + 1;
-
-    return { outcome: { jokerCard, winner, totalCards }, hash, version: this.version };
+    const deck = this.shuffleDeck(serverSeed, clientSeed, nonce);
+    const joker = deck[0];
+    const dealtCards = [];
+    let winner = null;
+    for (let i = 1; i < deck.length && !winner; i++) {
+      const side = i % 2 === 1 ? 'ANDAR' : 'BAHAR';
+      dealtCards.push({ side, card: deck[i] });
+      if (deck[i].rank === joker.rank) winner = side;
+    }
+    return {
+      outcome: { joker, jokerCard: joker, dealtCards, winner, totalCards: dealtCards.length, totalCardsDealt: dealtCards.length },
+      hash,
+      version: 'v2.0.0'
+    };
   }
 }
 

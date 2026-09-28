@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
+const { settleBet } = require('../gameBets');
 const prisma = new PrismaClient();
 const { UniversalRoundEngine, UNIVERSAL_PHASES } = require('../engine/UniversalRoundEngine');
 const { dealerRegistry } = require('../dealers/VirtualDealerRegistry');
@@ -230,21 +231,17 @@ class BaseTableEngine extends UniversalRoundEngine {
 
       for (const bet of bets) {
         const multiplier = this.calculatePayouts(bet.market, result, this.snapshottedPayoutRules);
-
-        if (multiplier > 0) {
-          const payout = BigInt(Math.floor(Number(bet.amount) * multiplier));
+        const payout = multiplier > 0 ? (bet.amount * BigInt(Math.round(multiplier * 100))) / 100n : 0n;
+        if (payout > 0n) {
           totalPayout += payout;
           winnersCount++;
-
-            await prisma.$transaction(async (tx) => {
-              await tx.tableGameBet.update({
-                where: { id: bet.id },
-                data: { payout }
-              });
-
-              const walletService = require('../walletService');
-              await walletService.settleWin(tx, bet.userId, bet.amount, payout, 'TABLE_WIN', bet.id);
-            });
+        }
+        try {
+          // Wins and losses both settle through the ledger, idempotent per bet id.
+          await settleBet(bet.userId, bet.amount, payout, this.gameId.replace(/-/g, '_'), bet.id);
+          if (payout > 0n) await prisma.tableGameBet.update({ where: { id: bet.id }, data: { payout } });
+        } catch (err) {
+          console.error(`[BaseTableEngine:${this.gameId}] Settlement failed for bet ${bet.id}:`, err.message);
         }
       }
 
@@ -308,6 +305,7 @@ class BaseTableEngine extends UniversalRoundEngine {
           gameId: this.gameId,
           room: this.room,
           phase: this.currentPhase,
+          ...this.getBettingClock(now),
           serverTime: now,
           phaseEndsAt: this.phaseEndsAt,
           phaseTimeLeft: this.phaseTimeLeft,

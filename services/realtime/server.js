@@ -6,6 +6,12 @@ const { Server } = require('socket.io');
 const { createApp } = require('./src/app');
 const { assertSecurityConfig } = require('./src/config/security');
 
+// A single failed async operation (e.g. a malformed client event) must not terminate the
+// process and every in-flight game round with it. Log and keep serving.
+process.on('unhandledRejection', (reason) => {
+  console.error('[Process] Unhandled promise rejection:', reason instanceof Error ? reason.message : reason);
+});
+
 // Fail fast on missing/weak secrets before anything else starts.
 assertSecurityConfig();
 
@@ -21,13 +27,10 @@ const CoreSocketManager = require('./src/sockets/CoreSocketManager');
 const AviatorEngine = require('./src/services/aviatorEngine');
 const ColourEngine = require('./src/services/colourEngine');
 const { LottoEngine } = require('./src/services/lottoEngine');
-const { TeenPattiRoom } = require('./src/services/teenPattiRoom');
 const { DiceEngine } = require('./src/services/diceEngine');
 const { DragonTigerEngine } = require('./src/services/tableGames/DragonTigerEngine');
 const { RouletteEngine } = require('./src/services/tableGames/RouletteEngine');
 const { AndarBaharEngine } = require('./src/services/tableGames/AndarBaharEngine');
-const { RummyRoom } = require('./src/services/rummy/RummyRoom');
-const LiveRouletteEngine = require('./src/services/live/LiveRouletteEngine');
 const walletService = require('./src/services/walletService');
 const adminGameConfigService = require('./src/services/adminGameConfigService');
 const { tableManager } = require('./src/services/tableGames/VirtualTableManager');
@@ -83,9 +86,6 @@ async function startServer() {
       const lottoEngine = new LottoEngine('5min', io);
       lottoEngine.start();
 
-      console.log('🃏 Starting Teen Patti Room...');
-      const tpRoom = new TeenPattiRoom('Classic-10', io);
-
       console.log('🎲 Starting Dice Engine...');
       const diceEngine = new DiceEngine('1min', io);
       diceEngine.start();
@@ -101,13 +101,6 @@ async function startServer() {
       console.log('🃏 Starting Andar Bahar Engine...');
       const andarBaharEngine = new AndarBaharEngine('Auto', coreManager);
       andarBaharEngine.start();
-
-      console.log('🎴 Starting Rummy Room...');
-      const rummyRoom = new RummyRoom('Points-10', io);
-
-      console.log('🔴 Starting Live Roulette Engine...');
-      const liveRouletteEngine = new LiveRouletteEngine(io);
-      liveRouletteEngine.startAutomatedDealer('live-roulette-1');
 
       // Register all engines with Central Round Registry
       RoundRegistry.register(aviatorEngine);
@@ -136,7 +129,7 @@ async function startServer() {
       }, 1000);
 
       // Init Sockets
-      initSockets(coreManager, io, { aviatorEngine, colourEngine1m, lottoEngine, tpRoom, diceEngine, dragontigerEngine, rouletteEngine, andarbaharEngine: andarBaharEngine, rummyRoom, liveRouletteEngine });
+      initSockets(coreManager, io, { aviatorEngine, colourEngine1m, colourEngines: { '1min': colourEngine1m, '3min': colourEngine3m }, lottoEngine, diceEngine, dragontigerEngine, rouletteEngine, andarbaharEngine: andarBaharEngine });
     });
   } catch (err) {
     console.error('Failed to start server:', err);

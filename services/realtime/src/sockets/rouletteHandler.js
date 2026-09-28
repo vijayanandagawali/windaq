@@ -1,6 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-const { ensureUserAndWallet } = require('../services/walletService');
+const crypto = require('crypto');
+const { requirePlayer, parseStake, debitStake, replyError, GameError, prisma } = require('../services/gameBets');
+const { validateRouletteBet } = require('../services/rouletteBets');
 
 function handleRouletteSockets(socket, io, engines) {
   
@@ -10,16 +10,7 @@ function handleRouletteSockets(socket, io, engines) {
     console.log(`Client ${socket.id} joined roulette:${room}`);
 
     const engine = engines.rouletteEngine;
-    
-    if (engine && engine.currentRound) {
-      socket.emit('roulette:tick', {
-        roundId: engine.currentRound.id,
-        status: engine.currentRound.status,
-        lockTime: engine.currentRound.lockTime.getTime(),
-        resultTime: engine.currentRound.resultTime.getTime(),
-        now: Date.now()
-      });
-    }
+    if (engine) engine.emitLegacyTick();
   });
 
   socket.on('roulette:leave', (data) => {
@@ -27,78 +18,34 @@ function handleRouletteSockets(socket, io, engines) {
     socket.leave(`roulette:${room}`);
   });
 
-  socket.on('roulette:bet', async (data, callback) => {
-    const resolvedUserId = (socket.user?.id && socket.user.id !== 'guest') ? socket.user.id : (process.env.NODE_ENV === 'test' && data?.userId ? data.userId : null);
-    if (!resolvedUserId) {
-      return callback({ success: false, code: 'AUTH_REQUIRED', message: 'You must be logged in to place bets.' });
-    }
-    const userId = resolvedUserId;
-    const { room = 'Auto', market, targets, amount } = data;
-    const betAmount = BigInt(amount * 100); // convert INR to paise
-
-    if (betAmount < 1000n) { // Minimum 10 INR
-      return callback({ success: false, message: 'Minimum bet is ₹10.' });
-    }
-
+  socket.on('roulette:bet', async (data = {}, callback) => {
     try {
-      const result = await prisma.$transaction(async (tx) => {
-        const round = await tx.rouletteRoll.findFirst({
-          where: { room, status: 'OPEN' },
-          orderBy: { startTime: 'desc' }
-        });
+      const userId = requirePlayer(socket);
+      const engine = engines.rouletteEngine;
+      if (!engine) throw new GameError('GAME_UNAVAILABLE', 'Roulette is not available right now.');
 
-        if (!round) throw new Error('No open round available.');
-        if (new Date() >= round.lockTime) throw new Error('Round is locked.');
+      // Targets are recomputed/validated server-side; the client cannot choose what a market covers.
+      const { market, targets } = validateRouletteBet(data.market, data.targets);
+      const amountPaise = parseStake(data.amount, { min: engine.minBet, max: engine.maxBet });
 
-        let { wallet } = await ensureUserAndWallet(tx, userId);
+      const roll = engine.legacyRoll;
+      if (!roll || roll.id !== engine.roundId || !engine.isBettingAcceptable()) {
+        throw new GameError('BETTING_CLOSED', 'Betting is closed for this spin.');
+      }
 
-        if (wallet.balance < betAmount) throw new Error('Insufficient balance.');
-
-        const newBalance = wallet.balance - betAmount;
-        await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
-
-        const bet = await tx.rouletteBet.create({
-          data: {
-            userId,
-            rollId: round.id,
-            marketType: market,
-            targets: targets, // e.g. [0], [1,2,3]
-            amount: betAmount
-          }
-        });
-
-        await tx.transaction.create({
-          data: {
-            walletId: wallet.id,
-            idempotencyKey: `roulette-bet-${bet.id}`,
-            type: 'BET_PLACE',
-            amount: betAmount,
-            balanceAfter: newBalance,
-            reference: bet.id
-          }
-        });
-
-        return {
-          betId: bet.id,
-          roundId: round.id,
-          market,
-          targets,
-          newBalance: newBalance.toString()
-        };
+      const betId = crypto.randomUUID();
+      const newBalance = await prisma.$transaction(async (tx) => {
+        const balance = await debitStake(tx, userId, amountPaise, 'roulette', betId);
+        await tx.rouletteBet.create({ data: { id: betId, userId, rollId: roll.id, marketType: market, targets, amount: amountPaise } });
+        return balance;
       });
 
-      // Broadcast bet to room for live ticker/chips
-      io.to(`roulette:${room}`).emit('roulette:live_bet', {
-        userId: userId.substring(0,4) + '***',
-        market,
-        targets,
-        amount
-      });
-
-      callback({ success: true, data: result });
-    } catch (e) {
-      console.error('Roulette bet error:', e);
-      callback({ success: false, message: e.message });
+      io.to(`roulette:${data.room || 'Auto'}`).emit('roulette:live_bet', { market, amount: Number(amountPaise) / 100 });
+      if (typeof callback === 'function') {
+        callback({ success: true, data: { betId, roundId: roll.id, market, targets, newBalance: Number(newBalance) / 100 } });
+      }
+    } catch (err) {
+      replyError(callback, err, 'Roulette bet');
     }
   });
 

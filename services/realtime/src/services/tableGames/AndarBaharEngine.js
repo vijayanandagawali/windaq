@@ -1,9 +1,5 @@
-const crypto = require('crypto');
 const { BaseTableEngine } = require('./BaseTableEngine');
 const provablyFair = require('../ProvablyFairService');
-
-const SUITS = ['S', 'H', 'D', 'C'];
-const RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]; // A = 14, K=13, Q=12, J=11
 
 class AndarBaharEngine extends BaseTableEngine {
   constructor(room = 'Auto', io) {
@@ -30,12 +26,12 @@ class AndarBaharEngine extends BaseTableEngine {
 
     // Side Bets could be added here (e.g. JOKER_RED, JOKER_BLACK)
     if (market === 'JOKER_RED') {
-      if (result.joker.suit === 'H' || result.joker.suit === 'D') return 1.9;
+      if (result.joker?.suit === 'H' || result.joker?.suit === 'D') return 1.9;
       return 0.0;
     }
 
     if (market === 'JOKER_BLACK') {
-      if (result.joker.suit === 'S' || result.joker.suit === 'C') return 1.9;
+      if (result.joker?.suit === 'S' || result.joker?.suit === 'C') return 1.9;
       return 0.0;
     }
 

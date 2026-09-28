@@ -1,7 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
+const crypto = require('crypto');
 const { TICKET_PRICE } = require('../services/lottoEngine');
-const { ensureUserAndWallet } = require('../services/walletService');
-const prisma = new PrismaClient();
+const { requirePlayer, debitStake, replyError, GameError, prisma } = require('../services/gameBets');
 
 function handleLottoSockets(socket, io, engines) {
   const lottoEngine = engines.lottoEngine; // Assuming we pass it down
@@ -28,82 +27,34 @@ function handleLottoSockets(socket, io, engines) {
     socket.leave(`lotto:${room}`);
   });
 
-  socket.on('lotto:buy', async (data, callback) => {
-    const { userId, room, numbers } = data;
-    
-    if (!numbers || numbers.length !== 6) {
-      return callback({ success: false, message: 'Exactly 6 numbers required.' });
-    }
-    
-    // Validate uniqueness and range (1-49)
-    const uniqueNumbers = new Set(numbers);
-    if (uniqueNumbers.size !== 6) return callback({ success: false, message: 'Numbers must be unique.' });
-    
-    for (const n of numbers) {
-      if (n < 1 || n > 49) return callback({ success: false, message: 'Numbers must be between 1 and 49.' });
-    }
-
+  socket.on('lotto:buy', async (data = {}, callback) => {
     try {
-      const result = await prisma.$transaction(async (tx) => {
-        // Fetch current active draw
-        const draw = await tx.lottoDraw.findFirst({
-          where: { room: room || '5min', status: 'OPEN' },
-          orderBy: { startTime: 'desc' }
-        });
+      const userId = requirePlayer(socket);
+      if (!lottoEngine) throw new GameError('GAME_UNAVAILABLE', 'Lotto is not available right now.');
 
-        if (!draw) {
-          throw new Error('No open draw available right now.');
-        }
+      const numbers = Array.isArray(data.numbers) ? data.numbers.map(Number) : [];
+      if (numbers.length !== 6 || numbers.some(n => !Number.isInteger(n) || n < 1 || n > 49) || new Set(numbers).size !== 6) {
+        throw new GameError('INVALID_BET', 'Pick exactly 6 different numbers from 1 to 49.');
+      }
 
-        if (new Date() >= draw.lockTime) {
-          throw new Error('Draw is locked. Please wait for the next round.');
-        }
+      const draw = lottoEngine.currentDraw;
+      if (!draw || !lottoEngine.isBettingAcceptable()) {
+        throw new GameError('BETTING_CLOSED', 'Ticket sales are closed for this draw.');
+      }
 
-        // Fetch wallet, auto-provision guest for testing if needed
-        let { wallet } = await ensureUserAndWallet(tx, userId);
-
-        if (wallet.balance < TICKET_PRICE) {
-          throw new Error('Insufficient balance in wallet.');
-        }
-
-        // Deduct ticket price
-        const newBalance = wallet.balance - TICKET_PRICE;
-        await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
-
-        // Record Ticket
-        const ticket = await tx.lottoTicket.create({
-          data: {
-            userId,
-            drawId: draw.id,
-            numbers: numbers.sort((a,b) => a-b),
-            stake: TICKET_PRICE
-          }
-        });
-
-        // Record Financial Transaction
-        await tx.transaction.create({
-          data: {
-            walletId: wallet.id,
-            idempotencyKey: `lotto-buy-${ticket.id}`,
-            type: 'BET_PLACE',
-            amount: TICKET_PRICE,
-            balanceAfter: newBalance,
-            reference: ticket.id
-          }
-        });
-
-        return {
-          ticketId: ticket.id,
-          drawId: draw.id,
-          numbers: ticket.numbers,
-          newBalance: newBalance.toString()
-        };
+      const ticketId = crypto.randomUUID();
+      const sorted = [...numbers].sort((a, b) => a - b);
+      const newBalance = await prisma.$transaction(async (tx) => {
+        const balance = await debitStake(tx, userId, TICKET_PRICE, 'lotto', ticketId);
+        await tx.lottoTicket.create({ data: { id: ticketId, userId, drawId: draw.id, numbers: sorted, stake: TICKET_PRICE } });
+        return balance;
       });
 
-      callback({ success: true, data: result });
-    } catch (e) {
-      console.error('Lotto buy error:', e);
-      callback({ success: false, message: e.message });
+      if (typeof callback === 'function') {
+        callback({ success: true, data: { ticketId, drawId: draw.id, numbers: sorted, newBalance: Number(newBalance) / 100 } });
+      }
+    } catch (err) {
+      replyError(callback, err, 'Lotto buy');
     }
   });
 

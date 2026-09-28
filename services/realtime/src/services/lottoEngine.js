@@ -2,6 +2,9 @@ const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { UniversalRoundEngine, UNIVERSAL_PHASES } = require('./engine/UniversalRoundEngine');
+const { settleBet } = require('./gameBets');
+
+const TICKET_PRICE = 10000n; // ₹100 per ticket, in paise
 
 // Payout structure for ₹100 stake (10000 paise)
 const PAYOUTS = {
@@ -121,36 +124,12 @@ class LottoEngine extends UniversalRoundEngine {
       for (const ticket of tickets) {
         const matched = ticket.numbers.filter(n => winningNumbers.includes(n)).length;
         const payout = PAYOUTS[matched] || 0n;
-
-        if (payout > 0n) {
-          await prisma.$transaction(async (tx) => {
-            await tx.lottoTicket.update({
-              where: { id: ticket.id },
-              data: { matchedCount: matched, payout }
-            });
-
-            const wallet = await tx.wallet.findFirst({ where: { userId: ticket.userId, currency: 'INR' } });
-            if (wallet) {
-              const newBalance = wallet.balance + payout;
-              await tx.wallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
-
-              await tx.transaction.create({
-                data: {
-                  walletId: wallet.id,
-                  idempotencyKey: `lotto-win-${ticket.id}`,
-                  type: 'BET_WIN',
-                  amount: payout,
-                  balanceAfter: newBalance,
-                  reference: ticket.id
-                }
-              });
-            }
-          });
-        } else {
-          await prisma.lottoTicket.update({
-            where: { id: ticket.id },
-            data: { matchedCount: matched, payout: 0n }
-          });
+        try {
+          // Idempotent per ticket id: re-running settlement never pays twice.
+          await settleBet(ticket.userId, ticket.stake, payout, 'lotto', ticket.id);
+          await prisma.lottoTicket.update({ where: { id: ticket.id }, data: { matchedCount: matched, payout } });
+        } catch (err) {
+          console.error(`[LottoEngine:${this.room}] Settlement failed for ticket ${ticket.id}:`, err.message);
         }
       }
 
@@ -187,7 +166,7 @@ class LottoEngine extends UniversalRoundEngine {
           gameId: 'lotto',
           room: this.room,
           phase: this.currentPhase,
-          status: this.currentPhase === UNIVERSAL_PHASES.BETTING_OPEN ? 'OPEN' : this.currentPhase,
+          ...this.getBettingClock(now),
           serverTime: now,
           phaseEndsAt: this.phaseEndsAt,
           phaseTimeLeft: this.phaseTimeLeft,
@@ -209,4 +188,4 @@ class LottoEngine extends UniversalRoundEngine {
   }
 }
 
-module.exports = { LottoEngine };
+module.exports = { LottoEngine, TICKET_PRICE, PAYOUTS };
