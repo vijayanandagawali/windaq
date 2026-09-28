@@ -37,6 +37,7 @@ export default function AppShell({ children }: AppShellProps) {
     pathname.includes('/dice') ||
     pathname.includes('/scratch') ||
     pathname.includes('/lotto') ||
+    pathname.includes('/ludo') ||
     pathname.includes('/colour-prediction') ||
     pathname.includes('/color-prediction')
   );

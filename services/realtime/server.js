@@ -88,7 +88,7 @@ async function startServer() {
       }, 60 * 1000).unref();
 
       // Rummy practice games live in memory; drop the idle ones.
-      setInterval(() => require('./src/services/rummyPractice').sweep(), 10 * 60 * 1000).unref();
+      setInterval(() => { require('./src/services/rummyPractice').sweep(); require('./src/services/ludo/ludoPractice').sweep(); }, 10 * 60 * 1000).unref();
 
       // Start Game Engines
       console.log('✈️ Starting Aviator Engine loop...');

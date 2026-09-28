@@ -4,7 +4,7 @@ test.describe('lobby', () => {
   test('lists only playable games and marks unreleased ones as coming soon', async ({ page }) => {
     await page.goto('/');
     const liveTiles = page.getByRole('link', { name: /^Play / });
-    await expect(liveTiles).toHaveCount(13);
+    await expect(liveTiles).toHaveCount(14);
     await expect(page.getByLabel('Sports — coming soon')).toBeVisible();
     await expect(page.getByRole('link', { name: /Play Sports/ })).toHaveCount(0);
     // No fabricated activity feeds or third-party studio names.
@@ -14,10 +14,10 @@ test.describe('lobby', () => {
   test('category tabs filter the grid and deep-link through the URL', async ({ page }) => {
     await page.goto('/?cat=table');
     await expect(page.getByRole('tab', { name: 'Table games' })).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByRole('link', { name: /^Play / })).toHaveCount(7);
+    await expect(page.getByRole('link', { name: /^Play / })).toHaveCount(8);
     await page.getByRole('tab', { name: 'All games' }).click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('link', { name: /^Play / })).toHaveCount(13);
+    await expect(page.getByRole('link', { name: /^Play / })).toHaveCount(14);
   });
 
   test('unreleased game pages take no bets', async ({ page }) => {
