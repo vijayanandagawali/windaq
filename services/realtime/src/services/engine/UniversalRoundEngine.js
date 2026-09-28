@@ -46,6 +46,8 @@ class UniversalRoundEngine {
     
     // Configurable phase durations
     this.phaseDurations = { ...DEFAULT_PHASE_DURATIONS, ...customDurations };
+    // The game's own durations, kept so admin speed adjustments scale these rather than defaults.
+    this.basePhaseDurations = { ...this.phaseDurations };
 
     // Admin Governance & Versioned Payout Snapshot
     this.snapshottedPayoutVersion = 1;
@@ -312,10 +314,13 @@ class UniversalRoundEngine {
         this.phaseDurations.BETTING_CLOSING = Math.min(3, Math.floor(totalBetting / 3));
         this.phaseDurations.BETTING_OPEN = Math.max(3, totalBetting - this.phaseDurations.BETTING_CLOSING);
       }
-      this.phaseDurations.PLAYING = Math.max(2, Math.round(4 * speedFactor));
-      this.phaseDurations.RESULT_REVEAL = Math.max(2, Math.round(3 * speedFactor));
-      this.phaseDurations.SETTLEMENT = Math.max(1, Math.round(2 * speedFactor));
-      this.phaseDurations.NEXT_ROUND = Math.max(1, Math.round(1 * speedFactor));
+      // Scale each game's own configured durations (not hard-coded defaults), so per-game
+      // settings such as a longer Andar Bahar or Lotto reveal survive the admin speed factor.
+      const base = this.basePhaseDurations || this.phaseDurations;
+      this.phaseDurations.PLAYING = Math.max(2, Math.round((base.PLAYING || 4) * speedFactor));
+      this.phaseDurations.RESULT_REVEAL = Math.max(2, Math.round((base.RESULT_REVEAL || 3) * speedFactor));
+      this.phaseDurations.SETTLEMENT = Math.max(1, Math.round((base.SETTLEMENT || 2) * speedFactor));
+      this.phaseDurations.NEXT_ROUND = Math.max(1, Math.round((base.NEXT_ROUND || 1) * speedFactor));
     }
 
     const totalOpenSeconds = this.phaseDurations.BETTING_OPEN + this.phaseDurations.BETTING_CLOSING;
@@ -501,14 +506,12 @@ class UniversalRoundEngine {
     if (!this.emitter) return;
     const roomName = `${this.gameId}:${this.room}`;
     
+    // One emit to all three rooms: a socket that joined more than one gets the event once.
+    const rooms = [roomName, `tg:${this.gameId}:${this.room}`, `${this.gameId}`];
     if (typeof this.emitter.emitToRoom === 'function') {
-      this.emitter.emitToRoom(roomName, eventName, payload);
-      this.emitter.emitToRoom(`tg:${this.gameId}:${this.room}`, eventName, payload);
-      this.emitter.emitToRoom(`${this.gameId}`, eventName, payload);
+      this.emitter.emitToRoom(rooms, eventName, payload);
     } else if (typeof this.emitter.to === 'function') {
-      this.emitter.to(roomName).emit(eventName, payload);
-      this.emitter.to(`tg:${this.gameId}:${this.room}`).emit(eventName, payload);
-      this.emitter.to(`${this.gameId}`).emit(eventName, payload);
+      this.emitter.to(rooms).emit(eventName, payload);
     }
   }
 

@@ -3,7 +3,8 @@ const provablyFair = require('../ProvablyFairService');
 
 class AndarBaharEngine extends BaseTableEngine {
   constructor(room = 'Auto', io) {
-    super('andar-bahar', room, io);
+    // A longer reveal lets the table deal card by card (up to ~49 cards) before settlement.
+    super('andar-bahar', room, io, { RESULT_REVEAL: 7 });
   }
 
   dealAndResolve(serverSeed, clientSeed) {

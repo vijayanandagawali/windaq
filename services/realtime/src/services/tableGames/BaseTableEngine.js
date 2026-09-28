@@ -162,7 +162,7 @@ class BaseTableEngine extends UniversalRoundEngine {
         data: { status: 'LOCKED' }
       }).catch(err => console.error(`[BaseTableEngine] Lock round error:`, err.message));
     }
-    this.emitEvent('tg:locked', { roundId });
+    // tg:locked is emitted once by UniversalRoundEngine when the phase moves to BETTING_LOCKED.
   }
 
   async onBettingClosed(roundId) {
@@ -190,13 +190,7 @@ class BaseTableEngine extends UniversalRoundEngine {
       }).catch(err => console.error(`[BaseTableEngine] Result save error:`, err.message));
     }
 
-    this.emitEvent('tg:result', {
-      roundId,
-      result,
-      winner: result?.winner,
-      dealer: this.dealer
-    });
-
+    // tg:result is emitted once by UniversalRoundEngine when the phase moves to RESULT_REVEAL.
     return result;
   }
 

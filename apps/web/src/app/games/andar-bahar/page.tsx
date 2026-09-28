@@ -11,7 +11,8 @@ import { createGameSocket } from '@/lib/config';
 import { useBetSettlements, type SettlementSummary } from '@/hooks/useBetSettlements';
 import { audioEngine } from '@/lib/audioEngine';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
-import AnimatedCard from '@/components/games/animation/AnimatedCard';
+import AndarBaharZone, { abRank } from '@/components/games/AndarBaharZone';
+import { PlayingCard } from '@/components/lobby/previews/primitives';
 import AnimatedChipFlight from '@/components/games/animation/AnimatedChipFlight';
 
 export default function AndarBaharGame() {
@@ -41,6 +42,14 @@ export default function AndarBaharGame() {
   // Animation State
   const [displayedCards, setDisplayedCards] = useState<any[]>([]);
   const [isDealing, setIsDealing] = useState(false);
+  const [jokerShown, setJokerShown] = useState(false);
+  const dealtRoundRef = useRef<string | null>(null);
+  // Pending deal steps; cancelled when a new round opens so no card lands in the next round.
+  const dealTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const clearDealTimers = () => {
+    dealTimersRef.current.forEach(clearTimeout);
+    dealTimersRef.current = [];
+  };
   const [chipFlights, setChipFlights] = useState<any[]>([]);
   const [celebration, setCelebration] = useState<{
     status: 'IDLE' | 'WON' | 'LOST';
@@ -71,6 +80,7 @@ export default function AndarBaharGame() {
       setTimeLeft(diff);
       
       if (data.status === 'OPEN' && resultRef.current !== null) {
+        clearDealTimers();
         resultRef.current = null;
         dealtWinnerRef.current = null;
         pendingSummaryRef.current = null;
@@ -91,13 +101,15 @@ export default function AndarBaharGame() {
     });
 
     s.on('tg:result', (data: any) => {
+      // Each round is dealt exactly once, even if a result event is delivered twice.
+      const roundKey = data.roundId || JSON.stringify(data.result?.joker);
+      if (dealtRoundRef.current === roundKey) return;
+      dealtRoundRef.current = roundKey;
+
       setGameState((p: any) => ({ ...p, status: 'RESULT' }));
       setResult(data.result);
-      
-      // Play joker reveal sound
-      audioEngine.play('cardFlip');
 
-      // Start realistic dealing animation
+      // Start realistic dealing animation (the joker flips first)
       startDealingAnimation(data.result?.dealtCards || [], data.result?.winner);
       
       setHistory(prev => [{ result: data.result, resultTime: new Date() }, ...prev].slice(0, 15));
@@ -161,25 +173,26 @@ export default function AndarBaharGame() {
   });
 
   const startDealingAnimation = (cards: any[], winner: string) => {
+    clearDealTimers();
     setIsDealing(true);
     setDisplayedCards([]);
+    setJokerShown(false);
+    // Joker turns first; dealing starts after a beat. The pace is even throughout (it never
+    // slows before the matching card, which would give the answer away).
+    dealTimersRef.current.push(setTimeout(() => { setJokerShown(true); audioEngine.play('cardFlip'); }, 350));
     if (cards.length === 0) { setIsDealing(false); dealtWinnerRef.current = winner; return; }
-
-    // Animate cards dealing one by one; long deals speed up so the reveal fits in ~7 seconds.
-    const stepMs = Math.min(450, Math.floor(7000 / cards.length));
+    const stepMs = Math.max(220, Math.min(600, Math.floor(8500 / cards.length)));
+    const startAt = 1400;
     cards.forEach((cardObj, index) => {
-      setTimeout(() => {
+      dealTimersRef.current.push(setTimeout(() => {
         audioEngine.play('cardSlide');
-        audioEngine.play('cardFlip');
         setDisplayedCards(prev => [...prev, cardObj]);
-
         if (index === cards.length - 1) {
           setIsDealing(false);
-
           dealtWinnerRef.current = winner;
           if (pendingSummaryRef.current) showOutcome(pendingSummaryRef.current, winner);
         }
-      }, stepMs * (index + 1));
+      }, startAt + stepMs * index));
     });
   };
 
@@ -280,90 +293,30 @@ export default function AndarBaharGame() {
            )}
         </div>
 
-        {/* Central Joker Area */}
-        <div className="mt-12 mb-8 relative flex flex-col items-center">
-           <div className="text-center mb-2 font-black tracking-widest text-amber-700 text-xs uppercase bg-white/80 px-3 py-1 rounded-full border border-amber-500/30">
-             🃏 Center Reference Joker Card
-           </div>
-           <div className="w-20 h-28 sm:w-24 sm:h-36 rounded-2xl border-2 border-dashed border-amber-400/50 flex items-center justify-center bg-slate-100 shadow-[0_0_25px_rgba(245,158,11,0.25)] p-1">
-             {result?.joker ? (
-               <AnimatedCard 
-                 card={result.joker} 
-                 isRevealed={true} 
-                 isWinner={true}
-                 size="lg"
-               />
-             ) : (
-               <span className="text-slate-400 text-xs font-mono">Awaiting Deal...</span>
-             )}
-           </div>
+        {/* Joker: dealt face down, then turned to show the rank to match */}
+        <div className="mb-6 mt-12 flex flex-col items-center">
+          <span className="mb-2 rounded-full bg-white/90 px-3 py-1 text-xs font-black uppercase tracking-[0.25em] text-amber-700 ring-1 ring-amber-200">Joker</span>
+          <div className="flex h-[124px] items-center justify-center text-[34px]">
+            {result?.joker ? (
+              <motion.div initial={{ y: -40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', damping: 16 }}>
+                <PlayingCard rank={abRank(result.joker.rank)} suit={result.joker.suit} faceDown={!jokerShown}
+                  className={`w-[84px] ${jokerShown ? 'wd-glow-card' : ''}`} />
+              </motion.div>
+            ) : (
+              <div className="flex h-[118px] w-[84px] items-center justify-center rounded-xl border-2 border-dashed border-amber-300/70 bg-white/60 text-center text-[11px] font-semibold text-slate-400">Joker dealt when bets close</div>
+            )}
+          </div>
         </div>
 
         {/* Andar / Bahar Table Zones */}
         <div className="w-[calc(100%-1rem)] max-w-4xl flex justify-between gap-3 sm:gap-6 rounded-[28px] bg-[radial-gradient(circle_at_50%_15%,#22C3A6,#0B6B5C_85%)] p-3 sm:p-5 shadow-[inset_0_10px_28px_rgba(0,0,0,0.28),0_18px_40px_rgba(11,107,92,0.25)] ring-4 ring-amber-200/70">
            
-           {/* Andar Area (Left) */}
-           <div className={`flex-1 bg-white/10 border-2 rounded-2xl p-3 sm:p-4 flex flex-col items-center relative min-h-[170px] transition-all duration-500 ${
-             result?.winner === 'ANDAR' && !isDealing ? 'border-amber-300 bg-white/20 shadow-[0_0_40px_rgba(251,191,36,0.6)]' : 'border-sky-200/50'
-           }`}>
-              <div className="absolute top-2 left-4 font-black text-xl sm:text-3xl text-white/55 uppercase tracking-tight pointer-events-none">Andar</div>
-              <div className="flex flex-wrap justify-center z-10 mt-6 min-h-[80px]">
-                {displayedCards.filter(c => c.side === 'ANDAR').map((c, i) => {
-                  const isMatch = result?.joker && c.card.rank === result.joker.rank;
-                  return (
-                    <div key={i} className="-ml-6 first:ml-0 transition-transform hover:-translate-y-2">
-                      <AnimatedCard 
-                        card={c.card}
-                        isRevealed={true}
-                        isWinner={isMatch}
-                        size="sm"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              {result && result.winner === 'ANDAR' && !isDealing && (
-                <motion.div 
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="mt-3 bg-amber-500 text-black font-black uppercase px-4 py-1 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.8)]"
-                >
-                  🏆 Andar Wins! (1.9x)
-                </motion.div>
-              )}
-           </div>
-
-           {/* Bahar Area (Right) */}
-           <div className={`flex-1 bg-white/10 border-2 rounded-2xl p-3 sm:p-4 flex flex-col items-center relative min-h-[170px] transition-all duration-500 ${
-             result?.winner === 'BAHAR' && !isDealing ? 'border-amber-300 bg-white/20 shadow-[0_0_40px_rgba(251,191,36,0.6)]' : 'border-rose-200/50'
-           }`}>
-              <div className="absolute top-2 right-4 font-black text-xl sm:text-3xl text-white/55 uppercase tracking-tight pointer-events-none">Bahar</div>
-              <div className="flex flex-wrap justify-center z-10 mt-6 min-h-[80px]">
-                {displayedCards.filter(c => c.side === 'BAHAR').map((c, i) => {
-                  const isMatch = result?.joker && c.card.rank === result.joker.rank;
-                  return (
-                    <div key={i} className="-ml-6 first:ml-0 transition-transform hover:-translate-y-2">
-                      <AnimatedCard 
-                        card={c.card}
-                        isRevealed={true}
-                        isWinner={isMatch}
-                        size="sm"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              {result && result.winner === 'BAHAR' && !isDealing && (
-                <motion.div 
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="mt-3 bg-amber-500 text-black font-black uppercase px-4 py-1 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.8)]"
-                >
-                  🏆 Bahar Wins! (2.0x)
-                </motion.div>
-              )}
-           </div>
-
+           <AndarBaharZone side="ANDAR" cards={displayedCards.filter(c => c.side === 'ANDAR').map(c => c.card)}
+             jokerRank={jokerShown ? result?.joker?.rank ?? null : null} isWinner={result?.winner === 'ANDAR' && !isDealing && jokerShown}
+             isNext={isDealing && displayedCards.length % 2 === 0} />
+           <AndarBaharZone side="BAHAR" cards={displayedCards.filter(c => c.side === 'BAHAR').map(c => c.card)}
+             jokerRank={jokerShown ? result?.joker?.rank ?? null : null} isWinner={result?.winner === 'BAHAR' && !isDealing && jokerShown}
+             isNext={isDealing && displayedCards.length % 2 === 1} />
         </div>
 
       {/* Reusable Chip Flights */}

@@ -64,9 +64,11 @@ class CoreSocketManager {
    * Emits an event to a room with strict sequence versioning and server timestamp.
    */
   emitToRoom(room, eventName, payload) {
-    let seq = this.roomSequences.get(room) || 0;
+    // `room` may be a list: socket.io then delivers once per socket even if it is in several rooms.
+    const key = Array.isArray(room) ? room.join('|') : room;
+    let seq = this.roomSequences.get(key) || 0;
     seq++;
-    this.roomSequences.set(room, seq);
+    this.roomSequences.set(key, seq);
 
     const enrichedPayload = {
       ...payload,
