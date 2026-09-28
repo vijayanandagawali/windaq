@@ -34,7 +34,7 @@ export default function BlackjackGame() {
     setSocket(s);
 
     s.on('connect', () => {
-      s.emit('bj:join', { userId: "guest" }, (res: any) => {
+      s.emit('bj:join', {}, (res: any) => {
         if (res.success) {
           setGameId(res.gameId);
           setGameState(res.state);
@@ -90,6 +90,8 @@ export default function BlackjackGame() {
     socket.emit('bj:bet', { gameId, amount: selectedChips }, (res: any) => {
       if (res.success) {
         audioEngine.play('cardSlide');
+        // Each round is a new game on the server; follow its id.
+        if (res.gameId) setGameId(res.gameId);
         setGameState(res.state);
         toast.success(`Bet ₹${selectedChips} placed!`);
         fetchBalance();

@@ -22,7 +22,7 @@ export default function TrustFooter() {
           </div>
           <div className="flex flex-col items-center opacity-70 hover:opacity-100 transition-opacity">
             <Award size={32} className="text-purple-500 mb-2" />
-            <span className="text-white text-xs font-bold uppercase tracking-wider">Provably Fair</span>
+            <span className="text-white text-xs font-bold uppercase tracking-wider">UPI Deposits</span>
           </div>
           <div className="flex flex-col items-center justify-center opacity-70 hover:opacity-100 transition-opacity">
             <div className="w-8 h-8 rounded-full border-2 border-red-500 text-red-500 flex items-center justify-center font-black text-xs mb-2">
@@ -37,7 +37,7 @@ export default function TrustFooter() {
         <div className="text-center max-w-2xl">
           <h4 className="text-white font-black tracking-widest uppercase mb-4 opacity-50">WinDaq Originals</h4>
           <p className="text-gray-500 text-[10px] leading-relaxed mb-4">
-            WinDaq operates a proprietary Provably Fair gaming engine. Cryptographic hashes are generated before every round, ensuring zero manipulation. All payouts and balances are settled on our secure, lightning-fast ledger.
+            WinDaq operates a proprietary Provably Fair gaming engine. Cryptographic hashes are generated before every round, so results cannot be changed after bets close. All payouts and balances are settled on a double-entry ledger.
           </p>
           <div className="flex justify-center gap-4 text-xs font-bold text-gray-400">
             <a href="#" className="hover:text-neon-mint transition-colors">Terms of Service</a>

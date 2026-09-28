@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, History } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Socket } from '@/lib/gameSocket';
 import { createGameSocket } from '@/lib/config';
+import { useBetSettlements, type SettlementSummary } from '@/hooks/useBetSettlements';
 import RouletteWheel from '@/components/games/RouletteWheel';
 import { audioEngine } from '@/lib/audioEngine';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
@@ -18,9 +19,20 @@ import AnimatedChipFlight from '@/components/games/animation/AnimatedChipFlight'
 
 const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 const isRed = (n: number) => RED_NUMBERS.includes(n);
+const PHASE_LABELS: Record<string, string> = {
+  LOCKED: 'Wheel Spinning',
+  BETTING_LOCKED: 'Bets Locked',
+  PLAYING: 'Wheel Spinning',
+  RESULT_REVEAL: 'Result',
+  SETTLEMENT: 'Paying Winners',
+  COMPLETED: 'Round Complete',
+  NEXT_ROUND: 'Next Round',
+  CREATED: 'Preparing Round',
+  WAITING: 'Connecting'
+};
 
 export default function RouletteGame() {
-  const { balance, fetchBalance } = useWalletStore();
+  const { balance, fetchBalance, setBalance } = useWalletStore();
   const [socket, setSocket] = useState<Socket | null>(null);
 
   // Game State
@@ -33,6 +45,8 @@ export default function RouletteGame() {
   
   const [timeLeft, setTimeLeft] = useState<number>(60);
   const [resultNumber, setResultNumber] = useState<number | null>(null);
+  // Lets the once-registered socket handlers know a result is showing without reconnecting.
+  const hasResultRef = useRef(false);
   const [history, setHistory] = useState<any[]>([]);
   const [showHistoryDrawer, setShowHistoryDrawer] = useState<boolean>(false);
   const [selectedRoundDetail, setSelectedRoundDetail] = useState<HistoryItem | null>(null);
@@ -56,42 +70,19 @@ export default function RouletteGame() {
     message?: string;
   }>({ status: 'IDLE', amount: 0 });
 
-  // Handle wheel settle completion (triggered only after deceleration into server pocket)
-  const handleSettleComplete = (settledWinNumber: number) => {
-    // 1. Calculate win/loss across player bets
-    const totalBet = Object.values(myBets).reduce((a, b) => a + b, 0);
-    let wonAmount = 0;
-    let winningMultiplier = 1;
+  // The banner waits for both the wheel to stop and the server's settlement, whichever comes last.
+  // Amounts come only from the server (`bet:settled`), never from client-side payout maths.
+  const pendingSummaryRef = useRef<SettlementSummary | null>(null);
+  const settledNumberRef = useRef<number | null>(null);
 
-    if (myBets[`STRAIGHT_${settledWinNumber}`] || myBets[settledWinNumber.toString()]) {
-      const straightBet = myBets[`STRAIGHT_${settledWinNumber}`] || myBets[settledWinNumber.toString()];
-      wonAmount += straightBet * 36;
-      winningMultiplier = 36;
-    }
-    const isResultRed = RED_NUMBERS.includes(settledWinNumber);
-    if (isResultRed && myBets['RED']) {
-      wonAmount += myBets['RED'] * 2;
-      winningMultiplier = Math.max(winningMultiplier, 2);
-    } else if (!isResultRed && settledWinNumber !== 0 && myBets['BLACK']) {
-      wonAmount += myBets['BLACK'] * 2;
-      winningMultiplier = Math.max(winningMultiplier, 2);
-    }
-    if (settledWinNumber !== 0) {
-      if (settledWinNumber % 2 === 0 && myBets['EVEN']) {
-        wonAmount += myBets['EVEN'] * 2;
-        winningMultiplier = Math.max(winningMultiplier, 2);
-      } else if (settledWinNumber % 2 !== 0 && myBets['ODD']) {
-        wonAmount += myBets['ODD'] * 2;
-        winningMultiplier = Math.max(winningMultiplier, 2);
-      }
-    }
-
-    if (wonAmount > 0) {
+  const showOutcome = (summary: SettlementSummary, settledWinNumber: number) => {
+    pendingSummaryRef.current = null;
+    if (summary.paid > 0) {
       audioEngine.play('win');
       setCelebration({
         status: 'WON',
-        amount: wonAmount,
-        multiplier: winningMultiplier,
+        amount: summary.paid,
+        multiplier: summary.bestMultiplier,
         message: `Number ${settledWinNumber} Hit!`
       });
 
@@ -100,7 +91,7 @@ export default function RouletteGame() {
         ...prev,
         {
           id: `win-${Date.now()}`,
-          amount: wonAmount,
+          amount: summary.paid,
           type: 'WIN',
           startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
           startY: 220,
@@ -110,15 +101,26 @@ export default function RouletteGame() {
           borderColor: 'border-yellow-200'
         }
       ]);
-    } else if (totalBet > 0) {
+    } else if (summary.staked > 0) {
       audioEngine.play('loss');
       setCelebration({
         status: 'LOST',
-        amount: totalBet,
+        amount: summary.staked,
         message: `Ball Landed on ${settledWinNumber}`
       });
     }
+    fetchBalance();
+  };
 
+  useBetSettlements(socket, 'roulette', (summary) => {
+    if (settledNumberRef.current !== null) showOutcome(summary, settledNumberRef.current);
+    else pendingSummaryRef.current = summary;
+  });
+
+  // Handle wheel settle completion (triggered only after deceleration into server pocket)
+  const handleSettleComplete = (settledWinNumber: number) => {
+    settledNumberRef.current = settledWinNumber;
+    if (pendingSummaryRef.current) showOutcome(pendingSummaryRef.current, settledWinNumber);
     setTimeout(() => fetchBalance(), 1500);
   };
 
@@ -138,7 +140,10 @@ export default function RouletteGame() {
       const diff = Math.max(0, Math.floor((data.lockTime - Date.now()) / 1000));
       setTimeLeft(diff);
       
-      if (data.status === 'OPEN' && resultNumber !== null) {
+      if (data.status === 'OPEN' && hasResultRef.current) {
+        hasResultRef.current = false;
+        settledNumberRef.current = null;
+        pendingSummaryRef.current = null;
         setResultNumber(null);
         setMyBets({}); // Clear bets for new round
         setLiveBets([]);
@@ -156,6 +161,7 @@ export default function RouletteGame() {
     s.on('roulette:result', (data: any) => {
       // Server-authoritative result arrives -> Wheel targets and decelerates into this exact pocket
       setGameState((p: any) => ({ ...p, status: 'RESULT' }));
+      hasResultRef.current = true;
       setResultNumber(data.resultNumber);
       setHistory(prev => [{ resultNumber: data.resultNumber, resultTime: new Date() }, ...prev].slice(0, 25));
     });
@@ -188,7 +194,7 @@ export default function RouletteGame() {
       s.emit('roulette:leave', { room: 'Auto' });
       s.disconnect(); 
     };
-  }, [fetchBalance, resultNumber]);
+  }, [fetchBalance]);
 
   useEffect(() => {
     if (gameState.status !== 'OPEN') return;
@@ -208,12 +214,12 @@ export default function RouletteGame() {
     if (!socket) return;
     
     audioEngine.play('bet');
-    const userId = "guest"; // Replace with real auth id
-    socket.emit('roulette:bet', { userId, room: 'Auto', market, targets, amount: selectedChips }, (res: any) => {
+    socket.emit('roulette:bet', { room: 'Auto', market, targets, amount: selectedChips }, (res: any) => {
       if (res.success) {
+        if (typeof res.data?.newBalance === 'number') setBalance(res.data.newBalance);
         audioEngine.play('accepted');
         // use a unique key for the grid to stack chips visually
-        const betKey = targets.length === 1 ? `STRAIGHT_${targets[0]}` : market;
+        const betKey = targets.length === 1 ? `STRAIGHT_${targets[0]}` : (market === 'DOZEN' || market === 'COLUMN') ? `${market}_${targets[0]}` : market;
         setMyBets(prev => ({
           ...prev,
           [betKey]: (prev[betKey] || 0) + selectedChips
@@ -326,7 +332,7 @@ export default function RouletteGame() {
            ) : (
              <>
                <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-               <span className="font-bold tracking-widest uppercase text-xs text-yellow-400">{gameState.status === 'LOCKED' ? 'Wheel Spinning...' : gameState.status}</span>
+               <span className="font-bold tracking-widest uppercase text-xs text-yellow-400">{PHASE_LABELS[gameState.status] || 'Please wait'}</span>
              </>
            )}
         </div>
@@ -334,7 +340,7 @@ export default function RouletteGame() {
         {/* Central Display: Realistic European Roulette Wheel */}
         <div className="z-10 relative flex flex-col items-center mt-6">
           <RouletteWheel 
-            isSpinning={gameState.status === 'LOCKED'} 
+            isSpinning={['LOCKED', 'BETTING_LOCKED', 'PLAYING'].includes(gameState.status)}
             winningNumber={resultNumber} 
             size={190}
             onSettleComplete={handleSettleComplete}
@@ -450,7 +456,7 @@ export default function RouletteGame() {
             <div className="w-12 sm:w-16 flex flex-col font-bold text-xs tracking-widest border-t border-l border-white/20 text-gray-400">
                <button onClick={() => placeBet('COLUMN', [3,6,9,12,15,18,21,24,27,30,33,36])} className="flex-1 border-b border-white/20 hover:bg-white/10 flex items-center justify-center relative">
                  <span className="-rotate-90">2:1</span>
-                 {myBets['COLUMN'] && <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[9px] px-1 rounded-full">{myBets['COLUMN']}</div>}
+                 {myBets['COLUMN_3'] && <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[9px] px-1 rounded-full">{myBets['COLUMN_3']}</div>}
                </button>
                <button onClick={() => placeBet('COLUMN', [2,5,8,11,14,17,20,23,26,29,32,35])} className="flex-1 border-b border-white/20 hover:bg-white/10 flex items-center justify-center relative">
                  <span className="-rotate-90">2:1</span>

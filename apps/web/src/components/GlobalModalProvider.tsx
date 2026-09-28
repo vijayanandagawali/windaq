@@ -4,9 +4,7 @@ import React, { useEffect } from 'react';
 import DepositModal from '@/components/modals/DepositModal';
 import WithdrawModal from '@/components/modals/WithdrawModal';
 import PassbookModal from '@/components/modals/PassbookModal';
-import VipClubModal from '@/components/modals/VipClubModal';
 import ReferralModal from '@/components/modals/ReferralModal';
-import DailySpinModal from '@/components/modals/DailySpinModal';
 import NotifDrawer from '@/components/modals/NotifDrawer';
 import AuthModal from '@/components/modals/AuthModal';
 import AudioControlsModal from '@/components/modals/AudioControlsModal';
@@ -26,9 +24,7 @@ export default function GlobalModalProvider() {
       <DepositModal />
       <WithdrawModal />
       <PassbookModal />
-      <VipClubModal />
       <ReferralModal />
-      <DailySpinModal />
       <NotifDrawer />
     </>
   );

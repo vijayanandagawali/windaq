@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Info, History } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Socket } from '@/lib/gameSocket';
 import { createGameSocket } from '@/lib/config';
+import { useBetSettlements } from '@/hooks/useBetSettlements';
 
 import UniversalBetPanel from '@/components/games/UniversalBetPanel';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
@@ -15,7 +16,7 @@ import { audioEngine, haptic } from '@/lib/audioEngine';
 import AnimatedChipFlight, { ChipFlightData } from '@/components/games/animation/AnimatedChipFlight';
 
 export default function DiceGame() {
-  const { balance, fetchBalance, userId } = useWalletStore();
+  const { balance, fetchBalance } = useWalletStore();
   const [socket, setSocket] = useState<Socket | null>(null);
 
   // Game State
@@ -28,6 +29,9 @@ export default function DiceGame() {
   
   const [timeLeft, setTimeLeft] = useState<number>(60);
   const [diceResult, setDiceResult] = useState<number[] | null>(null);
+  // Lets the once-registered socket handlers know a result is showing without reconnecting.
+  const hasResultRef = useRef(false);
+  const lastSumRef = useRef<number | null>(null);
   const [history, setHistory] = useState<any[]>([]);
 
   // Selected Market & Betting State
@@ -59,6 +63,28 @@ export default function DiceGame() {
     }]);
   };
 
+  // Win/loss banner from the server's settlement, never from client-side payout maths.
+  useBetSettlements(socket, 'dice', ({ staked, paid, bestMultiplier }) => {
+    const sumLabel = lastSumRef.current !== null ? `Dice Total: ${lastSumRef.current} • ` : '';
+    if (paid > 0) {
+      audioEngine.play('win');
+      haptic.win();
+      if (typeof window !== 'undefined') {
+        addChipFlight(
+          { x: window.innerWidth / 2, y: window.innerHeight * 0.3 },
+          { x: window.innerWidth - 60, y: 30 },
+          paid
+        );
+      }
+      setCelebration({ status: 'WON', amount: paid, multiplier: bestMultiplier, message: `${sumLabel}YOU WON!` });
+    } else if (staked > 0) {
+      audioEngine.play('loss');
+      haptic.error();
+      setCelebration({ status: 'LOST', amount: staked, message: `${sumLabel}Bet Lost` });
+    }
+    fetchBalance();
+  });
+
   useEffect(() => {
     const s = createGameSocket();
     setSocket(s);
@@ -75,7 +101,8 @@ export default function DiceGame() {
       const diff = Math.max(0, Math.floor((data.lockTime - Date.now()) / 1000));
       setTimeLeft(diff);
       
-      if (data.status === 'OPEN' && diceResult) {
+      if (data.status === 'OPEN' && hasResultRef.current) {
+        hasResultRef.current = false;
         setDiceResult(null);
         setMyBets({}); // Clear bets for new round
       }
@@ -91,64 +118,18 @@ export default function DiceGame() {
 
     s.on('dice:result', (data: any) => {
       setGameState((p: any) => ({ ...p, status: 'RESULT' }));
+      hasResultRef.current = true;
       setDiceResult(data.diceResult);
       audioEngine.play('diceBounce');
       haptic.card();
       
       const sum = data.diceResult.reduce((a: number, b: number) => a + b, 0);
-      const isTriple = data.diceResult[0] === data.diceResult[1] && data.diceResult[1] === data.diceResult[2];
-      const isSmall = sum >= 4 && sum <= 10;
-      const isBig = sum >= 11 && sum <= 17;
       
       // Update history
       setHistory(prev => [{ diceResult: data.diceResult, resultTime: new Date() }, ...prev].slice(0, 15));
 
-      // Calculate win/loss
-      const totalBet = Object.values(myBets).reduce((a, b) => a + b, 0);
-      let wonAmount = 0;
-      let multiplier = 2;
+      lastSumRef.current = sum;
 
-      if (isSmall && myBets['SMALL']) {
-        wonAmount += myBets['SMALL'] * 2.0;
-      }
-      if (isBig && myBets['BIG']) {
-        wonAmount += myBets['BIG'] * 2.0;
-      }
-      if (isTriple && myBets['TRIPLE_ANY']) {
-        wonAmount += myBets['TRIPLE_ANY'] * 30.0;
-        multiplier = 30;
-      }
-      if (myBets[`SUM_${sum}`]) {
-        wonAmount += myBets[`SUM_${sum}`] * 12.0;
-        multiplier = 12;
-      }
-
-      if (wonAmount > 0) {
-        audioEngine.play('win');
-        haptic.win();
-        if (typeof window !== 'undefined') {
-          addChipFlight(
-            { x: window.innerWidth / 2, y: window.innerHeight * 0.3 },
-            { x: window.innerWidth - 60, y: 30 },
-            wonAmount
-          );
-        }
-        setCelebration({
-          status: 'WON',
-          amount: wonAmount,
-          multiplier,
-          message: `Dice Total: ${sum} • YOU WON!`
-        });
-      } else if (totalBet > 0) {
-        audioEngine.play('loss');
-        haptic.error();
-        setCelebration({
-          status: 'LOST',
-          amount: totalBet,
-          message: `Dice Total: ${sum} • Bet Lost`
-        });
-      }
-      
       // We refetch balance after 2s to allow settlement
       setTimeout(() => fetchBalance(), 2000);
     });
@@ -157,7 +138,7 @@ export default function DiceGame() {
       s.emit('dice:leave', { room: '1min' });
       s.disconnect(); 
     };
-  }, [fetchBalance, diceResult]);
+  }, [fetchBalance]);
 
   // Sync timer strictly
   useEffect(() => {
@@ -177,8 +158,7 @@ export default function DiceGame() {
     
     if (!socket) return;
     
-    const userId = "guest"; // Replace with real auth id
-    socket.emit('dice:bet', { userId, room: '1min', market, amount: chipAmount }, (res: any) => {
+    socket.emit('dice:bet', { room: '1min', market, amount: chipAmount }, (res: any) => {
       if (res.success) {
         audioEngine.play('chipDrop');
         haptic.bet();
@@ -402,8 +382,7 @@ export default function DiceGame() {
               lockedMessage="Rolling Dice - Bets Locked"
               onPlaceBet={async (amount) => {
                 return new Promise((resolve) => {
-                  const uid = userId || 'guest';
-                  socket?.emit('dice:bet', { userId: uid, room: '1min', market: selectedMarket, amount }, (res: any) => {
+                  socket?.emit('dice:bet', { room: '1min', market: selectedMarket, amount }, (res: any) => {
                     if (res && res.success) {
                       audioEngine.play('chipDrop');
                       haptic.bet();

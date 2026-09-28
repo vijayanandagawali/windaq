@@ -19,7 +19,7 @@ const TIERS = [
 ];
 
 export default function ScratchGame() {
-  const { balance, deductBalance, setBalance } = useWalletStore();
+  const { balance, setBalance } = useWalletStore();
   const [socket, setSocket] = useState<Socket | null>(null);
   
   const [activeTier, setActiveTier] = useState<string | null>(null);
@@ -77,11 +77,10 @@ export default function ScratchGame() {
     if (!tier || balance < tier.price || !socket) return;
 
     setBuying(true);
-    deductBalance(tier.price);
     audioEngine.play('cardSlide');
     haptic.bet();
 
-    socket.emit('scratch:buy', { userId: 'guest', tierId }, (res: any) => {
+    socket.emit('scratch:buy', { tierId }, (res: any) => {
       setBuying(false);
       if (res.success) {
         audioEngine.play('cardFlip');
@@ -95,7 +94,6 @@ export default function ScratchGame() {
         setBalance(Number(res.data.newBalance) / 100); // Sync balance
       } else {
         toast.error(res.message);
-        setBalance(balance); // Revert
       }
     });
   };
@@ -125,7 +123,7 @@ export default function ScratchGame() {
   const finalizeReveal = () => {
     setIsRevealed(true);
     
-    socket?.emit('scratch:reveal', { userId: 'guest', ticketId }, (res: any) => {
+    socket?.emit('scratch:reveal', { ticketId }, (res: any) => {
       if (res.success) {
         setBalance(Number(res.data.newBalance) / 100);
         const currentTierObj = TIERS.find(t => t.id === activeTier);

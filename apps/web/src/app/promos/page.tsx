@@ -1,5 +1,5 @@
-"use client";
-import ComingSoon from '@/components/ui/ComingSoon';
+import GameComingSoon from '@/components/lobby/GameComingSoon';
+
 export default function PromosPage() {
-  return <ComingSoon title="Promotions Module" />;
+  return <GameComingSoon title="Promotions" />;
 }

@@ -172,3 +172,17 @@ body {
 .animate-pulse-glow {
   animation: pulseGlow 2.5s infinite ease-in-out;
 }
+
+/* Lobby hero: gently floating featured cards */
+@keyframes lobby-float {
+  0%, 100% { transform: rotate(var(--tilt, 0deg)) translateY(0); }
+  50% { transform: rotate(var(--tilt, 0deg)) translateY(-12px); }
+}
+.lobby-float {
+  transform: rotate(var(--tilt, 0deg));
+  animation: lobby-float 6s ease-in-out infinite;
+}
+.lobby-float:hover { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .lobby-float { animation: none; }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Info, Coins, Volume2, VolumeX } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
@@ -60,6 +60,9 @@ export default function SlotsGame() {
   }, []);
 
   const [spinningReels, setSpinningReels] = useState<boolean[]>([false, false, false, false, false]);
+  // The scramble interval reads the live reel state through a ref (state would be stale inside it).
+  const spinningReelsRef = useRef<boolean[]>([false, false, false, false, false]);
+  useEffect(() => { spinningReelsRef.current = spinningReels; }, [spinningReels]);
 
   const handleSpin = () => {
     if (balance < stake) {
@@ -71,6 +74,7 @@ export default function SlotsGame() {
     audioEngine.play('reelSpin');
     haptic.deal();
     setSpinning(true);
+    spinningReelsRef.current = [true, true, true, true, true];
     setSpinningReels([true, true, true, true, true]);
     setWinAmount(0);
     setWinningLines([]);
@@ -81,7 +85,7 @@ export default function SlotsGame() {
     // Continuous symbol scramble while spinning
     let spinInterval = setInterval(() => {
       setGrid(prev => prev.map((col, cIdx) => {
-        if (!spinningReels[cIdx]) return col;
+        if (!spinningReelsRef.current[cIdx]) return col;
         return [
           Object.keys(SYMBOL_MAP)[Math.floor(Math.random() * 9)],
           Object.keys(SYMBOL_MAP)[Math.floor(Math.random() * 9)],
@@ -90,7 +94,7 @@ export default function SlotsGame() {
       }));
     }, 80);
 
-    socket.emit('slot:spin', { userId: 'guest', stake: stake * 100 }, (res: any) => {
+    socket.emit('slot:spin', { stake: stake * 100 }, (res: any) => {
       if (res.success) {
         const { grid: finalGrid, totalWin, newBalance, winningLines: lines } = res.data;
 
@@ -178,7 +182,7 @@ export default function SlotsGame() {
            className="mb-6 z-10 text-center"
         >
            <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-b from-yellow-200 to-yellow-600 text-transparent bg-clip-text drop-shadow-[0_5px_15px_rgba(202,138,4,0.5)] tracking-tighter">
-             VEGAS 777 SLOTS
+             OCEAN TREASURES
            </h2>
         </motion.div>
 
@@ -210,11 +214,12 @@ export default function SlotsGame() {
                     const s = SYMBOL_MAP[symbol] || SYMBOL_MAP['L1'];
                     const isWinningSymbol = winningLines.some(l => l.symbol === symbol || symbol === 'WILD' || symbol === 'SCATTER');
                     
+                    // Keyframe spins stop with a tween: framer-motion springs cannot resolve multi-keyframe values.
                     return (
                       <motion.div 
                         key={`${x}-${y}`}
                         animate={isReelSpinning ? { y: [0, 60, -60, 0] } : { y: 0 }}
-                        transition={isReelSpinning ? { repeat: Infinity, duration: 0.15 } : { type: 'spring', stiffness: 300, damping: 18 }}
+                        transition={isReelSpinning ? { repeat: Infinity, duration: 0.15, ease: 'linear' } : { type: 'tween', duration: 0.25, ease: 'easeOut' }}
                         className={`
                           h-16 sm:h-20 md:h-24 bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl flex items-center justify-center border border-white/10
                           ${!spinning && isWinningSymbol ? 'ring-4 ring-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.7)] scale-105 z-10' : ''}

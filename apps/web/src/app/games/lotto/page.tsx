@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Info, RefreshCw, Ticket, Clock, CheckCircle2 } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
@@ -9,13 +9,14 @@ import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
 import { Socket } from '@/lib/gameSocket';
 import { createGameSocket } from '@/lib/config';
+import { useBetSettlements, type SettlementSummary } from '@/hooks/useBetSettlements';
 import { audioEngine } from '@/lib/audioEngine';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
 
 const TICKET_PRICE = 100;
 
 export default function LottoGame() {
-  const { balance, deductBalance, setBalance } = useWalletStore();
+  const { balance, setBalance, fetchBalance } = useWalletStore();
   const [socket, setSocket] = useState<Socket | null>(null);
   
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
@@ -37,6 +38,39 @@ export default function LottoGame() {
     message?: string;
   }>({ status: 'IDLE', amount: 0 });
 
+  // Once-registered socket handlers read the latest round state through refs.
+  const myTicketsRef = useRef(myTickets);
+  useEffect(() => { myTicketsRef.current = myTickets; }, [myTickets]);
+  const hasResultRef = useRef(false);
+  // The banner waits for both the ball animation and the server's settlement, whichever comes last.
+  const drawnRef = useRef<number[] | null>(null);
+  const pendingSummaryRef = useRef<SettlementSummary | null>(null);
+
+  const showOutcome = (summary: SettlementSummary, drawnNums: number[]) => {
+    pendingSummaryRef.current = null;
+    const maxMatch = myTicketsRef.current.reduce(
+      (best, ticket) => Math.max(best, ticket.numbers.filter(n => drawnNums.includes(n)).length), 0);
+    if (summary.paid > 0) {
+      setCelebration({
+        status: 'WON',
+        amount: summary.paid,
+        multiplier: Math.round(summary.bestMultiplier),
+        message: maxMatch >= 3 ? `MATCHED ${maxMatch} NUMBERS!` : 'WINNING TICKET!'
+      });
+      toast.success(maxMatch >= 3 ? `You matched ${maxMatch} numbers!` : 'Winning ticket!', { icon: '🎉', duration: 5000 });
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    } else if (summary.staked > 0) {
+      setCelebration({ status: 'LOST', amount: summary.staked, message: 'No Winning Match' });
+      toast.error('No matching tickets this round.', { duration: 3000 });
+    }
+    fetchBalance();
+  };
+
+  useBetSettlements(socket, 'lotto', (summary) => {
+    if (drawnRef.current) showOutcome(summary, drawnRef.current);
+    else pendingSummaryRef.current = summary;
+  });
+
   // Init Socket
   useEffect(() => {
     const s = createGameSocket();
@@ -54,7 +88,10 @@ export default function LottoGame() {
       setTimeRemaining(remaining);
       
       // Clear previous winning numbers if we are starting a new round
-      if (data.status === 'OPEN' && winningNumbers.length > 0) {
+      if (data.status === 'OPEN' && hasResultRef.current) {
+        hasResultRef.current = false;
+        drawnRef.current = null;
+        pendingSummaryRef.current = null;
         setWinningNumbers([]);
         setRevealedBalls([]);
         setMyTickets([]);
@@ -71,6 +108,7 @@ export default function LottoGame() {
     s.on('lotto:result', (data: any) => {
       setStatus('RESULT');
       const allNums = data.winningNumbers || [];
+      hasResultRef.current = true;
       setWinningNumbers(allNums);
       setRevealedBalls([]);
 
@@ -82,8 +120,8 @@ export default function LottoGame() {
 
           if (idx === allNums.length - 1) {
             setTimeout(() => {
-              audioEngine.play('win');
-              checkWin(allNums);
+              drawnRef.current = allNums;
+              if (pendingSummaryRef.current) showOutcome(pendingSummaryRef.current, allNums);
             }, 600);
           }
         }, 600 * (idx + 1));
@@ -101,6 +139,7 @@ export default function LottoGame() {
       s.emit('lotto:leave');
       s.disconnect(); 
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Countdown timer
@@ -113,32 +152,6 @@ export default function LottoGame() {
     return () => clearInterval(interval);
   }, [lockTime, status]);
 
-  const checkWin = useCallback((drawnNums: number[]) => {
-    let maxMatch = 0;
-    myTickets.forEach(ticket => {
-      const matches = ticket.numbers.filter(n => drawnNums.includes(n)).length;
-      if (matches > maxMatch) maxMatch = matches;
-    });
-
-    if (maxMatch >= 3) {
-      const payout = maxMatch === 6 ? 500000 : maxMatch === 5 ? 50000 : maxMatch === 4 ? 5000 : 500;
-      setCelebration({
-        status: 'WON',
-        amount: payout,
-        multiplier: Math.round(payout / (TICKET_PRICE * Math.max(1, myTickets.length))),
-        message: `MATCHED ${maxMatch} NUMBERS!`
-      });
-      toast.success(`You matched ${maxMatch} numbers!`, { icon: '🎉', duration: 5000 });
-      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-    } else if (myTickets.length > 0) {
-      setCelebration({
-        status: 'LOST',
-        amount: TICKET_PRICE * myTickets.length,
-        message: 'No Winning Match'
-      });
-      toast.error('No matching tickets this round.', { duration: 3000 });
-    }
-  }, [myTickets]);
 
   const handleSelect = (num: number) => {
     if (status !== 'OPEN') return;
@@ -167,18 +180,16 @@ export default function LottoGame() {
     if (!socket || status !== 'OPEN') return;
 
     setBuying(true);
-    deductBalance(TICKET_PRICE);
 
-    socket.emit('lotto:buy', { userId: 'guest', room: '5min', numbers: selectedNumbers }, (res: any) => {
+    socket.emit('lotto:buy', { room: '5min', numbers: selectedNumbers }, (res: any) => {
       setBuying(false);
       if (res.success) {
         toast.success("Ticket Purchased!", { icon: '🎫' });
         setMyTickets(prev => [...prev, { id: res.data.ticketId, numbers: res.data.numbers }]);
-        setBalance(Number(res.data.newBalance) / 100);
+        setBalance(Number(res.data.newBalance));
         setSelectedNumbers([]); // reset selection
       } else {
         toast.error(res.message);
-        setBalance(balance); // Revert
       }
     });
   };

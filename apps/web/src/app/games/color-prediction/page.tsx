@@ -9,6 +9,7 @@ import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
 import { Socket } from '@/lib/gameSocket';
 import { createGameSocket } from '@/lib/config';
+import { useBetSettlements } from '@/hooks/useBetSettlements';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
 import { audioEngine } from '@/lib/audioEngine';
 import AnimatedChipFlight from '@/components/games/animation/AnimatedChipFlight';
@@ -22,7 +23,7 @@ const COLORS = [
 const NUMBERS = Array.from({length: 10}, (_, i) => i);
 
 export default function ColorPrediction() {
-  const { balance, deductBalance, addWinnings } = useWalletStore();
+  const { balance, setBalance, fetchBalance } = useWalletStore();
   const [socket, setSocket] = useState<Socket | null>(null);
   
   const [activeTab, setActiveTab] = useState<'1min' | '3min'>('1min');
@@ -51,6 +52,31 @@ export default function ColorPrediction() {
     };
   }, []);
 
+  // Win/loss banner from the server's settlement (`bet:settled`), never from client-side payout maths.
+  useBetSettlements(socket, 'colour', ({ staked, paid, bestMultiplier }) => {
+    if (paid > 0) {
+      setCelebration({ type: 'win', amount: paid, multiplier: `${bestMultiplier.toFixed(1)}x` });
+      setChipFlights(prev => [
+        ...prev,
+        {
+          id: `cp-win-${Date.now()}`,
+          amount: paid,
+          type: 'WIN',
+          startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+          startY: 260,
+          endX: 60,
+          endY: typeof window !== 'undefined' ? window.innerHeight - 50 : 600,
+          color: 'from-amber-400 to-yellow-600',
+          borderColor: 'border-yellow-200'
+        }
+      ]);
+    } else if (staked > 0) {
+      setCelebration({ type: 'loss', amount: staked });
+    }
+    setActiveBets([]);
+    fetchBalance();
+  });
+
   // Room management
   useEffect(() => {
     if (!socket) return;
@@ -72,8 +98,8 @@ export default function ColorPrediction() {
         audioEngine.play('countdown');
       }
       if (data.state === 'LOCKED') setBetModalOpen(false);
-      if (data.state === 'OPEN' && lastResult) {
-        // Reset chamber on new round
+      if (data.state === 'OPEN') {
+        // Reset chamber on new round (no-op when already clear)
         setLastResult(null);
       }
     };
@@ -91,54 +117,6 @@ export default function ColorPrediction() {
       setLastResult(data);
       audioEngine.play('win');
 
-      // Evaluate active user bets for win/loss celebration
-      if (activeBets.length > 0) {
-        let totalWin = 0;
-        let totalStake = 0;
-        activeBets.forEach(b => {
-          totalStake += b.amount;
-          if (b.type === 'color') {
-            if (b.val === data.color) {
-              totalWin += b.amount * (b.val === 'violet' ? 4.5 : 2);
-            }
-          } else if (b.type === 'number') {
-            if (Number(b.val) === Number(data.number)) {
-              totalWin += b.amount * 9;
-            }
-          }
-        });
-
-        if (totalWin > 0) {
-          addWinnings(totalWin);
-          setCelebration({
-            type: 'win',
-            amount: totalWin,
-            multiplier: `${(totalWin / totalStake).toFixed(1)}x`
-          });
-
-          // Fly winning chips to user
-          setChipFlights(prev => [
-            ...prev,
-            {
-              id: `cp-win-${Date.now()}`,
-              amount: totalWin,
-              type: 'WIN',
-              startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
-              startY: 260,
-              endX: 60,
-              endY: typeof window !== 'undefined' ? window.innerHeight - 50 : 600,
-              color: 'from-amber-400 to-yellow-600',
-              borderColor: 'border-yellow-200'
-            }
-          ]);
-        } else {
-          setCelebration({
-            type: 'loss',
-            amount: totalStake
-          });
-        }
-        setActiveBets([]);
-      }
 
       // Trigger confetti on win color
       if (data.color === 'green' || data.color === 'violet' || data.color === 'red') {
@@ -189,7 +167,6 @@ export default function ColorPrediction() {
     
     setPlacingBet(true);
     socket.emit('colour:bet', {
-      userId: 'guest',
       room: activeTab,
       betType: selectedBet.type,
       betValue: selectedBet.val.toString(),
@@ -198,11 +175,13 @@ export default function ColorPrediction() {
       setPlacingBet(false);
       if (res.success) {
         if (navigator.vibrate) navigator.vibrate(50);
-        deductBalance(betAmount);
+        if (typeof res.newBalance === 'number') setBalance(res.newBalance);
         setActiveBets(prev => [...prev, { type: selectedBet.type, val: selectedBet.val, amount: betAmount }]);
         setBetModalOpen(false);
         toast.success(`₹${betAmount} placed successfully!`);
       } else {
+        // The round has moved on; keep the table visible instead of a stale bet sheet.
+        if (res.code === 'BETTING_CLOSED') setBetModalOpen(false);
         toast.error(res.message || "Failed to place bet.");
       }
     });

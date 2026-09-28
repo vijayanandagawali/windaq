@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { ShieldCheck, Plus, Bell, Crown, User, LogOut, ChevronLeft, Flame, Rocket, Video, Dices, Trophy, Gift, Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { ShieldCheck, Plus, Bell, LogOut, ChevronLeft, Flame, Rocket, Spade, Dices, Trophy, Volume2, VolumeX, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useWalletStore } from '@/store/walletStore';
@@ -11,8 +11,8 @@ import { useAudioStore } from '@/store/audioStore';
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const { balance, vipTier, setDepositing, setVipOpen, setNotifOpen, fetchBalance } = useWalletStore();
-  const { isAuthenticated, user, isGuest, logout, openAuthModal, loginAsGuest } = useAuthStore();
+  const { balance, setDepositing, setNotifOpen, fetchBalance } = useWalletStore();
+  const { isAuthenticated, user, logout, openAuthModal, loginAsGuest } = useAuthStore();
   const { soundEnabled, volume, setControlsOpen } = useAudioStore();
 
   const isHome = pathname === '/';
@@ -25,13 +25,14 @@ export default function Header() {
     setDepositing(true);
   };
 
+  const TABLE_PATHS = ['/european-roulette', '/dragon-tiger', '/andar-bahar', '/blackjack'];
+  const DRAW_PATHS = ['/color-prediction', '/colour-prediction', '/dice', '/lotto'];
   const navLinks = [
     { name: 'Lobby', href: '/', icon: Flame, match: pathname === '/' },
-    { name: 'Crash', href: '/games/aviator', icon: Rocket, match: pathname.includes('/aviator') },
-    { name: 'Live Casino', href: '/games/live-casino', icon: Video, match: pathname.includes('/live') },
-    { name: 'Slots', href: '/games/slots', icon: Trophy, match: pathname.includes('/slots') },
-    { name: 'Table', href: '/games/teen-patti', icon: Dices, match: pathname.includes('/teen-patti') || pathname.includes('/roulette') || pathname.includes('/blackjack') },
-    { name: 'Sports', href: '/games/sportsbook', icon: Trophy, match: pathname.includes('/sportsbook') },
+    { name: 'Aviator', href: '/games/aviator', icon: Rocket, match: pathname.includes('/aviator') },
+    { name: 'Table Games', href: '/?cat=table', icon: Spade, match: TABLE_PATHS.some((p) => pathname.includes(p)) },
+    { name: 'Draws & Dice', href: '/?cat=draws', icon: Dices, match: DRAW_PATHS.some((p) => pathname.includes(p)) },
+    { name: 'Slots', href: '/?cat=instant', icon: Trophy, match: pathname.includes('/slots') || pathname.includes('/scratch') },
   ];
 
   return (
@@ -84,31 +85,11 @@ export default function Header() {
               </Link>
             );
           })}
-          <button
-            onClick={() => setVipOpen(true)}
-            className="px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 text-yellow-400 hover:bg-yellow-500/10 transition-all cursor-pointer"
-          >
-            <Gift size={14} />
-            <span>VIP Club</span>
-          </button>
         </nav>
       </div>
 
       {/* Header Right Controls */}
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-        {/* VIP Tier Badge (Mobile/Tablet - hidden below 400px to prevent overflow) */}
-        <button
-          onClick={() => setVipOpen(true)}
-          className={`hidden min-[400px]:flex px-2 py-0.5 rounded-full text-[10px] font-extrabold items-center gap-1 hover:scale-105 transition-transform cursor-pointer ${
-            isGuest
-              ? 'bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 shadow-[0_0_8px_rgba(234,179,8,0.2)]'
-              : 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-yellow-500/40 text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.2)]'
-          }`}
-          title="VIP Club"
-        >
-          <Crown size={11} className="text-yellow-400" />
-          <span className="hidden sm:inline">{isGuest ? 'TEST GUEST' : vipTier.toUpperCase()}</span>
-        </button>
 
         {/* Notification Bell */}
         <button
@@ -118,7 +99,6 @@ export default function Header() {
           aria-label="Notifications"
         >
           <Bell size={14} className="text-gray-300" />
-          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-neon-mint rounded-full shadow-[0_0_6px_rgba(0,255,163,1)] animate-pulse"></span>
         </button>
 
         {/* Sound & Haptics Control Button */}

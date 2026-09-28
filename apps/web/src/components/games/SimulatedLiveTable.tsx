@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import type { SettlementSummary } from '@/hooks/useBetSettlements';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Volume2, VolumeX, Camera, Info, ShieldCheck, 
@@ -70,6 +71,8 @@ interface Props {
   onPlaceBet: (market: 'DRAGON' | 'TIGER' | 'TIE', amount: number) => Promise<boolean>;
   gameTitle?: string;
   roomName?: string;
+  /** Server-authoritative result of the player's bets this round (from `bet:settled`). */
+  settlement?: (SettlementSummary & { id: number }) | null;
 }
 
 const CHIP_DENOMINATIONS = [
@@ -86,7 +89,8 @@ export default function SimulatedLiveTable({
   balance,
   onPlaceBet,
   gameTitle = 'Dragon Tiger',
-  roomName = 'Standard Table 1'
+  roomName = 'Standard Table 1',
+  settlement = null
 }: Props) {
   // Camera angles: 'studio' (wide), 'felt' (close-up on betting), 'spotlight' (dramatic card view)
   const [cameraAngle, setCameraAngle] = useState<'studio' | 'felt' | 'spotlight'>('studio');
@@ -131,44 +135,6 @@ export default function SimulatedLiveTable({
       audioEngine.play('cardFlip');
       setTimeout(() => audioEngine.play('win'), 400);
 
-      // Trigger winning / losing animation based on user's active bets
-      const winner = state.result?.winner;
-      if (winner) {
-        const totalBet = Object.values(myBets).reduce((a, b) => a + b, 0);
-        const wonBet = myBets[winner] || 0;
-        if (wonBet > 0) {
-          const mult = winner === 'TIE' ? 8 : 2;
-          const payout = wonBet * mult;
-          setCelebration({
-            status: 'WON',
-            amount: payout,
-            multiplier: mult,
-            message: `${winner} WINS!`
-          });
-
-          // Fly winning chips from table center to player wallet
-          setChipFlights(prev => [
-            ...prev,
-            {
-              id: `dt-win-${Date.now()}`,
-              amount: payout,
-              type: 'WIN',
-              startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
-              startY: 320,
-              endX: 80,
-              endY: typeof window !== 'undefined' ? window.innerHeight - 60 : 600,
-              color: 'from-amber-400 to-yellow-600',
-              borderColor: 'border-yellow-200'
-            }
-          ]);
-        } else if (totalBet > 0) {
-          setCelebration({
-            status: 'LOST',
-            amount: totalBet,
-            message: `${winner} Won • Bet Lost`
-          });
-        }
-      }
     } else if (state.phase === 'NEXT_ROUND') {
       audioEngine.play('roundEnd');
       // Archive current bets for repeat
@@ -179,6 +145,41 @@ export default function SimulatedLiveTable({
       setCelebration({ status: 'IDLE', amount: 0 });
     }
   }, [state.phase, state.result?.winner]);
+
+  // Win/loss banner uses the server's settled amounts only.
+  useEffect(() => {
+    if (!settlement) return;
+    const winner = state.result?.winner;
+    if (settlement.paid > 0) {
+      setCelebration({
+        status: 'WON',
+        amount: settlement.paid,
+        multiplier: settlement.bestMultiplier,
+        message: winner ? `${winner} WINS!` : 'YOU WON!'
+      });
+      setChipFlights(prev => [
+        ...prev,
+        {
+          id: `dt-win-${settlement.id}`,
+          amount: settlement.paid,
+          type: 'WIN',
+          startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+          startY: 320,
+          endX: 80,
+          endY: typeof window !== 'undefined' ? window.innerHeight - 60 : 600,
+          color: 'from-amber-400 to-yellow-600',
+          borderColor: 'border-yellow-200'
+        }
+      ]);
+    } else if (settlement.staked > 0) {
+      setCelebration({
+        status: 'LOST',
+        amount: settlement.staked,
+        message: winner ? `${winner} Won • Bet Lost` : 'Bet Lost'
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settlement?.id]);
 
   // Handle betting
   const handleBetClick = async (market: 'DRAGON' | 'TIGER' | 'TIE') => {
@@ -651,7 +652,7 @@ export default function SimulatedLiveTable({
                   : 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400'
               }`}>
                 <div className="text-[10px] sm:text-xs font-black tracking-widest">TIE</div>
-                <div className="text-[8px] sm:text-[10px] font-bold text-emerald-300/70">8:1</div>
+                <div className="text-[8px] sm:text-[10px] font-bold text-emerald-300/70">11:1</div>
               </div>
             </div>
 
@@ -807,7 +808,7 @@ export default function SimulatedLiveTable({
               }`}
             >
               <span className="text-sm sm:text-lg md:text-xl font-black tracking-wider sm:tracking-widest text-emerald-400">TIE</span>
-              <span className="text-[10px] sm:text-xs font-bold text-emerald-300/60">Pays 8:1</span>
+              <span className="text-[10px] sm:text-xs font-bold text-emerald-300/60">Pays 11:1</span>
               
               {myBets['TIE'] && (
                 <div className="absolute -top-1.5 sm:top-2 -right-1 sm:right-2 bg-emerald-600 text-white text-[10px] sm:text-xs font-black px-1.5 sm:px-2.5 py-0.5 rounded-full border border-emerald-300 shadow-lg animate-bounce">

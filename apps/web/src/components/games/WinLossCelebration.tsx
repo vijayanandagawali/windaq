@@ -121,7 +121,7 @@ export default function WinLossCelebration({
           {/* Glowing Win Card */}
           <motion.div
             initial={{ scale: 0.7, y: 30 }}
-            animate={{ scale: [0.7, 1.06, 1], y: 0 }}
+            animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: -20 }}
             transition={{ type: "spring", damping: 15, stiffness: 250 }}
             className="relative pointer-events-auto bg-slate-950/95 border-2 border-emerald-400/80 rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-[0_0_60px_rgba(16,185,129,0.45)] text-center backdrop-blur-xl overflow-hidden"

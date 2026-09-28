@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, History } from 'lucide-react';
 import { useWalletStore } from '@/store/walletStore';
@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Socket } from '@/lib/gameSocket';
 import { createGameSocket } from '@/lib/config';
+import { useBetSettlements, type SettlementSummary } from '@/hooks/useBetSettlements';
 import { audioEngine } from '@/lib/audioEngine';
 import WinLossCelebration from '@/components/games/WinLossCelebration';
 import AnimatedCard from '@/components/games/animation/AnimatedCard';
@@ -48,6 +49,10 @@ export default function AndarBaharGame() {
     message?: string;
   }>({ status: 'IDLE', amount: 0 });
 
+  // Socket handlers are registered once; refs give them the latest round state without reconnecting.
+  const resultRef = useRef<any>(null);
+  useEffect(() => { resultRef.current = result; }, [result]);
+
   useEffect(() => {
     const s = createGameSocket();
     setSocket(s);
@@ -64,9 +69,12 @@ export default function AndarBaharGame() {
       const diff = Math.max(0, Math.floor((data.lockTime - Date.now()) / 1000));
       setTimeLeft(diff);
       
-      if (data.status === 'OPEN' && result !== null) {
+      if (data.status === 'OPEN' && resultRef.current !== null) {
+        resultRef.current = null;
+        dealtWinnerRef.current = null;
+        pendingSummaryRef.current = null;
         setResult(null);
-        setMyBets({}); 
+        setMyBets({});
         setLiveBets([]);
         setDisplayedCards([]);
         setIsDealing(false);
@@ -89,7 +97,7 @@ export default function AndarBaharGame() {
       audioEngine.play('cardFlip');
 
       // Start realistic dealing animation
-      startDealingAnimation(data.result.dealtCards, data.result.winner);
+      startDealingAnimation(data.result?.dealtCards || [], data.result?.winner);
       
       setHistory(prev => [{ result: data.result, resultTime: new Date() }, ...prev].slice(0, 15));
       setTimeout(() => fetchBalance(), 2500); 
@@ -103,7 +111,8 @@ export default function AndarBaharGame() {
       s.emit('tg:leave', { gameId: 'andar-bahar', room: 'Auto' });
       s.disconnect(); 
     };
-  }, [fetchBalance, result]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchBalance]);
 
   useEffect(() => {
     if (gameState.status !== 'OPEN') return;
@@ -114,11 +123,49 @@ export default function AndarBaharGame() {
     return () => clearInterval(interval);
   }, [gameState]);
 
+  // The banner waits for both the dealing animation and the server's settlement, whichever comes last.
+  // Amounts come only from the server (`bet:settled`).
+  const dealtWinnerRef = useRef<string | null>(null);
+  const pendingSummaryRef = useRef<SettlementSummary | null>(null);
+
+  const showOutcome = (summary: SettlementSummary, winner: string) => {
+    pendingSummaryRef.current = null;
+    if (summary.paid > 0) {
+      audioEngine.play('win');
+      setCelebration({ status: 'WON', amount: summary.paid, multiplier: summary.bestMultiplier, message: `${winner} WINS!` });
+      setChipFlights(prev => [
+        ...prev,
+        {
+          id: `ab-win-${Date.now()}`,
+          amount: summary.paid,
+          type: 'WIN',
+          startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
+          startY: 280,
+          endX: 80,
+          endY: typeof window !== 'undefined' ? window.innerHeight - 60 : 600,
+          color: 'from-amber-400 to-yellow-600',
+          borderColor: 'border-yellow-200'
+        }
+      ]);
+    } else if (summary.staked > 0) {
+      audioEngine.play('loss');
+      setCelebration({ status: 'LOST', amount: summary.staked, message: `${winner} Won • Bet Lost` });
+    }
+    fetchBalance();
+  };
+
+  useBetSettlements(socket, 'andar_bahar', (summary) => {
+    if (dealtWinnerRef.current) showOutcome(summary, dealtWinnerRef.current);
+    else pendingSummaryRef.current = summary;
+  });
+
   const startDealingAnimation = (cards: any[], winner: string) => {
     setIsDealing(true);
     setDisplayedCards([]);
-    
-    // Animate cards dealing one by one rapidly with sound
+    if (cards.length === 0) { setIsDealing(false); dealtWinnerRef.current = winner; return; }
+
+    // Animate cards dealing one by one; long deals speed up so the reveal fits in ~7 seconds.
+    const stepMs = Math.min(450, Math.floor(7000 / cards.length));
     cards.forEach((cardObj, index) => {
       setTimeout(() => {
         audioEngine.play('cardSlide');
@@ -128,45 +175,10 @@ export default function AndarBaharGame() {
         if (index === cards.length - 1) {
           setIsDealing(false);
 
-          // Evaluate player bet for celebration
-          const totalBet = Object.values(myBets).reduce((a, b) => a + b, 0);
-          const wonBet = myBets[winner] || 0;
-          if (wonBet > 0) {
-            const mult = winner === 'ANDAR' ? 1.9 : 2.0;
-            const payout = wonBet * mult;
-            audioEngine.play('win');
-            setCelebration({
-              status: 'WON',
-              amount: payout,
-              multiplier: mult,
-              message: `${winner} WINS!`
-            });
-
-            // Fly winning chips
-            setChipFlights(prev => [
-              ...prev,
-              {
-                id: `ab-win-${Date.now()}`,
-                amount: payout,
-                type: 'WIN',
-                startX: typeof window !== 'undefined' ? window.innerWidth / 2 : 200,
-                startY: 280,
-                endX: 80,
-                endY: typeof window !== 'undefined' ? window.innerHeight - 60 : 600,
-                color: 'from-amber-400 to-yellow-600',
-                borderColor: 'border-yellow-200'
-              }
-            ]);
-          } else if (totalBet > 0) {
-            audioEngine.play('loss');
-            setCelebration({
-              status: 'LOST',
-              amount: totalBet,
-              message: `${winner} Won • Bet Lost`
-            });
-          }
+          dealtWinnerRef.current = winner;
+          if (pendingSummaryRef.current) showOutcome(pendingSummaryRef.current, winner);
         }
-      }, 450 * (index + 1));
+      }, stepMs * (index + 1));
     });
   };
 
@@ -179,8 +191,7 @@ export default function AndarBaharGame() {
     if (!socket) return;
     
     audioEngine.play('bet');
-    const userId = "guest"; 
-    socket.emit('tg:bet', { userId, gameId: 'andar-bahar', room: 'Auto', market, amount: selectedChips }, (res: any) => {
+    socket.emit('tg:bet', { gameId: 'andar-bahar', room: 'Auto', market, amount: selectedChips }, (res: any) => {
       if (res.success) {
         setMyBets(prev => ({
           ...prev,

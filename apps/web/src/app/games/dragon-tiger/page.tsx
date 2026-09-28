@@ -7,6 +7,7 @@ import { useWalletStore } from '@/store/walletStore';
 import toast from 'react-hot-toast';
 import { Socket } from '@/lib/gameSocket';
 import { createGameSocket } from '@/lib/config';
+import { useBetSettlements, type SettlementSummary } from '@/hooks/useBetSettlements';
 import SimulatedLiveTable, { SimulatedLiveState } from '@/components/games/SimulatedLiveTable';
 import { stateRecovery } from '@/lib/stateRecovery';
 
@@ -255,6 +256,12 @@ export default function DragonTigerGamePage() {
   }, [fetchBalance, userId]);
 
   // Handle Bet placement
+  const [settlement, setSettlement] = useState<(SettlementSummary & { id: number }) | null>(null);
+  useBetSettlements(socket, 'dragon_tiger', (summary) => {
+    setSettlement({ ...summary, id: Date.now() });
+    fetchBalance();
+  });
+
   const handlePlaceBet = useCallback(async (market: 'DRAGON' | 'TIGER' | 'TIE', amount: number): Promise<boolean> => {
     if (!socket || !socket.connected) {
       toast.error('Connecting to simulated live table...');
@@ -309,6 +316,7 @@ export default function DragonTigerGamePage() {
           onPlaceBet={handlePlaceBet}
           gameTitle="Dragon Tiger"
           roomName="VIP Simulated Live Suite #1"
+          settlement={settlement}
         />
       </div>
 
