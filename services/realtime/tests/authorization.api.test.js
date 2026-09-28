@@ -37,7 +37,8 @@ const adminRoutes = [
   ['GET', '/api/admin/users'],
   ['GET', '/api/admin/risk/flags'],
   ['GET', '/api/admin/reconciliation/summary'],
-  ['GET', '/api/admin/reconciliation/cases']
+  ['GET', '/api/admin/reconciliation/cases'],
+  ['GET', '/api/payments/admin/queue']
 ];
 
 // Every GET the admin console loads must answer an admin (a 401 here signs the admin out in the browser).
@@ -45,7 +46,7 @@ const adminConsoleReads = [
   '/api/admin/dashboard', '/api/admin/users', '/api/admin/users?q=98', '/api/compliance/admin/kyc', '/api/admin/risk/flags',
   '/api/admin/reconciliation/summary', '/api/admin/reconciliation/cases?status=ALL', '/api/admin/adjustments', '/api/admin/audit',
   '/api/ledger?limit=100', '/api/payments/admin/deposits/pending', '/api/payments/admin/withdrawals/pending', '/api/payments/admin/bank-credits',
-  '/api/admin/history'
+  '/api/admin/history', '/api/payments/admin/queue'
 ];
 
 test('every admin console read succeeds for a super admin', async () => {

@@ -134,6 +134,43 @@ router.get('/admin/bank-credits', requireAuth, requireRole(FINANCE_ROLES), async
   }
 });
 
+// One call for the finance app: everything waiting for a decision, in a compact shape.
+router.get('/admin/queue', requireAuth, requireRole(FINANCE_ROLES), async (req, res) => {
+  try {
+    const [intents, unmatchedCredits] = await Promise.all([
+      prisma.paymentIntent.findMany({
+        where: { status: 'PENDING_REVIEW', type: { in: ['DEPOSIT', 'WITHDRAWAL'] } },
+        include: { user: { select: { phone: true } } },
+        orderBy: { createdAt: 'asc' },
+        take: 200
+      }),
+      prisma.bankCredit.findMany({ where: { status: { in: ['UNMATCHED', 'AMOUNT_MISMATCH'] } }, orderBy: { createdAt: 'desc' }, take: 50 })
+    ]);
+    const item = (i) => ({
+      id: i.id,
+      type: i.type,
+      amount: Number(i.amount) / 100,
+      phone: i.user?.phone || null,
+      utr: i.metadata?.utr || null,
+      destination: i.metadata?.destination || null,
+      createdAt: i.createdAt.toISOString()
+    });
+    res.json({
+      success: true,
+      data: {
+        deposits: intents.filter((i) => i.type === 'DEPOSIT').map(item),
+        withdrawals: intents.filter((i) => i.type === 'WITHDRAWAL').map(item),
+        unmatchedCredits: unmatchedCredits.map((c) => ({
+          id: c.id, utr: c.utr, amount: Number(c.amount) / 100, status: c.status, payerName: c.payerName, receivedAt: c.bankReceivedAt.toISOString()
+        })),
+        serverTime: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    sendError(res, error, 'finance queue');
+  }
+});
+
 router.get('/admin/deposits/pending', requireAuth, requireRole(FINANCE_ROLES), async (req, res) => {
   try {
     res.json({ success: true, data: await listPending('DEPOSIT') });

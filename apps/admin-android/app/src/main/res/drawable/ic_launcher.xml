@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <gradient android:startColor="#0EA5E9" android:endColor="#10B981" android:angle="315" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/ic_shield" android:top="22dp" android:bottom="22dp" android:left="22dp" android:right="22dp" />
+</layer-list>
