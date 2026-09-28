@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useEffect } from 'react';
-import { ShieldCheck, Plus, Bell, LogOut, ChevronLeft, Flame, Rocket, Spade, Dices, Trophy, Volume2, VolumeX, Sparkles } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ShieldCheck, Plus, Bell, LogOut, ChevronLeft, Flame, Rocket, Spade, Dices, Trophy, Volume2, VolumeX, Sparkles, History } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useWalletStore } from '@/store/walletStore';
 import { useAuthStore } from '@/store/authStore';
 import { useAudioStore } from '@/store/audioStore';
+import AnimatedBalance from '@/components/ui/AnimatedBalance';
+import GameHistorySheet, { HISTORY_GAME_NAMES } from '@/components/games/GameHistorySheet';
 
 const TABLE_PATHS = ['/european-roulette', '/dragon-tiger', '/andar-bahar', '/blackjack'];
 const DRAW_PATHS = ['/color-prediction', '/colour-prediction', '/dice', '/lotto'];
@@ -19,6 +21,9 @@ export default function Header() {
   const { soundEnabled, volume, setControlsOpen } = useAudioStore();
 
   const isHome = pathname === '/';
+  const gameSlug = pathname.match(/^\/games\/([^/]+)/)?.[1] ?? '';
+  const showHistory = isAuthenticated && Object.hasOwn(HISTORY_GAME_NAMES, gameSlug);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     fetchBalance();
@@ -88,6 +93,12 @@ export default function Header() {
             {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
           </button>
 
+          {showHistory && (
+            <button onClick={() => setHistoryOpen(true)} data-testid="header-history-btn" className={iconButton} title="My bets" aria-label="My bets">
+              <History size={15} />
+            </button>
+          )}
+
           {!isAuthenticated ? (
             <div className="flex items-center gap-1.5">
               <button data-testid="header-guest-btn" onClick={() => loginAsGuest()}
@@ -125,7 +136,7 @@ export default function Header() {
           <button data-testid="header-deposit-btn" role="button" aria-label="Deposit Funds" onClick={() => setDepositing(true)}
             className="group flex shrink-0 items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 py-1 pl-3 pr-1 text-white shadow-[0_6px_18px_rgba(5,150,105,0.35)] transition hover:shadow-[0_8px_24px_rgba(5,150,105,0.45)]">
             <span className="text-xs font-extrabold tabular-nums tracking-tight sm:text-[13px]">
-              ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <AnimatedBalance value={balance} />
             </span>
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-emerald-600 transition-transform group-hover:rotate-90 sm:h-7 sm:w-7">
               <Plus size={14} strokeWidth={3} />
@@ -134,6 +145,7 @@ export default function Header() {
           )}
         </div>
       </div>
+      {showHistory && <GameHistorySheet game={gameSlug} open={historyOpen} onClose={() => setHistoryOpen(false)} />}
     </header>
   );
 }

@@ -68,7 +68,18 @@ class AudioEngine {
         this.ctx = new AudioCtxClass();
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.setValueAtTime(this.getEffectiveVolume(), this.ctx.currentTime);
-        this.masterGain.connect(this.ctx.destination);
+        // Gentle limiter so overlapping sounds never clip on phone speakers.
+        const limiter = this.ctx.createDynamicsCompressor();
+        limiter.threshold.value = -14;
+        limiter.knee.value = 12;
+        limiter.ratio.value = 4;
+        limiter.attack.value = 0.003;
+        limiter.release.value = 0.2;
+        const makeup = this.ctx.createGain();
+        makeup.gain.value = 1.8;
+        this.masterGain.connect(makeup);
+        makeup.connect(limiter);
+        limiter.connect(this.ctx.destination);
       }
     }
 
@@ -201,575 +212,240 @@ class AudioEngine {
     }
   }
 
-  // --- Procedural Web Audio API Sound Synthesizers ---
+  // --- Procedural sound design ---
+  //
+  // Physical sounds (chips, cards, dice, balls) are built from short band-passed noise bursts plus
+  // a few inharmonic partials, which reads as a real object far better than a bare oscillator.
+  // Musical cues use soft bell tones. Everything passes through a small room reverb and a
+  // compressor so nothing clicks or clips. (Randomness here is cosmetic audio variation only.)
 
-  /**
-   * Click: Crisp tactile micro-transient (15ms).
-   */
-  private synthClick(ctx: AudioContext, destination: AudioNode): void {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const now = ctx.currentTime;
+  private noiseBuffer: AudioBuffer | null = null;
+  private reverbSend: GainNode | null = null;
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(1400, now);
-    osc.frequency.exponentialRampToValueAtTime(500, now + 0.015);
-
-    gain.gain.setValueAtTime(0.35, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
-
-    osc.connect(gain);
-    gain.connect(destination);
-
-    osc.start(now);
-    osc.stop(now + 0.018);
-  }
-
-  /**
-   * Bet: Ceramic casino chip toss with dual-tone resonance (70ms).
-   */
-  private synthBet(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-
-    // High ceramic fret ping
-    const oscHigh = ctx.createOscillator();
-    const gainHigh = ctx.createGain();
-    oscHigh.type = 'sine';
-    oscHigh.frequency.setValueAtTime(2200, now);
-    oscHigh.frequency.exponentialRampToValueAtTime(1600, now + 0.04);
-    gainHigh.gain.setValueAtTime(0.4, now);
-    gainHigh.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-    oscHigh.connect(gainHigh);
-    gainHigh.connect(destination);
-
-    // Body felt resonance
-    const oscBody = ctx.createOscillator();
-    const gainBody = ctx.createGain();
-    oscBody.type = 'triangle';
-    oscBody.frequency.setValueAtTime(780, now);
-    oscBody.frequency.exponentialRampToValueAtTime(320, now + 0.07);
-    gainBody.gain.setValueAtTime(0.5, now);
-    gainBody.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
-    oscBody.connect(gainBody);
-    gainBody.connect(destination);
-
-    oscHigh.start(now);
-    oscHigh.stop(now + 0.045);
-    oscBody.start(now);
-    oscBody.stop(now + 0.075);
-  }
-
-  /**
-   * Accepted: Ascending harmonic two-tone confirmation chime (200ms).
-   */
-  private synthAccepted(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const notes = [739.99, 987.77]; // F#5 -> B5 (Pleasant ascending 4th)
-
-    notes.forEach((freq, idx) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const noteStart = now + idx * 0.08;
-      const noteDuration = 0.16;
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, noteStart);
-
-      gain.gain.setValueAtTime(0.001, noteStart);
-      gain.gain.linearRampToValueAtTime(0.4, noteStart + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, noteStart + noteDuration);
-
-      osc.connect(gain);
-      gain.connect(destination);
-
-      osc.start(noteStart);
-      osc.stop(noteStart + noteDuration);
-    });
-  }
-
-  /**
-   * Countdown: Urgency tick/ping (800Hz / 1200Hz, 60ms).
-   */
-  private synthCountdown(ctx: AudioContext, destination: AudioNode, isUrgent = false): void {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = isUrgent ? 'square' : 'sine';
-    osc.frequency.setValueAtTime(isUrgent ? 1200 : 800, now);
-    osc.frequency.exponentialRampToValueAtTime(isUrgent ? 900 : 650, now + 0.05);
-
-    gain.gain.setValueAtTime(isUrgent ? 0.35 : 0.25, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-
-    osc.connect(gain);
-    gain.connect(destination);
-
-    osc.start(now);
-    osc.stop(now + 0.065);
-  }
-
-  /**
-   * Card: Realistic deck card flick/snap (noise swoosh + transient pop, 90ms).
-   */
-  private synthCard(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-
-    // Filtered noise swoosh (card sliding across felt)
-    const bufferSize = ctx.sampleRate * 0.08;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
+  /** One second of cached white noise; bursts start at a random offset for natural variation. */
+  private getNoise(ctx: AudioContext): AudioBuffer {
+    if (!this.noiseBuffer || this.noiseBuffer.sampleRate !== ctx.sampleRate) {
+      const buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      this.noiseBuffer = buffer;
     }
+    return this.noiseBuffer;
+  }
 
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
+  /** Lazily builds a short, soft room reverb (generated impulse) fed by a send bus. */
+  private getReverbSend(ctx: AudioContext, destination: AudioNode): AudioNode {
+    if (this.reverbSend) return this.reverbSend;
+    const seconds = 1.1;
+    const length = Math.floor(ctx.sampleRate * seconds);
+    const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = impulse.getChannelData(ch);
+      for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3.2);
+    }
+    const convolver = ctx.createConvolver();
+    convolver.buffer = impulse;
+    const tone = ctx.createBiquadFilter();
+    tone.type = 'lowpass';
+    tone.frequency.value = 4200;
+    const send = ctx.createGain();
+    send.gain.value = 0.22;
+    send.connect(convolver);
+    convolver.connect(tone);
+    tone.connect(destination);
+    this.reverbSend = send;
+    return send;
+  }
 
+  /** Band-limited noise burst with a fast attack and exponential decay. */
+  private noise(ctx: AudioContext, out: AudioNode, o: {
+    at?: number; dur: number; type?: BiquadFilterType; freq: number; freqEnd?: number; q?: number; gain: number; attack?: number;
+  }): void {
+    const start = ctx.currentTime + (o.at || 0);
+    const src = ctx.createBufferSource();
+    src.buffer = this.getNoise(ctx);
     const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(3400, now);
-    filter.frequency.exponentialRampToValueAtTime(900, now + 0.08);
-    filter.Q.setValueAtTime(3, now);
-
-    const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.3, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-
-    noise.connect(filter);
-    filter.connect(noiseGain);
-    noiseGain.connect(destination);
-
-    // Subtle transient pop
-    const pop = ctx.createOscillator();
-    const popGain = ctx.createGain();
-    pop.type = 'triangle';
-    pop.frequency.setValueAtTime(260, now);
-    pop.frequency.exponentialRampToValueAtTime(80, now + 0.03);
-    popGain.gain.setValueAtTime(0.35, now);
-    popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-
-    pop.connect(popGain);
-    popGain.connect(destination);
-
-    noise.start(now);
-    noise.stop(now + 0.085);
-    pop.start(now);
-    pop.stop(now + 0.035);
-  }
-
-  /**
-   * Win: Uplifting major arpeggio fanfare (C5 - E5 - G5 - C6, 600ms).
-   */
-  private synthWin(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const chord = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-
-    chord.forEach((freq, idx) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const noteStart = now + idx * 0.07;
-      const noteDuration = 0.35;
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, noteStart);
-
-      gain.gain.setValueAtTime(0.001, noteStart);
-      gain.gain.linearRampToValueAtTime(0.45, noteStart + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.001, noteStart + noteDuration);
-
-      osc.connect(gain);
-      gain.connect(destination);
-
-      osc.start(noteStart);
-      osc.stop(noteStart + noteDuration);
-    });
-  }
-
-  /**
-   * Loss: Muted lowpass descending tone (E3 -> B2, 350ms).
-   */
-  private synthLoss(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
+    filter.type = o.type || 'bandpass';
+    filter.frequency.setValueAtTime(o.freq, start);
+    if (o.freqEnd) filter.frequency.exponentialRampToValueAtTime(o.freqEnd, start + o.dur);
+    filter.Q.value = o.q ?? 1;
     const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(380, now);
-
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(164.81, now); // E3
-    osc.frequency.exponentialRampToValueAtTime(123.47, now + 0.35); // B2
-
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.linearRampToValueAtTime(0.25, now + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-
-    osc.connect(filter);
+    const attack = o.attack ?? 0.002;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(o.gain, start + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + o.dur);
+    src.connect(filter);
     filter.connect(gain);
-    gain.connect(destination);
-
-    osc.start(now);
-    osc.stop(now + 0.36);
+    gain.connect(out);
+    src.start(start, Math.random() * 0.8, o.dur + 0.05);
   }
 
-  /**
-   * Jackpot: Grand victory fanfare with cascading coin fountain pings (1.5s).
-   */
-  private synthJackpot(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
+  /** Single decaying partial (sine by default), optionally gliding in pitch. */
+  private tone(ctx: AudioContext, out: AudioNode, o: {
+    at?: number; freq: number; freqEnd?: number; dur: number; gain: number; attack?: number; type?: OscillatorType;
+  }): void {
+    const start = ctx.currentTime + (o.at || 0);
+    const osc = ctx.createOscillator();
+    osc.type = o.type || 'sine';
+    osc.frequency.setValueAtTime(o.freq, start);
+    if (o.freqEnd) osc.frequency.exponentialRampToValueAtTime(o.freqEnd, start + o.dur);
+    const gain = ctx.createGain();
+    const attack = o.attack ?? 0.003;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(o.gain, start + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + o.dur);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.start(start);
+    osc.stop(start + o.dur + 0.02);
+  }
 
-    // Victory Brass Fanfare
-    const fanfareNotes = [
-      { freq: 523.25, delay: 0.0, dur: 0.25 },  // C5
-      { freq: 659.25, delay: 0.12, dur: 0.25 }, // E5
-      { freq: 783.99, delay: 0.24, dur: 0.35 }, // G5
-      { freq: 1046.5, delay: 0.40, dur: 0.80 }, // C6
-      { freq: 1318.5, delay: 0.50, dur: 0.80 }  // E6
-    ];
+  /** Soft bell / marimba note: a fundamental plus quickly fading inharmonic partials. */
+  private bell(ctx: AudioContext, out: AudioNode, freq: number, at: number, dur: number, gain: number): void {
+    this.tone(ctx, out, { at, freq, dur, gain, attack: 0.004 });
+    this.tone(ctx, out, { at, freq: freq * 2.76, dur: dur * 0.35, gain: gain * 0.28 });
+    this.tone(ctx, out, { at, freq: freq * 5.4, dur: dur * 0.15, gain: gain * 0.12 });
+  }
 
-    fanfareNotes.forEach(({ freq, delay, dur }) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const start = now + delay;
+  /** Clay chip hitting another chip: a bright click with a short ceramic ring. */
+  private chipHit(ctx: AudioContext, out: AudioNode, at: number, level: number): void {
+    const pitch = 0.92 + Math.random() * 0.16;
+    this.noise(ctx, out, { at, dur: 0.03, freq: 3600 * pitch, q: 6, gain: 0.55 * level });
+    this.tone(ctx, out, { at, freq: 3150 * pitch, dur: 0.05, gain: 0.12 * level });
+    this.tone(ctx, out, { at, freq: 4870 * pitch, dur: 0.035, gain: 0.07 * level });
+  }
 
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, start);
+  private synthClick(ctx: AudioContext, out: AudioNode): void {
+    this.noise(ctx, out, { dur: 0.012, type: 'highpass', freq: 2800, gain: 0.25 });
+    this.tone(ctx, out, { freq: 1900, freqEnd: 1300, dur: 0.02, gain: 0.05 });
+  }
 
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(1800, start);
+  private synthBet(ctx: AudioContext, out: AudioNode): void {
+    this.chipHit(ctx, out, 0, 1);
+    this.chipHit(ctx, out, 0.045 + Math.random() * 0.015, 0.45);
+  }
 
-      gain.gain.setValueAtTime(0.001, start);
-      gain.gain.linearRampToValueAtTime(0.35, start + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(destination);
-
-      osc.start(start);
-      osc.stop(start + dur);
-    });
-
-    // Cascading Coin Fountain Dings
-    for (let i = 0; i < 8; i++) {
-      const coinStart = now + 0.3 + i * 0.11;
-      const coinFreq = 2200 + (i % 4) * 450 + Math.random() * 200;
-      const coinOsc = ctx.createOscillator();
-      const coinGain = ctx.createGain();
-
-      coinOsc.type = 'sine';
-      coinOsc.frequency.setValueAtTime(coinFreq, coinStart);
-
-      coinGain.gain.setValueAtTime(0.25, coinStart);
-      coinGain.gain.exponentialRampToValueAtTime(0.001, coinStart + 0.14);
-
-      coinOsc.connect(coinGain);
-      coinGain.connect(destination);
-
-      coinOsc.start(coinStart);
-      coinOsc.stop(coinStart + 0.15);
+  private synthChipDrop(ctx: AudioContext, out: AudioNode): void {
+    // A small stack settling: three to four hits, each quieter and closer together.
+    const hits = 3 + (Math.random() < 0.5 ? 1 : 0);
+    let t = 0;
+    for (let i = 0; i < hits; i++) {
+      this.chipHit(ctx, out, t, 1 - i * 0.22);
+      t += 0.05 - i * 0.008 + Math.random() * 0.01;
     }
   }
 
-  /**
-   * Round Start: Atmospheric table chime / swell (A4 + E5, 450ms).
-   */
-  private synthRoundStart(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const freqs = [440, 659.25]; // A4 + E5
-
-    freqs.forEach((freq) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
-
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-
-      osc.connect(gain);
-      gain.connect(destination);
-
-      osc.start(now);
-      osc.stop(now + 0.46);
-    });
+  private synthAccepted(ctx: AudioContext, out: AudioNode, wet: AudioNode): void {
+    this.bell(ctx, out, 880, 0, 0.35, 0.12);
+    this.bell(ctx, out, 1318.5, 0.07, 0.45, 0.1);
+    this.bell(ctx, wet, 1318.5, 0.07, 0.45, 0.06);
   }
 
-  /**
-   * Round End: Clean resolving cadence (D5 -> G4, 400ms).
-   */
-  private synthRoundEnd(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const notes = [
-      { freq: 587.33, delay: 0.0, dur: 0.18 }, // D5
-      { freq: 392.00, delay: 0.12, dur: 0.35 }  // G4
-    ];
-
-    notes.forEach(({ freq, delay, dur }) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const start = now + delay;
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, start);
-
-      gain.gain.setValueAtTime(0.001, start);
-      gain.gain.linearRampToValueAtTime(0.3, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
-
-      osc.connect(gain);
-      gain.connect(destination);
-
-      osc.start(start);
-      osc.stop(start + dur);
-    });
+  private synthCountdown(ctx: AudioContext, out: AudioNode, isUrgent = false): void {
+    // Wooden clock tick; the last seconds are a touch higher and firmer.
+    this.noise(ctx, out, { dur: 0.018, freq: isUrgent ? 2600 : 1900, q: 5, gain: isUrgent ? 0.5 : 0.32 });
+    this.tone(ctx, out, { freq: isUrgent ? 1250 : 950, dur: 0.04, gain: isUrgent ? 0.1 : 0.06 });
   }
 
-  /**
-   * Card Slide: Smooth felt friction swoosh (70ms).
-   */
-  private synthCardSlide(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const bufferSize = ctx.sampleRate * 0.07;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
+  private synthCard(ctx: AudioContext, out: AudioNode): void {
+    // Flick off the shoe, then the card landing on felt.
+    this.noise(ctx, out, { dur: 0.06, freq: 5200, freqEnd: 1800, q: 1.4, gain: 0.32, attack: 0.004 });
+    this.noise(ctx, out, { at: 0.05, dur: 0.035, type: 'lowpass', freq: 900, gain: 0.3 });
+    this.tone(ctx, out, { at: 0.05, freq: 150, freqEnd: 80, dur: 0.04, gain: 0.12 });
+  }
+
+  private synthCardSlide(ctx: AudioContext, out: AudioNode): void {
+    // Card sliding across cloth: soft, slightly longer friction.
+    this.noise(ctx, out, { dur: 0.13, freq: 2600, freqEnd: 1300, q: 0.8, gain: 0.16, attack: 0.03 });
+  }
+
+  private synthCardFlip(ctx: AudioContext, out: AudioNode): void {
+    // Paper snap: two tight bursts as the card bends and turns over.
+    this.noise(ctx, out, { dur: 0.018, freq: 4300, q: 2, gain: 0.35 });
+    this.noise(ctx, out, { at: 0.022, dur: 0.03, freq: 2400, q: 1.5, gain: 0.28 });
+    this.tone(ctx, out, { at: 0.022, freq: 210, freqEnd: 110, dur: 0.03, gain: 0.07 });
+  }
+
+  private synthRouletteWheel(ctx: AudioContext, out: AudioNode): void {
+    // Wheel rumble with the ball rolling on the rim above it.
+    this.noise(ctx, out, { dur: 0.42, type: 'lowpass', freq: 240, gain: 0.35, attack: 0.08 });
+    this.noise(ctx, out, { dur: 0.4, freq: 5200, q: 3, gain: 0.05, attack: 0.1 });
+  }
+
+  private synthRouletteBall(ctx: AudioContext, out: AudioNode): void {
+    // Ivory ball striking a metal fret.
+    this.noise(ctx, out, { dur: 0.014, freq: 4800, q: 8, gain: 0.45 });
+    this.tone(ctx, out, { freq: 5300 + Math.random() * 400, dur: 0.03, gain: 0.05 });
+  }
+
+  private synthDiceShake(ctx: AudioContext, out: AudioNode): void {
+    // Dice knocking inside a cup: irregular, slightly muffled clicks.
+    for (let i = 0; i < 7; i++) {
+      this.noise(ctx, out, { at: i * 0.03 + Math.random() * 0.02, dur: 0.02, freq: 2200 + Math.random() * 1800, q: 5, gain: 0.22 + Math.random() * 0.12 });
     }
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(2200, now);
-    filter.frequency.exponentialRampToValueAtTime(1400, now + 0.07);
-    filter.Q.setValueAtTime(2.5, now);
-
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
-
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(destination);
-
-    noise.start(now);
-    noise.stop(now + 0.075);
+    this.noise(ctx, out, { dur: 0.24, type: 'lowpass', freq: 500, gain: 0.08, attack: 0.03 });
   }
 
-  /**
-   * Card Flip: Crisp mechanical paper turn snap (50ms).
-   */
-  private synthCardFlip(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(450, now);
-    osc.frequency.exponentialRampToValueAtTime(120, now + 0.045);
-
-    gain.gain.setValueAtTime(0.35, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-
-    osc.connect(gain);
-    gain.connect(destination);
-
-    osc.start(now);
-    osc.stop(now + 0.055);
+  private synthDiceBounce(ctx: AudioContext, out: AudioNode): void {
+    // Die landing on the tray: a hard click with a short woody body.
+    this.noise(ctx, out, { dur: 0.02, freq: 2600, q: 4, gain: 0.4 });
+    this.tone(ctx, out, { freq: 190, freqEnd: 75, dur: 0.06, gain: 0.2 });
   }
 
-  /**
-   * Roulette Wheel: Ambient spinning whir (300ms).
-   */
-  private synthRouletteWheel(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(90, now);
-    osc.frequency.linearRampToValueAtTime(130, now + 0.15);
-    osc.frequency.exponentialRampToValueAtTime(70, now + 0.3);
-
-    gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.18, now + 0.08);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-
-    osc.connect(gain);
-    gain.connect(destination);
-
-    osc.start(now);
-    osc.stop(now + 0.31);
+  private synthLottoPop(ctx: AudioContext, out: AudioNode): void {
+    // Ball puffed up the tube: a soft air pop.
+    this.noise(ctx, out, { dur: 0.08, type: 'lowpass', freq: 1400, freqEnd: 400, gain: 0.22 });
+    this.tone(ctx, out, { freq: 320, freqEnd: 760, dur: 0.07, gain: 0.12, attack: 0.01 });
   }
 
-  /**
-   * Roulette Ball: Sharp ivory ball pocket clatter / tick (35ms).
-   */
-  private synthRouletteBall(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(2600, now);
-    osc.frequency.exponentialRampToValueAtTime(1800, now + 0.03);
-
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
-
-    osc.connect(gain);
-    gain.connect(destination);
-
-    osc.start(now);
-    osc.stop(now + 0.04);
+  private synthReelSpin(ctx: AudioContext, out: AudioNode): void {
+    this.noise(ctx, out, { dur: 0.24, freq: 700, freqEnd: 1500, q: 2, gain: 0.4, attack: 0.05 });
   }
 
-  /**
-   * Dice Shake: Leather cup rattle with multiple micro-ticks (180ms).
-   */
-  private synthDiceShake(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    for (let i = 0; i < 4; i++) {
-      const clickTime = now + i * 0.045 + Math.random() * 0.01;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+  private synthReelStop(ctx: AudioContext, out: AudioNode): void {
+    // Reel catching its detent.
+    this.noise(ctx, out, { dur: 0.018, freq: 2200, q: 3, gain: 0.35 });
+    this.tone(ctx, out, { freq: 150, freqEnd: 60, dur: 0.07, gain: 0.2 });
+  }
 
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(750 + i * 150, clickTime);
-      osc.frequency.exponentialRampToValueAtTime(250, clickTime + 0.025);
+  private synthWin(ctx: AudioContext, out: AudioNode, wet: AudioNode): void {
+    // Warm rising bell arpeggio, with a little air on the top note.
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((f, i) => {
+      this.bell(ctx, out, f, i * 0.085, 0.9, 0.13);
+      this.bell(ctx, wet, f, i * 0.085, 0.9, 0.08);
+    });
+    this.noise(ctx, out, { at: 0.26, dur: 0.5, type: 'highpass', freq: 7000, gain: 0.03, attack: 0.05 });
+  }
 
-      gain.gain.setValueAtTime(0.25, clickTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, clickTime + 0.025);
+  private synthLoss(ctx: AudioContext, out: AudioNode, wet: AudioNode): void {
+    // Calm, soft two-note fall: acknowledges the result without a harsh buzz.
+    this.tone(ctx, out, { freq: 392, dur: 0.35, gain: 0.08, attack: 0.02 });
+    this.tone(ctx, out, { at: 0.16, freq: 329.63, dur: 0.55, gain: 0.08, attack: 0.02 });
+    this.tone(ctx, wet, { at: 0.16, freq: 329.63, dur: 0.55, gain: 0.05, attack: 0.02 });
+  }
 
-      osc.connect(gain);
-      gain.connect(destination);
-
-      osc.start(clickTime);
-      osc.stop(clickTime + 0.03);
+  private synthJackpot(ctx: AudioContext, out: AudioNode, wet: AudioNode): void {
+    // Soft chord swell underneath, bell arpeggio on top, then scattered coin chimes.
+    [261.63, 329.63, 392].forEach((f) => this.tone(ctx, wet, { freq: f, dur: 1.6, gain: 0.05, attack: 0.25, type: 'triangle' }));
+    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => {
+      this.bell(ctx, out, f, i * 0.09, 1.1, 0.12);
+      this.bell(ctx, wet, f, i * 0.09, 1.1, 0.07);
+    });
+    for (let i = 0; i < 9; i++) {
+      this.bell(ctx, wet, 2000 + Math.random() * 1600, 0.45 + i * 0.1 + Math.random() * 0.04, 0.25, 0.05);
     }
   }
 
-  /**
-   * Dice Bounce: Wood / felt impact thump (60ms).
-   */
-  private synthDiceBounce(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(320, now);
-    osc.frequency.exponentialRampToValueAtTime(90, now + 0.06);
-
-    gain.gain.setValueAtTime(0.45, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-
-    osc.connect(gain);
-    gain.connect(destination);
-
-    osc.start(now);
-    osc.stop(now + 0.065);
+  private synthRoundStart(ctx: AudioContext, out: AudioNode, wet: AudioNode): void {
+    this.bell(ctx, out, 880, 0, 0.6, 0.09);
+    this.bell(ctx, wet, 880, 0, 0.6, 0.07);
   }
 
-  /**
-   * Lotto Pop: Pneumatic ball pop into extraction tube (90ms).
-   */
-  private synthLottoPop(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(380, now);
-    osc.frequency.exponentialRampToValueAtTime(1100, now + 0.04);
-    osc.frequency.exponentialRampToValueAtTime(800, now + 0.09);
-
-    gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.4, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
-
-    osc.connect(gain);
-    gain.connect(destination);
-
-    osc.start(now);
-    osc.stop(now + 0.095);
-  }
-
-  /**
-   * Chip Drop: Multi-chip ceramic clatter (120ms).
-   */
-  private synthChipDrop(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const freqs = [1800, 2400, 2100];
-    freqs.forEach((freq, idx) => {
-      const clickTime = now + idx * 0.035;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, clickTime);
-      osc.frequency.exponentialRampToValueAtTime(800, clickTime + 0.03);
-
-      gain.gain.setValueAtTime(0.3, clickTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, clickTime + 0.035);
-
-      osc.connect(gain);
-      gain.connect(destination);
-
-      osc.start(clickTime);
-      osc.stop(clickTime + 0.04);
-    });
-  }
-
-  /**
-   * Reel Stop: Mechanical slot reel snap lock (70ms).
-   */
-  private synthReelStop(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(420, now);
-    osc.frequency.exponentialRampToValueAtTime(110, now + 0.06);
-
-    gain.gain.setValueAtTime(0.35, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
-
-    osc.connect(gain);
-    gain.connect(destination);
-
-    osc.start(now);
-    osc.stop(now + 0.07);
-  }
-
-  /**
-   * Reel Spin: Upward mechanical motor whir (200ms).
-   */
-  private synthReelSpin(ctx: AudioContext, destination: AudioNode): void {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(140, now);
-    osc.frequency.exponentialRampToValueAtTime(360, now + 0.18);
-
-    gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.15, now + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-
-    osc.connect(gain);
-    gain.connect(destination);
-
-    osc.start(now);
-    osc.stop(now + 0.21);
+  private synthRoundEnd(ctx: AudioContext, out: AudioNode, wet: AudioNode): void {
+    this.bell(ctx, out, 1046.5, 0, 0.35, 0.07);
+    this.bell(ctx, out, 783.99, 0.1, 0.5, 0.07);
+    this.bell(ctx, wet, 783.99, 0.1, 0.5, 0.05);
   }
 
   // --- Main Play Dispatcher ---
@@ -845,6 +521,7 @@ class AudioEngine {
     if (!ctx || !this.masterGain) return;
 
     try {
+      const wet = this.getReverbSend(ctx, this.masterGain);
       switch (event) {
         case 'click':
           this.synthClick(ctx, this.masterGain);
@@ -856,7 +533,7 @@ class AudioEngine {
           this.synthChipDrop(ctx, this.masterGain);
           break;
         case 'accepted':
-          this.synthAccepted(ctx, this.masterGain);
+          this.synthAccepted(ctx, this.masterGain, wet);
           break;
         case 'countdown':
           this.synthCountdown(ctx, this.masterGain, extraParams?.urgent);
@@ -892,19 +569,19 @@ class AudioEngine {
           this.synthReelStop(ctx, this.masterGain);
           break;
         case 'win':
-          this.synthWin(ctx, this.masterGain);
+          this.synthWin(ctx, this.masterGain, wet);
           break;
         case 'loss':
-          this.synthLoss(ctx, this.masterGain);
+          this.synthLoss(ctx, this.masterGain, wet);
           break;
         case 'jackpot':
-          this.synthJackpot(ctx, this.masterGain);
+          this.synthJackpot(ctx, this.masterGain, wet);
           break;
         case 'roundStart':
-          this.synthRoundStart(ctx, this.masterGain);
+          this.synthRoundStart(ctx, this.masterGain, wet);
           break;
         case 'roundEnd':
-          this.synthRoundEnd(ctx, this.masterGain);
+          this.synthRoundEnd(ctx, this.masterGain, wet);
           break;
       }
     } catch {

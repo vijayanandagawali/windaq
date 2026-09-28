@@ -119,6 +119,17 @@ body {
   transform: scale(0.97);
 }
 
+/* Touch feedback: anything tappable presses in slightly. The standalone `scale` property
+   composes with existing transforms and Tailwind translate/rotate utilities. */
+button:not(:disabled):not([data-no-press]):active,
+[role="button"]:not([aria-disabled="true"]):not([data-no-press]):active,
+.press:active {
+  scale: 0.965;
+}
+@media (prefers-reduced-motion: reduce) {
+  button:active, [role="button"]:active, .press:active { scale: none; }
+}
+
 /* Soft animated colour mesh used behind hero areas */
 .bg-mesh {
   background:

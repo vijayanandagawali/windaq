@@ -11,6 +11,7 @@ import NetworkWatcher from '@/components/NetworkWatcher';
 import DemoModeBanner from '@/components/layout/DemoModeBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { Toaster } from 'react-hot-toast';
+import { audioEngine } from '@/lib/audioEngine';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -39,6 +40,18 @@ export default function AppShell({ children }: AppShellProps) {
     pathname.includes('/colour-prediction') ||
     pathname.includes('/color-prediction')
   );
+
+  // A light haptic tick on every tap of a control (touch only; respects the haptics setting).
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') return;
+      const target = (e.target as Element | null)?.closest?.('button, [role="button"], a, .press');
+      if (!target || (target as HTMLButtonElement).disabled || target.getAttribute('aria-disabled') === 'true') return;
+      audioEngine.vibrate(8);
+    };
+    window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    return () => window.removeEventListener('pointerdown', onPointerDown);
+  }, []);
 
   // Trigger top route loading bar on path changes
   useEffect(() => {

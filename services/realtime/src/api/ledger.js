@@ -385,6 +385,131 @@ router.post('/withdraw/instant', async (req, res) => {
   }
 });
 
+// Where each game page's bets are recorded: ledger games by the stake entry's referenceType,
+// round-based table games by their TableGameBet rows.
+const HISTORY_SOURCES = {
+  dice: { ledger: 'DICE_BET' },
+  'color-prediction': { ledger: 'COLOUR_BET' },
+  'colour-prediction': { ledger: 'COLOUR_BET' },
+  lotto: { ledger: 'LOTTO_BET' },
+  'european-roulette': { ledger: 'ROULETTE_BET' },
+  blackjack: { ledger: 'BLACKJACK_BET' },
+  scratch: { ledger: 'SCRATCH_BET' },
+  slots: { ledger: 'SLOTS_BET' },
+  aviator: { ledger: 'AVIATOR_BET' },
+  'andar-bahar': { table: 'andar-bahar' },
+  'dragon-tiger': { table: 'dragon-tiger' }
+};
+
+/** Start of the current day in India (UTC+5:30), as a Date. */
+function startOfIndianDay(now = new Date()) {
+  const offsetMs = 330 * 60 * 1000;
+  const local = new Date(now.getTime() + offsetMs);
+  local.setUTCHours(0, 0, 0, 0);
+  return new Date(local.getTime() - offsetMs);
+}
+
+/** Loads the player's stakes for one game, newest first: [{ id, stake (paise), placedAt, market }]. */
+async function loadStakes(userId, source, { since, take }) {
+  if (source.table) {
+    const bets = await prisma.tableGameBet.findMany({
+      where: { userId, gameId: source.table, ...(since ? { createdAt: { gte: since } } : {}) },
+      orderBy: { createdAt: 'desc' },
+      take
+    });
+    return bets.map((b) => ({ id: b.id, stake: b.amount, placedAt: b.createdAt, market: b.market }));
+  }
+  const entries = await prisma.ledgerTransaction.findMany({
+    where: {
+      debitAccountId: `USER:${userId}`,
+      referenceType: source.ledger,
+      idempotencyKey: { startsWith: 'bet-place-' },
+      ...(since ? { createdAt: { gte: since } } : {})
+    },
+    orderBy: { createdAt: 'desc' },
+    take
+  });
+  return entries.map((e) => ({ id: e.referenceId, stake: e.amount, placedAt: e.createdAt, market: null }));
+}
+
+/** Resolves each stake's outcome from the ledger (WON / LOST / REFUNDED / PENDING) and its payout. */
+async function resolveOutcomes(userId, stakes) {
+  const ids = stakes.map((s) => s.id).filter(Boolean);
+  if (ids.length === 0) return [];
+  const [wins, closings] = await Promise.all([
+    prisma.transaction.findMany({
+      where: { type: 'BET_WIN', reference: { in: ids }, wallet: { userId } },
+      select: { reference: true, amount: true }
+    }),
+    prisma.ledgerTransaction.findMany({
+      where: { idempotencyKey: { in: ids.flatMap((id) => [`bet-loss-${id}`, `bet-refund-${id}`]) } },
+      select: { idempotencyKey: true, referenceId: true }
+    })
+  ]);
+  const payoutById = new Map(wins.map((w) => [w.reference, w.amount]));
+  const closingById = new Map(closings.map((c) => [c.referenceId, c.idempotencyKey.startsWith('bet-refund-') ? 'REFUNDED' : 'LOST']));
+
+  return stakes.map((s) => {
+    let status = 'PENDING';
+    let payout = 0n;
+    if (payoutById.has(s.id)) { status = 'WON'; payout = payoutById.get(s.id); }
+    else if (closingById.get(s.id) === 'REFUNDED') { status = 'REFUNDED'; payout = s.stake; }
+    else if (closingById.get(s.id) === 'LOST') { status = 'LOST'; }
+    return { ...s, status, payout };
+  });
+}
+
+/**
+ * GET /api/ledger/game-history?game=<page slug>&limit=30
+ * The signed-in player's recent bets on one game plus today's totals, read from the ledger
+ * (never from client state), so the numbers always match the wallet.
+ */
+router.get('/game-history', async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', message: 'Authentication required' });
+
+    const source = HISTORY_SOURCES[String(req.query.game || '')];
+    if (!source) return res.status(400).json({ success: false, code: 'UNKNOWN_GAME', message: 'Unknown game.' });
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 30, 1), 100);
+
+    const [recent, today] = await Promise.all([
+      loadStakes(userId, source, { take: limit }).then((s) => resolveOutcomes(userId, s)),
+      loadStakes(userId, source, { since: startOfIndianDay(), take: 2000 }).then((s) => resolveOutcomes(userId, s))
+    ]);
+
+    const rupees = (paise) => Number(paise) / 100;
+    const settledToday = today.filter((b) => b.status !== 'PENDING');
+    const staked = settledToday.reduce((sum, b) => sum + b.stake, 0n);
+    const paid = settledToday.reduce((sum, b) => sum + b.payout, 0n);
+
+    res.json({
+      success: true,
+      data: {
+        bets: recent.map((b) => ({
+          id: b.id,
+          market: b.market,
+          stake: rupees(b.stake),
+          payout: rupees(b.payout),
+          net: b.status === 'PENDING' ? null : rupees(b.payout - b.stake),
+          status: b.status,
+          placedAt: b.placedAt.toISOString()
+        })),
+        today: {
+          bets: settledToday.length,
+          wins: settledToday.filter((b) => b.status === 'WON' && b.payout > b.stake).length,
+          staked: rupees(staked),
+          paid: rupees(paid),
+          net: rupees(paid - staked)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[GET /api/ledger/game-history Error]:', error.message);
+    res.status(500).json({ success: false, code: 'SERVER_ERROR', message: 'History could not be loaded.' });
+  }
+});
+
 /**
  * GET /api/ledger/wagers
  * Fetches user's game bets and wagers across all categories

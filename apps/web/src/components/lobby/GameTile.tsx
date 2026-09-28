@@ -68,7 +68,7 @@ export default function GameTile({ game, priority = false }: { game: LobbyGame; 
   }
 
   return (
-    <Link href={game.href} className="group block rounded-[22px] outline-none" aria-label={`Play ${game.name}`}>
+    <Link href={game.href} className="press group block rounded-[22px] outline-none transition-[scale] duration-150" aria-label={`Play ${game.name}`}>
       {body}
     </Link>
   );
