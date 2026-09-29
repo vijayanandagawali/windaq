@@ -252,6 +252,127 @@ async function recompute(matchId) {
   return { players: players.length, teams: teams.length };
 }
 
+// ------------------------------------------------------------------ CricketData provider
+
+const cricketData = require('./cricketData');
+const SYNC_EVERY_MS = 10 * 60 * 1000;
+const PROVIDER_STAT_FIELDS = ['runs', 'balls', 'fours', 'sixes', 'dismissed', 'overs', 'maidens', 'runsConceded', 'wickets', 'bowledLbw', 'catches', 'stumpings', 'runOutIndirect'];
+
+function providerError(err) {
+  if (err instanceof cricketData.ProviderError) {
+    return new FantasyError(err.code === 'BUDGET' ? 'PROVIDER_BUDGET' : err.code === 'NOT_CONFIGURED' ? 'PROVIDER_NOT_CONFIGURED' : 'PROVIDER_ERROR', err.message, err.code === 'NOT_CONFIGURED' ? 503 : 502);
+  }
+  return err;
+}
+
+async function providerFixtures() {
+  try {
+    const fixtures = await cricketData.upcomingT20Fixtures();
+    const imported = await prisma.fantasyMatch.findMany({ where: { externalId: { in: fixtures.map((f) => f.externalId) } }, select: { externalId: true, id: true } });
+    const byExt = new Map(imported.map((m) => [m.externalId, m.id]));
+    return { fixtures: fixtures.map((f) => ({ ...f, importedMatchId: byExt.get(f.externalId) || null })), usage: providerUsage() };
+  } catch (err) {
+    throw providerError(err);
+  }
+}
+
+function providerUsage() {
+  return { ...cricketData.usage, hitsLeft: cricketData.hitsLeft(), reserve: cricketData.RESERVE_HITS, fantasyCallCost: cricketData.FANTASY_COST };
+}
+
+/** Creates a match from a provider fixture (details supplied by the admin's fixture list) and tries to load its squad. */
+async function importFixture(f) {
+  const externalId = String(f?.externalId || '');
+  if (!externalId) throw new FantasyError('INVALID', 'Missing fixture id.');
+  const existing = await prisma.fantasyMatch.findFirst({ where: { externalId } });
+  if (existing) throw new FantasyError('ALREADY_IMPORTED', 'This fixture is already imported.', 409);
+  const [a, b] = Array.isArray(f.teamInfo) && f.teamInfo.length === 2 ? f.teamInfo : (f.teams || []).map((name) => ({ name, shortname: name }));
+  if (!a || !b) throw new FantasyError('INVALID', 'The fixture has no teams yet.');
+  const match = await adminCreateMatch({
+    title: `${a.name} vs ${b.name}`,
+    teamA: a.name, teamB: b.name, teamAShort: a.shortname || a.name, teamBShort: b.shortname || b.name,
+    venue: f.venue, startsAt: f.startsAt
+  });
+  await prisma.fantasyMatch.update({ where: { id: match.id }, data: { externalId } });
+  let squad = { added: 0, note: 'Squad not published yet; use "Fetch squad" later.' };
+  if (f.hasSquad) {
+    try { squad = await fetchSquadFor(match.id); } catch (err) { squad = { added: 0, note: providerError(err).message }; }
+  }
+  return { matchId: match.id, squad };
+}
+
+/** Loads the squad from the provider. Existing players (by provider id) are kept, new ones added. */
+async function fetchSquadFor(matchId) {
+  const m = await prisma.fantasyMatch.findUnique({ where: { id: String(matchId) }, include: { players: true } });
+  if (!m || !m.externalId) throw new FantasyError('NOT_FOUND', 'This match was not imported from the provider.', 404);
+  let data;
+  try { data = await cricketData.fetchSquad(m.externalId); } catch (err) { throw providerError(err); }
+  const mapped = cricketData.mapSquad(data, m.teamA);
+  const have = new Set(m.players.map((p) => p.externalId).filter(Boolean));
+  const fresh = mapped.filter((p) => !have.has(p.externalId));
+  if (fresh.length) await prisma.fantasyPlayer.createMany({ data: fresh.map((p) => ({ ...p, matchId: m.id })) });
+  return { added: fresh.length, total: m.players.length + fresh.length, note: mapped.length ? 'Default credits set by role; adjust before the deadline.' : 'The provider returned no players yet.' };
+}
+
+/** Pulls the scorecard and recomputes points. Only provider fields are replaced; admin corrections to other fields stay. */
+async function syncScorecard(matchId) {
+  const m = await prisma.fantasyMatch.findUnique({ where: { id: String(matchId) }, include: { players: true } });
+  if (!m || !m.externalId) throw new FantasyError('NOT_FOUND', 'This match was not imported from the provider.', 404);
+  let data;
+  try { data = await cricketData.fetchScorecard(m.externalId); } catch (err) { throw providerError(err); }
+  const stats = cricketData.mapScorecard(data);
+  let updated = 0;
+  for (const p of m.players) {
+    const s = p.externalId ? stats.get(p.externalId) : null;
+    if (!s) continue;
+    const merged = { ...(p.stats || {}) };
+    for (const k of PROVIDER_STAT_FIELDS) if (s[k] !== undefined) merged[k] = s[k];
+    await prisma.fantasyPlayer.update({ where: { id: p.id }, data: { stats: merged, inLineup: p.inLineup || !!s.played } });
+    updated += 1;
+  }
+  const ended = !!data?.matchEnded;
+  await prisma.fantasyMatch.update({ where: { id: m.id }, data: { lastSyncAt: new Date(), ...(ended && m.status === 'LIVE' ? { status: 'COMPLETED' } : {}) } });
+  const r = await recompute(m.id);
+  return { updated, ended, ...r };
+}
+
+/**
+ * Runs every minute: locks matches whose start time has passed (UPCOMING -> LIVE) and keeps live
+ * imported matches in sync every SYNC_EVERY_MS, within the API budget.
+ */
+async function autoTick(now = new Date()) {
+  const locked = await prisma.fantasyMatch.updateMany({ where: { status: 'UPCOMING', startsAt: { lte: now } }, data: { status: 'LIVE' } });
+  const live = await prisma.fantasyMatch.findMany({
+    where: { status: 'LIVE', externalId: { not: null }, OR: [{ lastSyncAt: null }, { lastSyncAt: { lt: new Date(now.getTime() - SYNC_EVERY_MS) } }] },
+    orderBy: { lastSyncAt: 'asc' },
+    take: 3
+  });
+  let synced = 0;
+  for (const m of live) {
+    if (!cricketData.canAfford(cricketData.FANTASY_COST) || !process.env.CRICKETDATA_API_KEY) break;
+    try { await syncScorecard(m.id); synced += 1; } catch (err) { console.warn('[Fantasy] auto sync skipped:', err.message); }
+  }
+  return { locked: locked.count, synced };
+}
+
+/** Admin edit of a player's credits or role before the deadline (the provider does not supply credits). */
+async function adminUpdatePlayer(playerId, body) {
+  const p = await prisma.fantasyPlayer.findUnique({ where: { id: String(playerId) }, include: { match: true } });
+  if (!p) throw new FantasyError('NOT_FOUND', 'Player not found.', 404);
+  if (!isOpen(p.match)) throw new FantasyError('DEADLINE_PASSED', 'Credits cannot change after the deadline.', 409);
+  const data = {};
+  if (body.credits !== undefined) {
+    const c = Math.round(Number(body.credits) * 2) / 2;
+    if (!(c >= 5 && c <= 12)) throw new FantasyError('INVALID', 'Credits must be between 5 and 12.');
+    data.credits = c;
+  }
+  if (body.role !== undefined) {
+    if (!ROLES.includes(body.role)) throw new FantasyError('INVALID', 'Unknown role.');
+    data.role = body.role;
+  }
+  return prisma.fantasyPlayer.update({ where: { id: p.id }, data });
+}
+
 async function adminPlayerBreakdown(matchId) {
   const players = await prisma.fantasyPlayer.findMany({ where: { matchId: String(matchId) }, orderBy: [{ team: 'asc' }, { name: 'asc' }] });
   return players.map((p) => ({ ...p, breakdown: F.playerPoints(p.role, { ...(p.stats || {}), inLineup: p.inLineup }).breakdown }));
@@ -273,5 +394,12 @@ module.exports = {
   adminCreateContest,
   adminScorecard,
   adminPlayerBreakdown,
-  recompute
+  adminUpdatePlayer,
+  recompute,
+  providerFixtures,
+  providerUsage,
+  importFixture,
+  fetchSquadFor,
+  syncScorecard,
+  autoTick
 };

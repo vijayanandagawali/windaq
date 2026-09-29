@@ -2,8 +2,14 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Trophy, Plus, Save } from 'lucide-react';
+import { Trophy, Plus, Save, Download, RefreshCw, Users } from 'lucide-react';
 import { fantasyApi, type FMatch } from '@/lib/fantasy';
+
+interface Fixture {
+  externalId: string; name: string; series: string; startsAt: string; venue: string | null;
+  teamInfo: { name: string; shortname: string }[]; teams: string[]; hasSquad: boolean; fantasyEnabled: boolean; importedMatchId: string | null;
+}
+interface Usage { hitsToday: number | null; hitsLimit: number | null; hitsLeft: number | null; reserve: number; fantasyCallCost: number }
 
 interface AdminPlayer {
   id: string; name: string; team: 'A' | 'B'; role: string; credits: number; inLineup: boolean; points: number;
@@ -23,6 +29,9 @@ export default function AdminFantasyPage() {
   const [bulk, setBulk] = useState('');
   const [contest, setContest] = useState({ name: 'Free Contest', maxEntries: 1000, maxTeamsPerUser: 1, prizeText: '' });
   const [edits, setEdits] = useState<Record<string, Record<string, string | boolean>>>({});
+  const [fixtures, setFixtures] = useState<Fixture[] | null>(null);
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [busy, setBusy] = useState('');
 
   const loadMatches = useCallback(async () => {
     const r = await fantasyApi<FMatch[]>('/matches');
@@ -85,6 +94,49 @@ export default function AdminFantasyPage() {
     if (await act('Scorecard saved, points recalculated', `/admin/matches/${selected.id}/scorecard`, 'POST', { lines })) loadMatch(selected.id);
   };
 
+  const loadFixtures = async () => {
+    setBusy('fixtures');
+    const r = await fantasyApi<{ fixtures: Fixture[]; usage: Usage }>('/admin/provider/fixtures');
+    setBusy('');
+    if (!r.ok || !r.data) { toast.error(r.message || 'Could not load fixtures'); return; }
+    setFixtures(r.data.fixtures);
+    setUsage(r.data.usage);
+  };
+
+  const refreshUsage = async () => {
+    const r = await fantasyApi<Usage>('/admin/provider/usage');
+    if (r.ok && r.data) setUsage(r.data);
+  };
+
+  const importFixture = async (f: Fixture) => {
+    setBusy(f.externalId);
+    const r = await fantasyApi<{ matchId: string; squad: { added: number; note: string } }>('/admin/provider/import', { method: 'POST', body: f });
+    setBusy('');
+    if (!r.ok || !r.data) { toast.error(r.message || 'Import failed'); return; }
+    toast.success(`Imported · ${r.data.squad.added} players. ${r.data.squad.note}`);
+    setFixtures((list) => (list || []).map((x) => (x.externalId === f.externalId ? { ...x, importedMatchId: r.data!.matchId } : x)));
+    loadMatches();
+    loadMatch(r.data.matchId);
+    refreshUsage();
+  };
+
+  const providerAction = async (label: string, path: string) => {
+    if (!selected) return;
+    setBusy(label);
+    const r = await fantasyApi<{ added?: number; updated?: number; note?: string }>(path, { method: 'POST' });
+    setBusy('');
+    if (!r.ok) { toast.error(r.message || `${label} failed`); return; }
+    toast.success(`${label}: ${r.data?.added ?? r.data?.updated ?? 0} players${r.data?.note ? ` · ${r.data.note}` : ''}`);
+    loadMatch(selected.id);
+    refreshUsage();
+  };
+
+  const saveCredits = async (p: AdminPlayer, credits: string) => {
+    const r = await fantasyApi(`/admin/players/${p.id}`, { method: 'PATCH', body: { credits: Number(credits) } });
+    if (!r.ok) toast.error(r.message || 'Could not update credits');
+    else if (selected) loadMatch(selected.id);
+  };
+
   const val = (p: AdminPlayer, k: string) => (edits[p.id]?.[k] ?? p.stats?.[k] ?? '') as string | number | boolean;
   const setVal = (id: string, k: string, v: string | boolean) => setEdits((e) => ({ ...e, [id]: { ...(e[id] || {}), [k]: v } }));
 
@@ -93,6 +145,32 @@ export default function AdminFantasyPage() {
       <div className="border-b border-slate-200 pb-4">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900"><Trophy className="h-6 w-6 text-amber-500" /> Fantasy Cricket</h1>
         <p className="mt-1 text-sm text-slate-500">Publish only real fixtures and squads. Scorecards entered here drive every player&apos;s points, team totals and contest ranks. Contests are free.</p>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="mr-auto flex items-center gap-2 text-sm font-bold"><Download size={15} className="text-sky-600" /> Import from CricketData (T20 only)</p>
+          {usage && <span className="text-xs text-slate-500">API hits today: {usage.hitsToday ?? '—'} / {usage.hitsLimit ?? '—'} · squad or scorecard costs {usage.fantasyCallCost} · {usage.reserve} kept in reserve</span>}
+          <button onClick={loadFixtures} disabled={busy === 'fixtures'} className="flex items-center gap-1 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
+            <RefreshCw size={12} className={busy === 'fixtures' ? 'animate-spin' : ''} /> Load upcoming fixtures
+          </button>
+        </div>
+        {fixtures && (
+          <div className="mt-3 max-h-72 overflow-y-auto rounded-lg border border-slate-100">
+            {fixtures.length === 0 && <p className="p-4 text-sm text-slate-500">No upcoming T20 fixtures in the next series.</p>}
+            {fixtures.map((f) => (
+              <div key={f.externalId} className="flex items-center gap-3 border-b border-slate-100 px-3 py-2 text-xs">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-slate-800">{f.name}</p>
+                  <p className="truncate text-slate-500">{new Date(f.startsAt).toLocaleString('en-IN')} · {f.venue || 'Venue TBA'} · {f.hasSquad ? 'squad published' : 'squad not yet published'}</p>
+                </div>
+                {f.importedMatchId
+                  ? <button onClick={() => loadMatch(f.importedMatchId!)} className="rounded-lg bg-slate-100 px-2.5 py-1 font-semibold">Open</button>
+                  : <button onClick={() => importFixture(f)} disabled={busy === f.externalId} className="rounded-lg bg-emerald-600 px-2.5 py-1 font-semibold text-white disabled:opacity-50">Import</button>}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
@@ -124,6 +202,10 @@ export default function AdminFantasyPage() {
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-4">
               <p className="mr-auto text-base font-bold">{selected.title} <span className="text-xs font-medium text-slate-500">({selected.status})</span></p>
+              <button onClick={() => providerAction('Fetch squad', `/admin/matches/${selected.id}/fetch-squad`)} disabled={!!busy}
+                className="flex items-center gap-1 rounded-lg bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 disabled:opacity-50"><Users size={12} /> Fetch squad</button>
+              <button onClick={() => providerAction('Sync scorecard', `/admin/matches/${selected.id}/sync-scorecard`)} disabled={!!busy}
+                className="flex items-center gap-1 rounded-lg bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 disabled:opacity-50"><RefreshCw size={12} /> Sync scorecard</button>
               {(['UPCOMING', 'LIVE', 'COMPLETED', 'ABANDONED'] as const).map((s) => (
                 <button key={s} onClick={async () => { if (await act(`Status: ${s}`, `/admin/matches/${selected.id}`, 'PATCH', { status: s })) { loadMatch(selected.id); loadMatches(); } }}
                   className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${selected.status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>{s}</button>
@@ -171,7 +253,9 @@ export default function AdminFantasyPage() {
                   <tbody>
                     {players.map((p) => (
                       <tr key={p.id} className="border-t border-slate-100" title={p.breakdown.map((b) => `${b.label}: ${b.points}`).join('\n')}>
-                        <td className="px-2 py-1.5"><span className="font-semibold">{p.name}</span> <span className="text-slate-400">{p.team === 'A' ? selected.teamAShort : selected.teamBShort} · {p.role} · {p.credits}</span></td>
+                        <td className="px-2 py-1.5"><span className="font-semibold">{p.name}</span> <span className="text-slate-400">{p.team === 'A' ? selected.teamAShort : selected.teamBShort} · {p.role} · </span>
+                          <input key={`${p.id}-${p.credits}`} defaultValue={p.credits} disabled={!selected.open} onBlur={(e) => { if (Number(e.target.value) !== p.credits) saveCredits(p, e.target.value); }}
+                            className="w-12 rounded border px-1 py-0.5 text-right text-slate-700 disabled:bg-slate-50" inputMode="decimal" title="Credits (5-12, steps of 0.5)" /></td>
                         <td className="text-center"><input type="checkbox" checked={Boolean(val(p, 'inLineup') === '' ? p.inLineup : val(p, 'inLineup'))} onChange={(e) => setVal(p.id, 'inLineup', e.target.checked)} /></td>
                         {STAT_FIELDS.map(([k]) => (
                           <td key={k} className="px-0.5"><input className="w-12 rounded border px-1 py-0.5 text-right" inputMode="decimal" value={String(val(p, k))} onChange={(e) => setVal(p.id, k, e.target.value)} /></td>

@@ -46,6 +46,12 @@ router.patch('/admin/matches/:id', requireAuth, requireRole(ADMIN), audited('FAN
 router.post('/admin/matches/:id/lineup', requireAuth, requireRole(ADMIN), audited('FANTASY_SET_LINEUP', (req) => fantasy.adminSetLineup(req.params.id, req.body?.playerIds)));
 router.post('/admin/matches/:id/contests', requireAuth, requireRole(ADMIN), audited('FANTASY_CREATE_CONTEST', (req) => fantasy.adminCreateContest(req.params.id, req.body || {})));
 router.post('/admin/matches/:id/scorecard', requireAuth, requireRole(ADMIN), audited('FANTASY_SCORECARD', (req) => fantasy.adminScorecard(req.params.id, req.body?.lines)));
+router.get('/admin/provider/fixtures', requireAuth, requireRole(ADMIN), wrap(() => fantasy.providerFixtures()));
+router.get('/admin/provider/usage', requireAuth, requireRole(ADMIN), wrap(() => fantasy.providerUsage()));
+router.post('/admin/provider/import', requireAuth, requireRole(ADMIN), audited('FANTASY_IMPORT_FIXTURE', (req) => fantasy.importFixture(req.body || {})));
+router.post('/admin/matches/:id/fetch-squad', requireAuth, requireRole(ADMIN), audited('FANTASY_FETCH_SQUAD', (req) => fantasy.fetchSquadFor(req.params.id)));
+router.post('/admin/matches/:id/sync-scorecard', requireAuth, requireRole(ADMIN), audited('FANTASY_SYNC_SCORECARD', (req) => fantasy.syncScorecard(req.params.id)));
+router.patch('/admin/players/:id', requireAuth, requireRole(ADMIN), audited('FANTASY_UPDATE_PLAYER', (req) => fantasy.adminUpdatePlayer(req.params.id, req.body || {})));
 router.get('/admin/matches/:id/points', requireAuth, requireRole(ADMIN), wrap((req) => fantasy.adminPlayerBreakdown(req.params.id)));
 
 module.exports = router;

@@ -474,6 +474,8 @@ model FantasyMatch {
   venue      String?
   startsAt   DateTime
   status     String   @default("UPCOMING") // UPCOMING, LIVE, COMPLETED, ABANDONED
+  externalId String?  // CricketData match id when imported (uniqueness checked on import)
+  lastSyncAt DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -482,6 +484,7 @@ model FantasyMatch {
   contests FantasyContest[]
 
   @@index([status, startsAt])
+  @@index([externalId])
 }
 
 model FantasyPlayer {
@@ -494,6 +497,7 @@ model FantasyPlayer {
   inLineup Boolean @default(false)
   stats    Json?
   points   Float   @default(0)
+  externalId String? // CricketData player id when imported
 
   match FantasyMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
