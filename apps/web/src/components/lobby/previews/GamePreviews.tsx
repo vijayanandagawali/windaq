@@ -292,7 +292,186 @@ function ScratchPreview() {
   );
 }
 
+/* ---------------- Teen Patti 20-20 ---------------- */
+function TeenPattiPreview() {
+  const { ref, inView } = useInView<HTMLDivElement>();
+  const hands: { side: string; tone: string; cards: [string, 'S' | 'H' | 'D' | 'C'][]; win: boolean }[] = [
+    { side: 'Player A', tone: 'text-sky-100', cards: [['A', 'S'], ['A', 'H'], ['9', 'C']], win: false },
+    { side: 'Player B', tone: 'text-rose-100', cards: [['7', 'H'], ['8', 'H'], ['9', 'H']], win: true }
+  ];
+  return (
+    <Stage innerRef={ref} inView={inView} className={FELT}>
+      <div className="absolute inset-x-[4%] top-[14%] grid grid-cols-2 gap-[4%]">
+        {hands.map((h, hi) => (
+          <div key={h.side} className="flex flex-col items-center">
+            <span className={`text-[9px] font-extrabold uppercase tracking-[0.2em] ${h.tone}`}>{h.side}</span>
+            <div className="mt-2.5 flex text-[10px]">
+              {h.cards.map(([r, s], i) => (
+                <div key={i} className="-mx-[3px] w-[27px]" style={{ transform: `rotate(${(i - 1) * 9}deg) translateY(${i === 1 ? -2 : 0}px)` }}>
+                  <PlayingCard rank={r} suit={s} className={`wd-deal w-full ${h.win ? 'wd-glow-card' : ''}`} style={{ animationDelay: `${(i * 2 + hi) * 0.28}s` }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <span className="absolute left-1/2 top-[27%] -translate-x-1/2 rounded-full bg-black/30 px-1.5 py-0.5 text-[8px] font-black text-white/90">VS</span>
+      <div className="absolute inset-x-0 bottom-[12%] flex justify-center">
+        <span className="wd-pop rounded-full bg-amber-400 px-3 py-1 text-[10px] font-black uppercase text-amber-950 shadow-[0_0_18px_rgba(245,158,11,0.6)]">Pure sequence wins</span>
+      </div>
+    </Stage>
+  );
+}
+
+/* ---------------- Casino Hold'em ---------------- */
+function HoldemPreview() {
+  const { ref, inView } = useInView<HTMLDivElement>();
+  const board: [string, 'S' | 'H' | 'D' | 'C'][] = [['10', 'H'], ['J', 'H'], ['Q', 'H'], ['4', 'C'], ['9', 'S']];
+  return (
+    <Stage innerRef={ref} inView={inView} className={FELT}>
+      <div className="absolute inset-[7%] rounded-[46%] border-2 border-amber-200/50 shadow-[inset_0_0_24px_rgba(0,0,0,0.25)]" />
+      <div className="absolute left-1/2 top-[13%] flex -translate-x-1/2 gap-1 text-[11px]">
+        <PlayingCard rank="A" suit="S" faceDown className="w-[26px]" />
+        <PlayingCard rank="A" suit="S" faceDown className="w-[26px]" />
+      </div>
+      <div className="absolute inset-x-[9%] top-[36%] flex justify-center gap-[2.5%] text-[12px]">
+        {board.map(([r, s], i) => (
+          <PlayingCard key={i} rank={r} suit={s} className="wd-deal w-[17%]" style={{ animationDelay: `${i * 0.32}s` }} />
+        ))}
+      </div>
+      <div className="absolute inset-x-0 bottom-[17%] flex justify-center text-[18px]">
+        <PlayingCard rank="K" suit="H" className="wd-glow-card w-[22%] -rotate-6" />
+        <PlayingCard rank="A" suit="H" className="wd-glow-card -ml-[7%] w-[22%] rotate-6" />
+      </div>
+      <span className="absolute bottom-[5%] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-400 px-3 py-0.5 text-[9px] font-black uppercase text-amber-950 shadow">Royal flush</span>
+    </Stage>
+  );
+}
+
+/* ---------------- Rummy ---------------- */
+function RummyPreview() {
+  const { ref, inView } = useInView<HTMLDivElement>();
+  const groups: { label: string; cards: [string, 'S' | 'H' | 'D' | 'C'][]; wild?: number }[] = [
+    { label: 'Pure sequence', cards: [['5', 'H'], ['6', 'H'], ['7', 'H']] },
+    { label: 'Set', cards: [['9', 'S'], ['9', 'D'], ['9', 'C']] },
+    { label: 'Sequence', cards: [['J', 'S'], ['4', 'D'], ['K', 'S']], wild: 1 }
+  ];
+  return (
+    <Stage innerRef={ref} inView={inView} className="bg-[radial-gradient(circle_at_50%_25%,#2DD4BF,#115E59_82%)]">
+      <div className="absolute left-1/2 top-[15%] flex -translate-x-1/2 items-center gap-2 text-[12px]">
+        <PlayingCard rank="4" suit="C" className="w-[28px] rotate-6" />
+        <span className="rounded-full bg-amber-300 px-2 py-0.5 text-[9px] font-black uppercase text-amber-950">Wild · 4s</span>
+      </div>
+      <div className="absolute inset-x-[3%] top-[38%] flex flex-wrap justify-center gap-x-[6%] gap-y-2">
+        {groups.map((g, gi) => (
+          <div key={g.label} className="flex flex-col items-center">
+            <div className="flex text-[12px]">
+              {g.cards.map(([r, s], i) => (
+                <div key={i} className="wd-deal relative -ml-[12px] w-[26px] first:ml-0" style={{ animationDelay: `${(gi * 3 + i) * 0.18}s` }}>
+                  <PlayingCard rank={r} suit={s} className="w-full" />
+                  {g.wild === i && <span className="absolute -right-1 -top-1 rounded-full bg-amber-400 px-1 text-[7px] font-black leading-3 text-amber-950">W</span>}
+                </div>
+              ))}
+            </div>
+            <span className="mt-1.5 whitespace-nowrap rounded-full bg-white/90 px-1.5 py-0.5 text-[7px] font-black uppercase text-emerald-700">{g.label} ✓</span>
+          </div>
+        ))}
+      </div>
+    </Stage>
+  );
+}
+
+/* ---------------- Ludo ---------------- */
+function LudoPreview() {
+  const { ref, inView } = useInView<HTMLDivElement>();
+  const colors = ['#E5484D', '#30A46C', '#E8A800', '#3E63DD'];
+  const pawns = [
+    { c: 0, x: 22, y: 45 }, { c: 1, x: 55, y: 22 }, { c: 2, x: 78, y: 55 }, { c: 3, x: 45, y: 78 }
+  ];
+  return (
+    <Stage innerRef={ref} inView={inView} className="bg-gradient-to-br from-sky-100 via-white to-emerald-100">
+      <svg viewBox="0 0 150 150" className="absolute left-1/2 top-[10%] w-[80%] -translate-x-1/2 drop-shadow-[0_12px_20px_rgba(15,23,42,0.18)]" aria-hidden="true">
+        <rect width="150" height="150" rx="14" fill="#fff" />
+        {[[0, 0], [90, 0], [90, 90], [0, 90]].map(([x, y], i) => (
+          <g key={i}>
+            <rect x={x + 3} y={y + 3} width="54" height="54" rx="9" fill={colors[i]} />
+            <rect x={x + 13} y={y + 13} width="34" height="34" rx="7" fill="#fff" opacity=".85" />
+          </g>
+        ))}
+        <g stroke="#E2E8F0" strokeWidth="0.8" fill="none">
+          {[60, 70, 80, 90].map((v) => <path key={`h${v}`} d={`M0 ${v} H150`} />)}
+          {[60, 70, 80, 90].map((v) => <path key={`v${v}`} d={`M${v} 0 V150`} />)}
+        </g>
+        <path d="M10 70 H60 V80 H10 Z" fill={colors[0]} opacity=".9" />
+        <path d="M70 10 H80 V60 H70 Z" fill={colors[1]} opacity=".9" />
+        <path d="M90 70 H140 V80 H90 Z" fill={colors[2]} opacity=".9" />
+        <path d="M70 90 H80 V140 H70 Z" fill={colors[3]} opacity=".9" />
+        <polygon points="60,60 75,75 60,90" fill={colors[0]} /><polygon points="60,60 90,60 75,75" fill={colors[1]} />
+        <polygon points="90,60 90,90 75,75" fill={colors[2]} /><polygon points="60,90 75,75 90,90" fill={colors[3]} />
+      </svg>
+      {pawns.map((p, i) => (
+        <span key={i} className="wd-ball-bob absolute h-[11%] w-[11%] -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_4px_8px_rgba(15,23,42,0.35)]"
+          style={{ left: `${p.x}%`, top: `${p.y * 0.8 + 10}%`, animationDelay: `${i * 0.4}s`, background: `radial-gradient(circle at 35% 30%, #fff 0 10%, ${colors[p.c]} 42%, color-mix(in srgb, ${colors[p.c]} 65%, #000) 100%)` }}>
+          <span className="absolute left-[22%] top-[16%] h-[26%] w-[36%] rounded-full bg-white/70 blur-[1px]" />
+        </span>
+      ))}
+      <div className="wd-die-hop absolute bottom-[6%] right-[8%]"><Die3D size={30} /></div>
+    </Stage>
+  );
+}
+
+/* ---------------- Fantasy cricket ---------------- */
+function FantasyPreview() {
+  const { ref, inView } = useInView<HTMLDivElement>();
+  const [pts, setPts] = useState(0);
+  useEffect(() => {
+    if (!inView) return;
+    let v = 0;
+    const t = setInterval(() => {
+      v = v >= 148.5 ? 0 : Math.min(148.5, v + 6.5);
+      setPts(v);
+    }, 90);
+    return () => clearInterval(t);
+  }, [inView]);
+  const rows = [
+    { tag: 'C', name: 'Captain', x: '2x', tone: 'bg-amber-400 text-amber-950' },
+    { tag: 'VC', name: 'Vice-captain', x: '1.5x', tone: 'bg-sky-400 text-sky-950' }
+  ];
+  return (
+    <Stage innerRef={ref} inView={inView} className="bg-[linear-gradient(180deg,#0F2A3D,#0E4A4E_55%,#0B5E46)]">
+      <div aria-hidden="true" className="absolute -top-[30%] left-1/2 h-[70%] w-[120%] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(253,230,138,0.45),transparent)]" />
+      <div aria-hidden="true" className="absolute -bottom-[35%] left-1/2 h-[60%] w-[150%] -translate-x-1/2 rounded-[50%] bg-emerald-600/80" />
+      <div className="absolute inset-x-[10%] top-[14%] rounded-2xl bg-white/10 p-[6%] ring-1 ring-white/20 backdrop-blur-sm">
+        <div className="flex items-baseline justify-between text-white">
+          <span className="text-[9px] font-extrabold uppercase tracking-widest text-white/70">Your XI</span>
+          <span className="font-mono text-[18px] font-black tabular-nums">{pts.toFixed(1)}<span className="ml-0.5 text-[9px] text-white/60">pts</span></span>
+        </div>
+        <div className="mt-2 flex gap-1">
+          {Array.from({ length: 11 }).map((_, i) => <span key={i} className="h-1 flex-1 rounded-full bg-emerald-300" />)}
+        </div>
+        <div className="mt-2.5 space-y-1.5">
+          {rows.map((r) => (
+            <div key={r.tag} className="flex items-center gap-2 rounded-lg bg-white/10 px-2 py-1">
+              <span className={`flex h-5 w-6 items-center justify-center rounded-full text-[8px] font-black ${r.tone}`}>{r.tag}</span>
+              <span className="flex-1 text-[9px] font-bold text-white/90">{r.name}</span>
+              <span className="text-[9px] font-black text-amber-200">{r.x}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="absolute inset-x-0 bottom-[10%] flex justify-center">
+        <span className="rounded-full bg-slate-900/70 px-3 py-1 font-mono text-[10px] font-black tracking-widest text-amber-200">11 · 100 CR</span>
+      </div>
+    </Stage>
+  );
+}
+
 const PREVIEWS: Record<string, () => React.ReactElement> = {
+  'teen-patti': TeenPattiPreview,
+  'texas-holdem': HoldemPreview,
+  'rummy': RummyPreview,
+  'ludo': LudoPreview,
+  'fantasy-cricket': FantasyPreview,
   'european-roulette': RoulettePreview,
   'dice': DicePreview,
   'dragon-tiger': DragonTigerPreview,
