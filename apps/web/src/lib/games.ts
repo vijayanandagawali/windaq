@@ -99,6 +99,11 @@ export const GAMES: LobbyGame[] = [
     accent: '#B46CFF', ...art('rummy')
   },
   {
+    slug: 'fantasy-cricket', name: 'Fantasy Cricket', href: '/games/fantasy', category: 'draws', status: 'live',
+    tagline: 'Pick 11 within 100 credits, captain scores 2x', highlight: 'Free contests', minBet: 0,
+    accent: '#F59E0B', ...art('fantasy-cricket')
+  },
+  {
     slug: 'ludo', name: 'Ludo', href: '/games/ludo', category: 'table', status: 'live',
     tagline: 'Classic Ludo against 1 or 3 Computer players', highlight: 'Free practice', minBet: 0,
     accent: '#3E63DD', ...art('ludo')

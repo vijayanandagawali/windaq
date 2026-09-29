@@ -460,6 +460,96 @@ model CasinoHoldemHand {
   @@index([status, createdAt])
 }
 
+// --- FANTASY CRICKET ---
+// Fixtures, squads and scorecards are entered by admins (no invented matches); points are computed
+// by services/realtime/src/services/fantasy/fantasyRules.js. Contests are free while paid entry is off.
+model FantasyMatch {
+  id         String   @id @default(uuid())
+  title      String
+  teamA      String
+  teamB      String
+  teamAShort String
+  teamBShort String
+  format     String   @default("T20")
+  venue      String?
+  startsAt   DateTime
+  status     String   @default("UPCOMING") // UPCOMING, LIVE, COMPLETED, ABANDONED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  players  FantasyPlayer[]
+  teams    FantasyTeam[]
+  contests FantasyContest[]
+
+  @@index([status, startsAt])
+}
+
+model FantasyPlayer {
+  id       String  @id @default(uuid())
+  matchId  String
+  name     String
+  team     String  // 'A' | 'B'
+  role     String  // WK, BAT, AR, BOWL
+  credits  Float
+  inLineup Boolean @default(false)
+  stats    Json?
+  points   Float   @default(0)
+
+  match FantasyMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([matchId])
+}
+
+model FantasyTeam {
+  id            String   @id @default(uuid())
+  matchId       String
+  userId        String
+  name          String
+  playerIds     Json
+  captainId     String
+  viceCaptainId String
+  points        Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  match   FantasyMatch   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  entries FantasyEntry[]
+
+  @@index([matchId, userId])
+}
+
+model FantasyContest {
+  id              String   @id @default(uuid())
+  matchId         String
+  name            String
+  entryFee        BigInt   @default(0) // paise; only free contests are accepted today
+  maxEntries      Int
+  maxTeamsPerUser Int      @default(1)
+  prizeText       String?
+  createdAt       DateTime @default(now())
+
+  match   FantasyMatch   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  entries FantasyEntry[]
+
+  @@index([matchId])
+}
+
+model FantasyEntry {
+  id        String   @id @default(uuid())
+  contestId String
+  teamId    String
+  userId    String
+  points    Float    @default(0)
+  rank      Int?
+  createdAt DateTime @default(now())
+
+  contest FantasyContest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  team    FantasyTeam    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, teamId])
+  @@index([contestId, points])
+}
+
 // --- RUMMY GAMES ---
 
 model RummyGame {

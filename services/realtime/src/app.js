@@ -111,6 +111,7 @@ function createApp() {
   app.use('/api/bonus', requireAuth, bonusRouter);
   app.use('/api/notifications', notificationsRouter);
   app.use('/api/history', historyRouter);
+  app.use('/api/fantasy', require('./api/fantasy'));
   app.use('/api/admin/realtime', requireAuth, adminRealtimeRouter);
   app.use('/api/admin/tables', requireAuth, adminTablesRouter);
 

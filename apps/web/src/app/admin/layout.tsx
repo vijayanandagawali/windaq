@@ -14,6 +14,7 @@ import {
   Layers,
   History,
   LogOut,
+  Trophy,
   type LucideIcon
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -31,7 +32,8 @@ const NAV: { section: string; items: NavItem[] }[] = [
     { href: '/admin/realtime', label: 'Realtime Control', icon: ActivitySquare, iconClass: 'text-emerald-600', live: true },
     { href: '/admin/tables', label: 'Live Tables (Dealers)', icon: Layers, iconClass: 'text-amber-600', badge: 'AUTO' },
     { href: '/admin/games', label: 'Game Control', icon: Gamepad2, iconClass: 'text-emerald-600' },
-    { href: '/admin/history', label: 'Result History & Audits', icon: History, iconClass: 'text-amber-600', badge: 'AUDIT' }
+    { href: '/admin/history', label: 'Result History & Audits', icon: History, iconClass: 'text-amber-600', badge: 'AUDIT' },
+    { href: '/admin/fantasy', label: 'Fantasy Cricket', icon: Trophy, iconClass: 'text-amber-500' }
   ] },
   { section: 'Finance', items: [
     { href: '/admin/reconciliation', label: 'Wallet Reconciliation', icon: ShieldCheck, iconClass: 'text-emerald-600', badge: 'ENGINE' },
